@@ -1,0 +1,6 @@
+---
+- name: Restart bluetooth
+  ansible.builtin.systemd:
+    name: bluetooth.service
+    state: restarted
+  become: true

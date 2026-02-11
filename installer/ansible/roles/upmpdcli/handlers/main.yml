@@ -1,0 +1,6 @@
+---
+- name: Restart upmpdcli
+  ansible.builtin.systemd:
+    name: upmpdcli.service
+    state: restarted
+  become: true

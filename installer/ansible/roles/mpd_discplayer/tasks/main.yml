@@ -1,0 +1,88 @@
+---
+- name: Configure mpd cdio
+  ansible.builtin.blockinfile:
+    path: "/home/{{ target_user }}/.config/mpd/mpd.conf"
+    marker: "# {mark} ANSIBLE MANAGED BLOCK - cdio input"
+    block: |
+      # Input plugins
+      input {
+        plugin  "cdio_paranoia"
+        speed "12"
+      }
+  become: true
+  become_user: "{{ target_user }}"
+  notify: Restart mpd
+
+- name: Configure mpd playlist plugin
+  ansible.builtin.blockinfile:
+    path: "/home/{{ target_user }}/.config/mpd/mpd.conf"
+    marker: "# {mark} ANSIBLE MANAGED BLOCK - playlist plugin"
+    block: |
+      # Playlist plugins
+      playlist_plugin {
+        name "cue"
+        enabled "true"
+        as_folder "true"
+      }
+  become: true
+  become_user: "{{ target_user }}"
+  notify: Restart mpd
+
+- name: Configure mpd udisk neighbor
+  ansible.builtin.blockinfile:
+    path: "/home/{{ target_user }}/.config/mpd/mpd.conf"
+    marker: "# {mark} ANSIBLE MANAGED BLOCK - udisk neighbor"
+    block: |
+      # Neighbors - USB device discovery
+      neighbors {
+        plugin "udisks"
+      }
+  become: true
+  become_user: "{{ target_user }}"
+  notify: Restart mpd
+
+- name: Install mpd-discplayer
+  ansible.builtin.apt:
+    name: mpd-discplayer
+    state: present
+  become: true
+  notify: Restart mpd-discplayer
+
+- name: Copy .mpdignore to USB media directory
+  ansible.builtin.copy:
+    src: .mpdignore
+    dest: /media/USB/.mpdignore
+    mode: '0644'
+    owner: "{{ target_user }}"
+    group: audio
+  become: true
+
+- name: Create mpd-discplayer config directory
+  ansible.builtin.file:
+    path: "/home/{{ target_user }}/.config/mpd-discplayer"
+    state: directory
+    owner: "{{ target_user }}"
+    group: "{{ target_user }}"
+    mode: '0700'
+  become: true
+
+- name: Deploy mpd-discplayer configuration
+  ansible.builtin.template:
+    src: config.yaml.j2
+    dest: "/home/{{ target_user }}/.config/mpd-discplayer/config.yaml"
+    owner: "{{ target_user }}"
+    group: "{{ target_user }}"
+    mode: '0644'
+  become: true
+  notify: Restart mpd-discplayer
+
+- name: Enable mpd-discplayer service
+  ansible.builtin.systemd:
+    name: mpd-discplayer.service
+    enabled: true
+    scope: user
+    daemon_reload: true
+  environment:
+    XDG_RUNTIME_DIR: "/run/user/{{ target_user_uid }}"
+  become: true
+  become_user: "{{ target_user }}"

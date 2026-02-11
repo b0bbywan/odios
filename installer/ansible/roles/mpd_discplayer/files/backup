@@ -1,0 +1,18 @@
+
+# Input plugins
+input {
+	plugin	"cdio_paranoia"
+	speed	"12"
+}
+
+# Neighbors - USB device discovery
+neighbors {
+	plugin "udisks"
+}
+
+# Playlist plugins
+playlist_plugin {
+	name "cue"
+	enabled "true"
+	as_folder "true"
+}

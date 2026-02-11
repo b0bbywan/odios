@@ -1,0 +1,74 @@
+---
+- name: Download lesbonscomptes GPG key
+  ansible.builtin.get_url:
+    url: "https://www.lesbonscomptes.com/pages/lesbonscomptes.gpg"
+    dest: /usr/share/keyrings/lesbonscomptes.gpg
+    mode: '0644'
+    owner: root
+    group: root
+  become: true
+
+- name: Download upmpdcli apt sources
+  ansible.builtin.get_url:
+    url: "https://www.lesbonscomptes.com/upmpdcli/pages/upmpdcli-{% if ansible_architecture in ['armv6l', 'armv7l', 'aarch64'] %}r{% endif %}trixie.sources"
+    dest: /etc/apt/sources.list.d/upmpdcli.sources
+    mode: '0644'
+    owner: root
+    group: root
+  become: true
+
+- name: Install upmpdcli
+  ansible.builtin.apt:
+    name: upmpdcli
+    state: present
+    update_cache: true
+  become: true
+  notify: Restart upmpdcli
+
+- name: Configure upmpdcli friendly name
+  ansible.builtin.lineinfile:
+    path: /etc/upmpdcli.conf
+    regexp: '^#?avfriendlyname\s*='
+    line: "avfriendlyname = UpMpd/AV-{{ target_hostname }}"
+  become: true
+  notify: Restart upmpdcli
+
+- name: Configure upmpdcli upnpav
+  ansible.builtin.lineinfile:
+    path: /etc/upmpdcli.conf
+    regexp: '^#?upnpav\s*='
+    line: "upnpav = 1"
+  become: true
+  notify: Restart upmpdcli
+
+- name: Configure upmpdcli openhome
+  ansible.builtin.lineinfile:
+    path: /etc/upmpdcli.conf
+    regexp: '^#?openhome\s*='
+    line: "openhome = 1"
+  become: true
+  notify: Restart upmpdcli
+
+- name: Configure upmpdcli mpdhost
+  ansible.builtin.lineinfile:
+    path: /etc/upmpdcli.conf
+    regexp: '^#?mpdhost\s*='
+    line: "mpdhost = localhost"
+  become: true
+  notify: Restart upmpdcli
+
+- name: Configure upmpdcli mpdport
+  ansible.builtin.lineinfile:
+    path: /etc/upmpdcli.conf
+    regexp: '^#?mpdport\s*='
+    line: "mpdport = 6600"
+  become: true
+  notify: Restart upmpdcli
+
+- name: Enable upmpdcli service
+  ansible.builtin.systemd:
+    name: upmpdcli.service
+    enabled: true
+    state: started
+    daemon_reload: true
+  become: true

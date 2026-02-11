@@ -1,0 +1,24 @@
+---
+- name: Install Bluetooth packages
+  ansible.builtin.apt:
+    name:
+      - bluez
+      - pulseaudio-module-bluetooth
+    state: present
+  become: true
+  notify: Restart bluetooth
+
+- name: Configure Bluetooth main.conf
+  ansible.builtin.template:
+    src: bluetooth-main.conf.j2
+    dest: /etc/bluetooth/main.conf
+    mode: '0644'
+  become: true
+  notify: Restart bluetooth
+
+- name: Enable Bluetooth service
+  ansible.builtin.systemd:
+    name: bluetooth.service
+    enabled: true
+    state: started
+  become: true

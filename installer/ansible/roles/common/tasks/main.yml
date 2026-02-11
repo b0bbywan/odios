@@ -1,0 +1,62 @@
+---
+- name: Ensure audio group exists
+  ansible.builtin.group:
+    name: audio
+    state: present
+  become: true
+
+- name: Ensure user in audio group
+  ansible.builtin.user:
+    name: "{{ target_user }}"
+    append: true
+    groups:
+      - audio
+  become: true
+
+- name: User systemd directory
+  ansible.builtin.file:
+    path: "/home/{{ target_user }}/.config/systemd/user"
+    state: directory
+    owner: "{{ target_user }}"
+    group: "{{ target_user }}"
+    mode: '0755'
+  become: true
+
+- name: Check linger status
+  ansible.builtin.stat:
+    path: "/var/lib/systemd/linger/{{ target_user }}"
+  register: common_linger_stat
+
+- name: Enable user session persistence (linger)
+  ansible.builtin.command:
+    cmd: "loginctl enable-linger {{ target_user }}"
+  become: true
+  changed_when: true
+  when: not common_linger_stat.stat.exists
+
+- name: Check odio gpg file
+  ansible.builtin.stat:
+    path: "{{ gpg_file }}"
+  register: common_gpg_stat
+
+- name: Add apt.odio.love gpg key
+  ansible.builtin.get_url:
+    url: "{{ odio_gpg }}"
+    dest: /tmp/odio.gpg
+    mode: '0644'
+  when: not common_gpg_stat.stat.exists
+
+- name: Dearmor GPG key
+  ansible.builtin.command:
+    cmd: "gpg --dearmor -o {{ gpg_file }} /tmp/odio.gpg"
+    creates: "{{ gpg_file }}"
+  become: true
+
+- name: Copy odio apt source
+  ansible.builtin.template:
+    src: odio.sources.j2
+    dest: /etc/apt/sources.list.d/odio.sources
+    mode: '0644'
+    owner: root
+    group: root
+  become: true
