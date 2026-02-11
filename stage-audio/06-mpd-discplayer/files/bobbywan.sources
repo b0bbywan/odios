@@ -1,0 +1,5 @@
+Types: deb
+URIs:  https://apt.bobbywan.me/
+Suites: trixie
+Components: main
+Trusted: yes

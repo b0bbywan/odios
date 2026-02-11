@@ -1,0 +1,34 @@
+--- stage3/rootfs/etc/shairport-sync.conf
++++ stage3/rootfs/etc/shairport-sync.conf
+@@ -6,7 +6,7 @@
+ // General Settings
+ general =
+ {
+-//	name = "%H"; // This means "Hostname" -- see below. This is the name the service will advertise to iTunes.
++	name = "%h"; // This means "hostname" -- see below. This is the name the service will advertise to iTunes.
+ //		The default is "Hostname" -- i.e. the machine's hostname with the first letter capitalised (ASCII only.)
+ //		You can use the following substitutions:
+ //				%h for the hostname,
+@@ -16,8 +16,8 @@
+ //		Overall length can not exceed 50 characters. Example: "Shairport Sync %v on %H".
+ //	password = "secret"; // leave this commented out if you don't want to require a password
+ //	interpolation = "auto"; // aka "stuffing". Default is "auto". Alternatives are "basic" or "soxr". Choose "soxr" only if you have a reasonably fast processor and Shairport Sync has been built with "soxr" support.
+-//	output_backend = "alsa"; // Run "shairport-sync -h" to get a list of all output_backends, e.g. "alsa", "pipe", "stdout". The default is the first one.
+-//	mdns_backend = "avahi"; // Run "shairport-sync -h" to get a list of all mdns_backends. The default is the first one.
++	output_backend = "pa"; // Run "shairport-sync -h" to get a list of all output_backends, e.g. "alsa", "pipe", "stdout". The default is the first one.
++	mdns_backend = "avahi"; // Run "shairport-sync -h" to get a list of all mdns_backends. The default is the first one.
+ //	interface = "name"; // Use this advanced setting to specify the interface on which Shairport Sync should provide its service. Leave it commented out to get the default, which is to select the interface(s) automatically.
+ //	port = 5000; // Listen for service requests on this port
+ //	udp_port_base = 6001; // start allocating UDP ports from this port number when needed
+@@ -133,9 +133,9 @@
+ // --with-pa
+ pa =
+ {
+-//	server = "host"; // Set this to override the default pulseaudio server that should be used.
++	server = "127.0.0.1"; // Set this to override the default pulseaudio server that should be used.
+ //	sink = "Sink Name"; // Set this to override the default pulseaudio sink that should be used. (Untested)
+-//	application_name = "Shairport Sync"; //Set this to the name that should appear in the Sounds "Applications" tab when Shairport Sync is active.
++	application_name = "Shairport Sync"; //Set this to the name that should appear in the Sounds "Applications" tab when Shairport Sync is active.
+ };
+ 
+ // Parameters for the "jack" JACK Audio Connection Kit backend.

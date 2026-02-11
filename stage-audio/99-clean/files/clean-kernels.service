@@ -1,0 +1,9 @@
+[Unit]
+Description=Clean unused kernels on boot
+
+[Service]
+Type=idle
+ExecStart=sh -c 'if /usr/local/bin/raspiHandleKernels.sh -u; then yes | /usr/local/bin/raspiHandleKernels.sh -eu; else true; fi'
+
+[Install]
+WantedBy=multi-user.target

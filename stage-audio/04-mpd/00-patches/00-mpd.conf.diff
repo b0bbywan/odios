@@ -1,0 +1,164 @@
+--- stage-audio.orig/rootfs/etc/mpd.conf
++++ stage-audio/rootfs/etc/mpd.conf
+@@ -12,14 +12,14 @@
+ # be disabled and audio files will only be accepted over ipc socket (using
+ # file:// protocol) or streaming files over an accepted protocol.
+ #
+-music_directory		"/var/lib/mpd/music"
++music_directory		"/media/USB"
+ #
+ # This setting sets the MPD internal playlist directory. The purpose of this
+ # directory is storage for playlists created by MPD. The server will use
+ # playlist files not created by the server but only if they are in the MPD
+ # format. This setting defaults to playlist saving being disabled.
+ #
+-playlist_directory		"/var/lib/mpd/playlists"
++playlist_directory		"~/.local/share/mpd/playlists"
+ #
+ # This setting sets the location of the MPD database. This file is used to
+ # load the database at server start up and store the database while the
+@@ -27,7 +27,11 @@
+ # MPD to accept files over ipc socket (using file:// protocol) or streaming
+ # files over an accepted protocol.
+ #
+-db_file			"/var/lib/mpd/tag_cache"
++database {
++	plugin "simple"
++	path "~/.local/share/mpd/db"
++	cache_directory "~/.local/share/mpd/cache"
++}
+ 
+ # These settings are the locations for the daemon log files for the daemon.
+ #
+@@ -52,12 +56,12 @@
+ # it was brought down. This setting is disabled by default and the server
+ # state will be reset on server start up.
+ #
+-state_file			"/var/lib/mpd/state"
++state_file			"~/.local/share/mpd/state"
+ #
+ # The location of the sticker database.  This is a database which
+ # manages dynamic information attached to songs.
+ #
+-sticker_file                   "/var/lib/mpd/sticker.sql"
++sticker_file                   "~/.local/share/mpd/sticker.sql"
+ #
+ ###############################################################################
+ 
+@@ -69,7 +73,7 @@
+ # initialization. This setting is disabled by default and MPD is run as the
+ # current user.
+ #
+-user				"mpd"
++#user				"mpd"
+ #
+ # This setting specifies the group that MPD will run as. If not specified
+ # primary group of user specified with "user" setting will be used (if set).
+@@ -84,15 +88,15 @@
+ # systemd socket activation is in use.
+ #
+ # For network
+-bind_to_address			"localhost"
++bind_to_address			"any"
+ #
+ # And for Unix Socket
+-#bind_to_address		"/run/mpd/socket"
++bind_to_address		"/run/user/1000/mpd.socket"
+ #
+ # This setting is the TCP port that is desired for the daemon to get assigned
+ # to.
+ #
+-#port				"6600"
++port				"6600"
+ #
+ # Suppress all messages below the given threshold.  Use "verbose" for
+ # troubleshooting. Available setting arguments are "notice", "info", "verbose",
+@@ -122,7 +126,7 @@
+ # This setting enables automatic update of MPD's database when files in
+ # music_directory are changed.
+ #
+-#auto_update	"yes"
++auto_update	"yes"
+ #
+ # Limit the depth of the directories being watched, 0 means only watch
+ # the music directory itself.  There is no limit by default.
+@@ -152,12 +156,12 @@
+ # If this setting is set to "yes", service information will be published with
+ # Zeroconf / Avahi.
+ #
+-#zeroconf_enabled		"yes"
++zeroconf_enabled		"yes"
+ #
+ # The argument to this setting will be the Zeroconf / Avahi unique name for
+ # this MPD server on the network. %h will be replaced with the hostname.
+ #
+-#zeroconf_name			"Music Player @ %h"
++zeroconf_name			"Mpd-%h"
+ #
+ ###############################################################################
+ 
+@@ -205,6 +209,29 @@
+ #       proxy_password "password"
+ }
+ 
++input {
++	plugin	"cdio_paranoia"
++	speed	"12"
++}
++#
++###############################################################################
++
++# Neighbors ###################################################################
++#
++neighbors {
++	plugin "udisks"
++}
++#
++# #############################################################################
++
++# Playlist Plugin #############################################################
++#
++playlist_plugin {
++	name "cue"
++	enabled "true"
++	as_folder "true"
++} 
++
+ # Decoder #####################################################################
+ #
+ 
+@@ -213,11 +240,11 @@
+         enabled                 "no"
+ #       gapless                 "no"
+ }
+-decoder {
+-        plugin        "wildmidi"
+-        enabled       "no"
++#decoder {
++#        plugin        "wildmidi"
++#        enabled       "no"
+         #config_file "/etc/timidity/timidity.cfg"
+-}
++#}
+ 
+ #
+ ###############################################################################
+@@ -305,13 +332,13 @@
+ # Please see README.Debian if you want mpd to play through the pulseaudio
+ # daemon started as part of your graphical desktop session!
+ #
+-#audio_output {
+-#	type		"pulse"
+-#	name		"My Pulse Output"
+-##	server		"remote_server"		# optional
++audio_output {
++	type		"pulse"
++	name		"pulseaudio"
++	server		"127.0.0.1"
+ ##	sink		"remote_server_sink"	# optional
+ ##	media_role	"media_role"		#optional
+-#}
++}
+ #
+ # An example of a winmm output (Windows multimedia API).
+ #

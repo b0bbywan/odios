@@ -1,0 +1,14 @@
+[Unit]
+Description=PulseAudio TCP and Zeroconf
+After=pulseaudio.service
+Requires=pulseaudio.service
+ConditionUser=!root
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/pulse-acl.sh start
+ExecStop=/usr/local/bin/pulse-acl.sh stop
+RemainAfterExit=true
+
+[Install]
+WantedBy=default.target

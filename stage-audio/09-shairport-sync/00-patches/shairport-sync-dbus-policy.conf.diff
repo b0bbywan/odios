@@ -1,0 +1,14 @@
+--- stage3/rootfs/usr/share/dbus-1/system.d/shairport-sync-dbus-policy.conf
++++ stage3/rootfs/usr/share/dbus-1/system.d/shairport-sync-dbus-policy.conf
+@@ -4,7 +4,10 @@
+           "http://www.freedesktop.org/standards/dbus/1.0/busconfig.dtd">
+ <busconfig>
+ 
+-  <!-- Allow users "root" and "shairport-sync" to own the Shairport Sync service -->
++  <!-- Allow users "root", "shairport-sync" and "FIRST_USER_NAME" to own the Shairport Sync service -->
++  <policy user="FIRST_USER_NAME">
++    <allow own="org.gnome.ShairportSync"/>
++  </policy>
+   <policy user="root">
+     <allow own="org.gnome.ShairportSync"/>
+   </policy>

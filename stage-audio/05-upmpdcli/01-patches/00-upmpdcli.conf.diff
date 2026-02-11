@@ -1,0 +1,29 @@
+--- stage-audio.orig/rootfs/etc/upmpdcli.conf
++++ stage-audio/rootfs/etc/upmpdcli.conf
+@@ -38,11 +38,11 @@
+ # "Friendly Name" for the Media Renderer.
+ #friendlyname = UpMpd-%h
+ # Specific friendly name for the UPnP/AV Media Renderer.
+-#avfriendlyname =
++avfriendlyname = UpMpd/AV-TARGET_HOSTNAME
+ # Enable UPnP AV services (0/1).
+-#upnpav = 1
++upnpav = 1
+ # Enable OpenHome services (0/1).
+-#openhome = 1
++openhome = 1
+ # Disable the OpenHome Credentials service.
+ #lumincompat = 0
+ # Store metadata into the OpenHome "metatext" variable.
+@@ -65,9 +65,9 @@
+ # MPD parameters
+ 
+ # Host MPD runs on.
+-#mpdhost = localhost
++mpdhost = localhost
+ # IP port used by MPD
+-#mpdport = 6600
++mpdport = 6600
+ # MPD password.
+ #mpdpassword =
+ # MPD connection timeout in milliseconds.

@@ -1,0 +1,7 @@
+MPDConnection:
+  Type: "unix"
+  Address: "/run/user/1000/mpd/socket"
+  ReconnectWait: 5
+AudioBackend: "none"
+MPDLibraryFolder: "/media/USB"
+MountConfig: "mpd"

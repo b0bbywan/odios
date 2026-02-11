@@ -1,0 +1,14 @@
+--- stage3/rootfs/usr/share/dbus-1/system.d/shairport-sync-mpris-policy.conf
++++ stage3/rootfs/usr/share/dbus-1/system.d/shairport-sync-mpris-policy.conf
+@@ -4,7 +4,10 @@
+           "http://www.freedesktop.org/standards/dbus/1.0/busconfig.dtd">
+ <busconfig>
+ 
+-  <!-- Allow users "root" and "shairport-sync" to own the Shairport Sync MPRIS service -->
++  <!-- Allow users "root", "shairport-sync" and "FIRST_USER_NAME" to own the Shairport Sync MPRIS service -->
++  <policy user="FIRST_USER_NAME">
++    <allow own="org.mpris.MediaPlayer2.ShairportSync"/>
++  </policy>
+   <policy user="shairport-sync">
+     <allow own="org.mpris.MediaPlayer2.ShairportSync"/>
+   </policy>
