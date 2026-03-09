@@ -8,6 +8,20 @@
   become: true
   notify: Restart bluetooth
 
+- name: Ensure bluetooth group exists
+  ansible.builtin.group:
+    name: bluetooth
+    state: present
+  become: true
+
+- name: Ensure user in bluetooth group
+  ansible.builtin.user:
+    name: "{{ target_user }}"
+    append: true
+    groups:
+      - bluetooth
+  become: true
+
 - name: Backup Bluetooth config before changes
   ansible.builtin.include_tasks: "../../../tasks/backup_conf_before.yml"
   vars:
