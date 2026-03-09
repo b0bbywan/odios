@@ -8,6 +8,7 @@ on:
 
 permissions:
   contents: write
+  packages: write
 
 env:
   ANSIBLE_CORE_VERSION: '2.19.*'
@@ -130,3 +131,88 @@ jobs:
             Pre-release automatique pour la PR #${{ github.event.pull_request.number }}.
 
             **Commit :** `${{ github.event.pull_request.head.sha }}`
+
+  build-test-image:
+    needs: build
+    runs-on: ubuntu-latest
+    outputs:
+      image: ${{ steps.meta.outputs.image }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set image tag
+        id: meta
+        run: |
+          if [[ "${{ needs.build.outputs.is_release }}" == "true" ]]; then
+            TAG="${{ needs.build.outputs.version }}"
+          else
+            TAG="pr-${{ github.event.pull_request.number }}"
+          fi
+          echo "image=ghcr.io/${{ github.repository }}/test:${TAG}" >> "$GITHUB_OUTPUT"
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: Dockerfile.test
+          push: true
+          tags: ${{ steps.meta.outputs.image }}
+          cache-from: type=registry,ref=ghcr.io/${{ github.repository }}/test:latest
+          cache-to: type=inline
+
+  test-playbook:
+    needs: build-test-image
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run playbook test
+        run: ./test.sh
+        env:
+          REMOTE_IMAGE: ${{ needs.build-test-image.outputs.image }}
+
+      - name: Re-run playbook (idempotence)
+        run: ./test.sh rerun
+
+      - name: Clean
+        if: always()
+        run: ./test.sh clean
+
+  test-install:
+    needs: [build, build-test-image, pre-release, release]
+    if: |
+      always() &&
+      needs.build.result == 'success' &&
+      needs.build-test-image.result == 'success' &&
+      (needs.pre-release.result == 'success' || needs.release.result == 'success')
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        mode: [install, install-root]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Resolve tag
+        id: tag
+        run: |
+          if [[ "${{ needs.build.outputs.is_release }}" == "true" ]]; then
+            echo "value=${{ needs.build.outputs.version }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "value=pr-${{ github.event.pull_request.number }}" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Test curl|bash (${{ matrix.mode }})
+        run: ./test.sh ${{ matrix.mode }} ${{ steps.tag.outputs.value }}
+        env:
+          REMOTE_IMAGE: ${{ needs.build-test-image.outputs.image }}
+
+      - name: Clean
+        if: always()
+        run: ./test.sh clean

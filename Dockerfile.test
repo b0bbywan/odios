@@ -2,7 +2,7 @@ FROM debian:trixie
 
 ENV DEBIAN_FRONTEND=noninteractive
 
-# Bare minimum: systemd + ansible to run the playbook
+# Bare minimum: systemd to run the container
 RUN apt-get update && apt-get install -y --no-install-recommends \
     systemd \
     systemd-sysv \
@@ -12,7 +12,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
     python3 \
     python3-apt \
-    ansible \
+    python3-pip \
+    python3-cryptography \
+    python3-jinja2 \
     ca-certificates \
     gnupg2 \
     && rm -rf /var/lib/apt/lists/*

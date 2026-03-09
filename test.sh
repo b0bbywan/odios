@@ -2,14 +2,27 @@
 set -e
 
 CONTAINER_NAME="odios-test"
-IMAGE_NAME="odios-test"
 GITHUB_REPO="b0bbywan/odios"
+REMOTE_IMAGE="${REMOTE_IMAGE:-ghcr.io/${GITHUB_REPO}/test:latest}"
+BUILD_LOCAL=false
 
 # ─── Helpers ──────────────────────────────────────────────────────────────────
 
+resolve_image() {
+    if [[ "${BUILD_LOCAL}" == "true" ]]; then
+        echo "=== Building image locally ==="
+        docker build -t "${REMOTE_IMAGE}" -f Dockerfile.test .
+    else
+        echo "=== Pulling image ==="
+        docker pull "${REMOTE_IMAGE}" || {
+            echo "Pull failed, falling back to local build..."
+            docker build -t "${REMOTE_IMAGE}" -f Dockerfile.test .
+        }
+    fi
+}
+
 start_container() {
-    echo "=== Building image ==="
-    docker build -t "${IMAGE_NAME}" -f Dockerfile.test .
+    resolve_image
 
     echo "=== Starting container with systemd ==="
     docker rm -f "${CONTAINER_NAME}" 2>/dev/null || true
@@ -19,7 +32,7 @@ start_container() {
       --cgroupns=host \
       --user root \
       -v /sys/fs/cgroup:/sys/fs/cgroup:rw \
-      "${IMAGE_NAME}"
+      "${REMOTE_IMAGE}"
 
     echo "=== Waiting for systemd ==="
     sleep 3
@@ -58,31 +71,47 @@ run_install() {
 
 # ─── Actions ──────────────────────────────────────────────────────────────────
 
-case "$1" in
+while [[ "${1:-}" == --* ]]; do
+    case "$1" in
+      --build) BUILD_LOCAL=true ;;
+      --help|-h)
+        echo "Usage: $0 [--build] [action] [args...]"
+        echo ""
+        echo "  --build            - Force local image build instead of pulling from GHCR"
+        echo ""
+        echo "  test               - Pull/build + start + run playbook directly (default)"
+        echo "  shell              - Shell into running container"
+        echo "  rerun              - Re-run playbook without restart"
+        echo "  clean              - Remove container"
+        echo "  install [TAG]      - Test install.sh as user odios (sudo)"
+        echo "  install-root [TAG] - Test install.sh as root, TARGET_USER=odios"
+        echo "                       TAG examples: latest, pr-2, 2026.3.0"
+        exit 0
+        ;;
+    esac
+    shift
+done
+
+case "${1:-}" in
   shell|rerun|clean|install|install-root)
     ACTION="$1"
     shift
-    ;;
-  --help|-h)
-    echo "Usage: $0 [test|shell|rerun|clean|install|install-root] [args...]"
-    echo ""
-    echo "  test               - Build + start + run playbook directly (default)"
-    echo "  shell              - Shell into running container"
-    echo "  rerun              - Re-run playbook without rebuild"
-    echo "  clean              - Remove container"
-    echo "  install [TAG]      - Test install.sh as user odios (sudo)"
-    echo "  install-root [TAG] - Test install.sh as root, TARGET_USER=odios"
-    echo "                       TAG examples: latest, pr-2, v1.0.0"
-    exit 0
     ;;
   *)
     ACTION="test"
     ;;
 esac
 
+install_ansible() {
+    echo "=== Installing ansible-core ==="
+    docker exec "${CONTAINER_NAME}" \
+      pip3 install --break-system-packages --quiet "ansible-core==2.19.*"
+}
+
 case "${ACTION}" in
   test)
     start_container
+    install_ansible
 
     echo "=== Running playbook ==="
     docker exec -u odios "${CONTAINER_NAME}" \
