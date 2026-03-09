@@ -9,6 +9,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     dbus \
     dbus-user-session \
     sudo \
+    curl \
     python3 \
     python3-apt \
     ansible \
