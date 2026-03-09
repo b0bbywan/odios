@@ -89,6 +89,8 @@ curl -fsSL https://github.com/b0bbywan/odios/releases/latest/download/install.sh
 |--------------------------|---------------|--------------------------------------|
 | `TARGET_USER`            | `$USER`       | System user for the services         |
 | `TARGET_HOSTNAME`        | *(unchanged)* | Hostname (optional)                  |
+| `MPD_MUSIC_DIRECTORY`    | `/media/USB`  | MPD music library path               |
+| `MPD_CONF_PATH`          | *(detected)*  | Path to external mpd.conf (when `INSTALL_MPD=n` + `INSTALL_MPD_DISCPLAYER=y`) ⚠ experimental |
 | `INSTALL_PULSEAUDIO`     | `Y`           | PulseAudio + network streaming       |
 | `INSTALL_BLUETOOTH`      | `Y`           | Bluetooth A2DP sink                  |
 | `INSTALL_MPD`            | `Y`           | Music Player Daemon                  |
@@ -163,6 +165,20 @@ installer/
         ├── mpd_discplayer/      # CD/DVD player (optional)
         └── spotifyd/            # Spotify Connect (optional, disabled)
 ```
+
+## Using mpd_discplayer with an existing MPD ⚠ experimental
+
+By default, `mpd_discplayer` is designed to work alongside MPD managed by odios. It is also possible to install it against a pre-existing MPD installation (`INSTALL_MPD=n` + `INSTALL_MPD_DISCPLAYER=y`), but this mode is **experimental**.
+
+In this case the installer will:
+1. Auto-detect your `mpd.conf` (`~/.config/mpd/mpd.conf` then `/etc/mpd.conf`), or use `MPD_CONF_PATH` if provided
+2. Extract `music_directory` from it to configure `mpd-discplayer`
+3. Append the required blocks (`cdio_paranoia`, `playlist_plugin`, `neighbors`) to your existing config — your original file is backed up as `mpd.conf.bak` beforehand
+
+**Requirements for external MPD:**
+- Must use the `database { plugin "simple" }` block format — legacy `db_file` directive is not supported and will cause a fail-fast error with a migration guide
+
+This mode has not been extensively tested across MPD configurations. Feedback welcome.
 
 ## Testing
 
