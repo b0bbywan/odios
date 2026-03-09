@@ -19,6 +19,9 @@ system_services:
 user_services:
   - mpd.service
   - pulseaudio.service
+{% if install_mpd_discplayer %}
+  - mpd-discplayer.service
+{% endif %}
 {% if install_spotifyd %}
   - spotifyd.service
 {% endif %}

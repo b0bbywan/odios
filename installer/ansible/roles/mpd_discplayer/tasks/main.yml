@@ -1,4 +1,12 @@
 ---
+- name: Backup MPD config before changes
+  ansible.builtin.include_tasks: "../../../tasks/backup_conf_before.yml"
+  vars:
+    conf_path: "/home/{{ target_user }}/.config/mpd/mpd.conf"
+    conf_mode: '0600'
+    conf_owner: "{{ target_user }}"
+    conf_group: "{{ target_user }}"
+
 - name: Configure mpd cdio
   ansible.builtin.blockinfile:
     path: "/home/{{ target_user }}/.config/mpd/mpd.conf"
@@ -40,6 +48,14 @@
   become: true
   become_user: "{{ target_user }}"
   notify: Restart mpd
+
+- name: Backup MPD config after changes
+  ansible.builtin.include_tasks: "../../../tasks/backup_conf_after.yml"
+  vars:
+    conf_path: "/home/{{ target_user }}/.config/mpd/mpd.conf"
+    conf_mode: '0600'
+    conf_owner: "{{ target_user }}"
+    conf_group: "{{ target_user }}"
 
 - name: Install mpd-discplayer
   ansible.builtin.apt:

@@ -8,13 +8,3 @@
     XDG_RUNTIME_DIR: "/run/user/{{ target_user_uid }}"
   become: true
   become_user: "{{ target_user }}"
-
-- name: Restart mpd
-  ansible.builtin.systemd:
-    name: mpd.service
-    state: restarted
-    scope: user
-  environment:
-    XDG_RUNTIME_DIR: "/run/user/{{ target_user_uid }}"
-  become: true
-  become_user: "{{ target_user }}"
