@@ -1,267 +1,244 @@
 # Audio Streaming System Installer
 
-Installeur Ansible "curl | bash" pour configurer un système audio/multimédia complet sur Debian/Ubuntu.
+Ansible-based "curl | bash" installer to set up a complete audio/multimedia system on Debian/Ubuntu.
 
-## 🎵 Composants
+## Components
 
-### Core (installés par défaut)
-- **PulseAudio** - Serveur audio avec streaming réseau (TCP + Zeroconf)
-- **Bluetooth Audio** - Agent d'authentification et connexion automatique
-- **MPD** - Music Player Daemon avec support USB, CD/DVD et réseau
+### Core (enabled by default, can be disabled)
+- **PulseAudio** - Audio server with network streaming (TCP + Zeroconf)
+- **Bluetooth Audio** - Authentication agent and automatic connection
+- **MPD** - Music Player Daemon with USB, CD/DVD and network support
+- **Odio API** - REST control interface
 
-### Optionnels (sur demande)
-- **Spotifyd** - Spotify Connect daemon
-- **Shairport Sync** - Récepteur AirPlay
-- **Snapcast** - Client multi-room audio
-- **UPnP/DLNA** - Renderer pour contrôle depuis applications UPnP
-- **MPD DiscPlayer** - Support CD/DVD pour MPD
+### Optional (disabled by default)
+- **Shairport Sync** - AirPlay receiver
+- **Snapcast** - Multi-room audio client
+- **UPnP/DLNA** - Renderer for UPnP application control
+- **MPD DiscPlayer** - CD/DVD support for MPD
 
-## 📋 Prérequis
+## Fresh install vs existing system
 
-- OS: Debian 10+, Ubuntu 20.04+, ou Raspberry Pi OS
-- Architecture: ARM (armv6l, armv7l, aarch64) ou x86_64
-- Sudo access
-- Connexion Internet
-- 500 MB d'espace disque libre
+The installer is fully idempotent — it can be run on a fresh system or an existing one, and re-run safely at any time to update or repair the installation.
 
-## 🚀 Installation
+### Existing system — user recommendation
 
-### Installation directe (recommandée pour testing)
+If you are installing on a system that already has a configured user, it is strongly recommended to target a **dedicated user** for odios. The playbook creates it automatically if it doesn't exist — the installer will confirm this at startup:
 
-```bash
-cd installer
-./build.sh          # Génère install.sh
-./install.sh        # Lance l'installation
+```
+Target user [pi]: odios
+✓ User 'odios' will be created.
 ```
 
-### Installation depuis URL (production)
+If you install for an existing user, the installer warns you upfront:
 
-```bash
-curl -fsSL https://example.com/install.sh | bash
+```
+Target user [pi]:
+⚠ Installing for current user 'pi' — existing config files will be backed up before modification.
 ```
 
-### Installation avec review (sécurité)
+### Config file handling
+
+When the installer modifies a configuration file that already exists, it **automatically creates a backup** before applying changes:
+
+- If the file is modified: a backup is saved as `<config>.bak` (e.g. `/etc/shairport-sync.conf.bak`)
+- If the file ends up identical: no backup is kept
+
+This applies to: `/etc/bluetooth/main.conf`, `/etc/shairport-sync.conf`, `/etc/default/snapclient`, `/etc/upmpdcli.conf`, and `~/.config/mpd/mpd.conf` (modified by both the `mpd` and `mpd_discplayer` roles).
+
+## Requirements
+
+- OS: Debian 11+, Ubuntu 22.04+, or Raspberry Pi OS (Bullseye+)
+- Architecture: ARM (armv6l, armv7l, aarch64) or x86_64
+- Python 3.10+
+- `python3-cryptography` (present by default on Debian/Ubuntu)
+- `curl`
+- Sudo access (or root)
+- Internet connection
+- 50 MB free disk space in `/tmp`
+
+## Installation
+
+### Current user (with sudo)
 
 ```bash
-curl -fsSL https://example.com/install.sh -o install.sh
-less install.sh     # Reviewer le script
-chmod +x install.sh
-./install.sh
+curl -fsSL https://github.com/b0bbywan/odios/releases/latest/download/install.sh | bash
 ```
 
-## ⚙️ Configuration
+The installer interactively prompts for the target user and optional components.
 
-L'installeur demande interactivement:
-
-- **Hostname** - Nom pour l'advertising des services (défaut: hostname actuel)
-- **User cible** - User système pour les services (défaut: $USER)
-- **PIN Bluetooth** - Code PIN pour pairing (défaut: 0000)
-- **Composants optionnels** - Choix des composants à installer (y/N)
-
-### Variables d'environnement (automation)
-
-Pour une installation non-interactive:
+### As root for a specific user
 
 ```bash
-export TARGET_HOSTNAME="raspiaudio"
-export TARGET_USER="pi"
-export BLUETOOTH_PIN="1234"
-export INSTALL_SPOTIFYD="y"
-export INSTALL_SHAIRPORT_SYNC="y"
-export INSTALL_SNAPCLIENT="n"
-export INSTALL_UPMPDCLI="y"
-export INSTALL_MPD_DISCPLAYER="n"
-
-./install.sh
+TARGET_USER=pi curl -fsSL https://github.com/b0bbywan/odios/releases/latest/download/install.sh | sudo bash
 ```
 
-## 🏗️ Architecture
+### Non-interactive (automation)
 
-### Structure du projet
+All configuration variables can be passed as environment variables — if set, prompts are skipped:
+
+```bash
+TARGET_USER=pi \
+INSTALL_SHAIRPORT_SYNC=y \
+INSTALL_SNAPCLIENT=y \
+INSTALL_UPMPDCLI=y \
+INSTALL_MPD_DISCPLAYER=y \
+curl -fsSL https://github.com/b0bbywan/odios/releases/latest/download/install.sh | bash
+```
+
+| Variable                 | Default       | Description                          |
+|--------------------------|---------------|--------------------------------------|
+| `TARGET_USER`            | `$USER`       | System user for the services         |
+| `TARGET_HOSTNAME`        | *(unchanged)* | Hostname (optional)                  |
+| `INSTALL_PULSEAUDIO`     | `Y`           | PulseAudio + network streaming       |
+| `INSTALL_BLUETOOTH`      | `Y`           | Bluetooth A2DP sink                  |
+| `INSTALL_MPD`            | `Y`           | Music Player Daemon                  |
+| `INSTALL_ODIO_API`       | `Y`           | REST control API                     |
+| `INSTALL_SHAIRPORT_SYNC` | `N`           | AirPlay receiver                     |
+| `INSTALL_SNAPCLIENT`     | `N`           | Snapcast client                      |
+| `INSTALL_UPMPDCLI`       | `N`           | UPnP/DLNA renderer                   |
+| `INSTALL_MPD_DISCPLAYER` | `N`           | CD/DVD support                       |
+| `INSTALL_SPOTIFYD`       | `N`           | Spotify Connect                      |
+| `ODIOS_VERSION`          | `latest`      | Version to install (`pr-2`, `2026.3.0`, …) |
+
+### Specific version or pre-release
+
+Releases follow the `YYYY.M.patch` format (e.g. `2026.3.0`). Pre-releases use suffixes: `2026.3.0a1` (alpha), `2026.3.0b1` (beta), `2026.3.0rc1` (release candidate).
+
+```bash
+# Stable version
+ODIOS_VERSION=2026.3.0 curl -fsSL https://github.com/b0bbywan/odios/releases/download/2026.3.0/install.sh | bash
+
+# Beta
+ODIOS_VERSION=2026.3.0b1 curl -fsSL https://github.com/b0bbywan/odios/releases/download/2026.3.0b1/install.sh | bash
+
+# PR pre-release
+ODIOS_VERSION=pr-5 curl -fsSL https://github.com/b0bbywan/odios/releases/download/pr-5/install.sh | bash
+```
+
+## Architecture
+
+### How it works
+
+1. `install.sh` is downloaded and executed (`curl | bash`)
+2. It checks prerequisites (OS, arch, Python 3.10+, cryptography, curl, sudo, disk space, systemd)
+3. It downloads the release archive from GitHub into `/tmp`
+4. It runs **vendored** ansible-core from the archive (no Ansible installation required)
+5. The playbook configures the system and starts the services
+6. Temporary files are cleaned up
+
+### Release archive
+
+The archive (`odios-{version}.tar.gz`) contains:
+
+```
+ansible/        — playbooks and roles
+vendor/         — vendored ansible-core (pure Python, no native extensions)
+licenses/       — licenses (GPLv3 ansible-core, BSD-2 odios)
+VERSION
+```
+
+`python3-cryptography` is the only native dependency not included — it is provided by the system.
+
+### Project structure
 
 ```
 installer/
-├── README.md                    # Ce fichier
-├── build.sh                     # Script de build
-├── bootstrap.sh                 # Template du script d'installation
-├── install.sh                   # Installeur généré (après build.sh)
+├── install.sh                   # curl|bash entry point (published as-is)
 └── ansible/
-    ├── playbook.yml             # Playbook principal
-    ├── inventory/localhost.yml  # Inventory localhost
-    ├── group_vars/all.yml       # Variables par défaut
+    ├── playbook.yml             # Main playbook
+    ├── inventory/localhost.yml
+    ├── group_vars/all.yml       # Default variables
+    ├── tasks/
+    │   ├── backup_conf_before.yml  # Shared: snapshot config before changes
+    │   └── backup_conf_after.yml   # Shared: promote/discard backup after changes
     └── roles/
-        ├── common/              # Prérequis système
-        ├── pulseaudio/          # PulseAudio + modules réseau
-        ├── bluetooth/           # Bluetooth audio
+        ├── common/              # System prerequisites + linger
+        ├── pulseaudio/          # PulseAudio + network streaming
+        ├── bluetooth/           # Bluetooth audio (A2DP)
         ├── mpd/                 # Music Player Daemon
-        ├── spotifyd/            # Spotify Connect (optionnel)
-        ├── shairport_sync/      # AirPlay (optionnel)
-        ├── snapclient/          # Snapcast (optionnel)
-        ├── upmpdcli/            # UPnP/DLNA (optionnel)
-        └── mpd_discplayer/      # CD/DVD player (optionnel)
+        ├── odio_api/            # REST control API
+        ├── shairport_sync/      # AirPlay (optional)
+        ├── snapclient/          # Snapcast (optional)
+        ├── upmpdcli/            # UPnP/DLNA (optional)
+        ├── mpd_discplayer/      # CD/DVD player (optional)
+        └── spotifyd/            # Spotify Connect (optional, disabled)
 ```
 
-### Fonctionnement
+## Testing
 
-1. **bootstrap.sh** - Script bash qui:
-   - Affiche une bannière
-   - Demande la configuration (prompts interactifs)
-   - Vérifie les prérequis (OS, architecture, sudo, réseau, espace disque)
-   - Installe Ansible si nécessaire
-   - Extrait le playbook Ansible embarqué
-   - Lance le playbook avec les variables collectées
-   - Nettoie les fichiers temporaires
-
-2. **build.sh** - Script de build qui:
-   - Crée un tarball de ansible/
-   - Encode en base64
-   - Injecte dans bootstrap.sh à la place du marqueur `# __PLAYBOOK_ARCHIVE__`
-   - Génère install.sh final
-
-3. **Playbook Ansible** - Configure le système:
-   - Détecte l'architecture (ARM/x86_64)
-   - Exécute les roles CORE (common, pulseaudio, bluetooth, mpd)
-   - Exécute les roles optionnels selon la configuration
-   - Active les services systemd user
-   - Configure l'auto-login console
-   - Affiche un résumé de l'installation
-
-## 🧪 Tests
-
-### Test du playbook Ansible seul
+### Run the playbook directly
 
 ```bash
-cd ansible
-ansible-playbook playbook.yml \
-  -e "target_hostname=test" \
-  -e "target_user=$USER" \
-  -e "bluetooth_pin=1234"
+./test.sh               # build image + run playbook via system ansible
+./test.sh rerun         # re-run playbook without rebuild
+./test.sh shell         # shell into the container
+./test.sh clean         # remove the container
 ```
 
-### Test de l'installeur complet
+### Full curl|bash installer test
+
+Tests `install.sh` from a GitHub release inside a systemd container:
 
 ```bash
-cd installer
-./build.sh
-./install.sh
+# As user odios (sudo) — standard user case
+./test.sh install pr-5
+
+# As root with TARGET_USER=odios — system installation case
+./test.sh install-root pr-5
+
+# Against the latest stable release
+./test.sh install latest
 ```
 
-### Test d'idempotence
+### Service verification
 
 ```bash
-./install.sh  # Première exécution
-./install.sh  # Deuxième exécution (doit montrer "ok", pas "changed")
-```
-
-### Vérification des services
-
-```bash
-# Services user
 systemctl --user status pulseaudio pulse-tcp mpd
 
-# Modules PulseAudio
 pactl list modules | grep -E "tcp|zeroconf"
 
-# Bluetooth
-bluetoothctl show
-
-# MPD
 mpc status
 ```
 
-## 📝 Notes techniques
+## Troubleshooting
 
-### UID dynamique
-
-Le playbook détecte automatiquement l'UID de l'utilisateur cible pour configurer:
-- Socket Unix MPD: `/run/user/{UID}/mpd.socket`
-- XDG_RUNTIME_DIR pour les services systemd user
-
-### Services systemd user
-
-Les services audio tournent en mode user (pas system) pour:
-- Accès direct aux devices audio de l'utilisateur
-- Isolation par utilisateur
-- Pas besoin de permissions root pour l'exécution
-
-Nécessite:
-- `XDG_RUNTIME_DIR="/run/user/{UID}"` pour systemctl --user
-- `loginctl enable-linger {user}` pour démarrage au boot
-
-### Auto-login console
-
-Configuration via override systemd (pas raspi-config):
-```
-/etc/systemd/system/getty@tty1.service.d/override.conf
-```
-
-### PulseAudio ACL
-
-Le script `pulse-tcp.sh`:
-- Détecte dynamiquement les IPs privées (10.x, 172.16-31.x, 192.168.x)
-- Calcule les adresses réseau avec CIDR
-- Configure l'ACL pour module-native-protocol-tcp
-- Charge module-zeroconf-publish pour découverte réseau
-
-## 🐛 Troubleshooting
-
-### Ansible non installé
-
-L'installeur installe automatiquement Ansible via apt ou pip.
-
-### Services ne démarrent pas
+### `python3-cryptography` not found
 
 ```bash
-# Vérifier les logs
+sudo apt install python3-cryptography
+```
+
+### Services not starting
+
+```bash
 journalctl --user -u pulseaudio -u mpd -f
 
-# Redémarrer manuellement
 systemctl --user restart pulseaudio pulse-tcp mpd
 ```
 
-### Erreur "XDG_RUNTIME_DIR not set"
+### "XDG_RUNTIME_DIR not set" error
 
 ```bash
-# Vérifier que linger est activé
 loginctl show-user $USER | grep Linger
-
-# Activer si nécessaire
 sudo loginctl enable-linger $USER
 ```
 
-### MPD ne trouve pas /media/USB
+### MPD cannot find /media/USB
 
 ```bash
-# Vérifier les permissions
 ls -la /media/USB
-
-# Doit être: drwxrwxr-x user audio
+# Should be: drwxrwxr-x user audio
 ```
 
-### Bluetooth ne se connecte pas
+## References
 
-```bash
-# Vérifier le service bt-agent
-sudo systemctl status bt-agent
-
-# Vérifier le PIN
-cat /etc/bluetooth/pin.conf
-
-# Réinitialiser Bluetooth
-sudo systemctl restart bluetooth bt-agent
-```
-
-## 📚 Références
-
-- [Ansible Documentation](https://docs.ansible.com/)
-- [MPD Documentation](https://www.musicpd.org/doc/)
-- [PulseAudio Documentation](https://www.freedesktop.org/wiki/Software/PulseAudio/)
+- [Ansible](https://docs.ansible.com/)
+- [go-odio-api](https://github.com/b0bbywan/go-odio-api)
+- [go-mpd-discplayer](https://github.com/b0bbywan/go-mpd-discplayer)
+- [PulseAudio](https://www.freedesktop.org/wiki/Software/PulseAudio/)
+- [MPD — Music Player Daemon](https://www.musicpd.org/doc/)
+- [Shairport Sync](https://github.com/mikebrady/shairport-sync)
+- [Snapcast](https://github.com/badaix/snapcast)
+- [upmpdcli](https://www.lesbonscomptes.com/upmpdcli/)
+- [Spotifyd](https://github.com/Spotifyd/spotifyd)
 - [Project Repository](https://github.com/b0bbywan/odios)
-
-## 📄 Licence
-
-Voir LICENSE dans le répertoire parent du projet.
-
-## 🤝 Contribution
-
-Les contributions sont bienvenues! Voir le README principal du projet pour les guidelines.
