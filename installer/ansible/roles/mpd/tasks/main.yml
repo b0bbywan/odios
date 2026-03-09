@@ -66,7 +66,7 @@
     path: "/home/{{ target_user }}/.config/mpd/mpd.conf"
     marker: "# {mark} ANSIBLE MANAGED BLOCK - paths"
     block: |
-      music_directory         "/media/USB"
+      music_directory         "{{ mpd_music_directory }}"
       playlist_directory      "~/.local/share/mpd/playlists"
       database {
           plugin "simple"
@@ -135,9 +135,9 @@
     force: false
   become: true
 
-- name: Create USB media directory
+- name: Create music directory
   ansible.builtin.file:
-    path: /media/USB
+    path: "{{ mpd_music_directory }}"
     state: directory
     owner: "{{ target_user }}"
     group: audio
