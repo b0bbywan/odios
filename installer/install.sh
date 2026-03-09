@@ -205,7 +205,7 @@ download_archive() {
     elif [[ "$ODIOS_VERSION" == pr-* ]]; then
         download_url="https://github.com/${GITHUB_REPO}/releases/download/${ODIOS_VERSION}/odios-dev.tar.gz"
     else
-        local tag="v${ODIOS_VERSION#v}"
+        local tag="${ODIOS_VERSION}"
         download_url="https://github.com/${GITHUB_REPO}/releases/download/${tag}/odios-${tag}.tar.gz"
     fi
 
