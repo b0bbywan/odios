@@ -1,9 +1,13 @@
 ---
-- name: Ensure audio group exists
+- name: Ensure required groups exist
   ansible.builtin.group:
-    name: audio
+    name: "{{ item }}"
     state: present
   become: true
+  loop:
+    - audio
+    - input
+    - plugdev
 
 - name: Ensure user in audio group
   ansible.builtin.user:
@@ -11,6 +15,9 @@
     append: true
     groups:
       - audio
+      - users
+      - input
+      - plugdev
   become: true
 
 - name: User systemd directory

@@ -11,6 +11,20 @@
   ansible.builtin.include_tasks: validate_external_mpd.yml
   when: not (install_mpd | bool)
 
+- name: Ensure cdrom group exists
+  ansible.builtin.group:
+    name: cdrom
+    state: present
+  become: true
+
+- name: Ensure user in cdrom group
+  ansible.builtin.user:
+    name: "{{ target_user }}"
+    append: true
+    groups:
+      - cdrom
+  become: true
+
 - name: Backup MPD config before changes (external MPD only)
   ansible.builtin.include_tasks: "../../../tasks/backup_conf_before.yml"
   vars:
