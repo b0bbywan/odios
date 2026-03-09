@@ -1,15 +1,28 @@
 ---
-- name: Backup MPD config before changes
+# When MPD is managed by odios, the conf path is known and already backed up by the mpd role.
+# When MPD is external, we detect it and back up its config ourselves.
+
+- name: Set MPD config path (managed by odios)
+  ansible.builtin.set_fact:
+    mpd_conf_path: "/home/{{ target_user }}/.config/mpd/mpd.conf" # noqa: var-naming[no-role-prefix]
+  when: install_mpd | bool
+
+- name: Validate external MPD installation
+  ansible.builtin.include_tasks: validate_external_mpd.yml
+  when: not (install_mpd | bool)
+
+- name: Backup MPD config before changes (external MPD only)
   ansible.builtin.include_tasks: "../../../tasks/backup_conf_before.yml"
   vars:
-    conf_path: "/home/{{ target_user }}/.config/mpd/mpd.conf"
+    conf_path: "{{ mpd_conf_path }}"
     conf_mode: '0600'
     conf_owner: "{{ target_user }}"
     conf_group: "{{ target_user }}"
+  when: not (install_mpd | bool)
 
 - name: Configure mpd cdio
   ansible.builtin.blockinfile:
-    path: "/home/{{ target_user }}/.config/mpd/mpd.conf"
+    path: "{{ mpd_conf_path }}"
     marker: "# {mark} ANSIBLE MANAGED BLOCK - cdio input"
     block: |
       # Input plugins
@@ -23,7 +36,7 @@
 
 - name: Configure mpd playlist plugin
   ansible.builtin.blockinfile:
-    path: "/home/{{ target_user }}/.config/mpd/mpd.conf"
+    path: "{{ mpd_conf_path }}"
     marker: "# {mark} ANSIBLE MANAGED BLOCK - playlist plugin"
     block: |
       # Playlist plugins
@@ -38,7 +51,7 @@
 
 - name: Configure mpd udisk neighbor
   ansible.builtin.blockinfile:
-    path: "/home/{{ target_user }}/.config/mpd/mpd.conf"
+    path: "{{ mpd_conf_path }}"
     marker: "# {mark} ANSIBLE MANAGED BLOCK - udisk neighbor"
     block: |
       # Neighbors - USB device discovery
@@ -49,13 +62,14 @@
   become_user: "{{ target_user }}"
   notify: Restart mpd
 
-- name: Backup MPD config after changes
+- name: Backup MPD config after changes (external MPD only)
   ansible.builtin.include_tasks: "../../../tasks/backup_conf_after.yml"
   vars:
-    conf_path: "/home/{{ target_user }}/.config/mpd/mpd.conf"
+    conf_path: "{{ mpd_conf_path }}"
     conf_mode: '0600'
     conf_owner: "{{ target_user }}"
     conf_group: "{{ target_user }}"
+  when: not (install_mpd | bool)
 
 - name: Install mpd-discplayer
   ansible.builtin.apt:
@@ -64,10 +78,10 @@
   become: true
   notify: Restart mpd-discplayer
 
-- name: Copy .mpdignore to USB media directory
+- name: Copy .mpdignore to music directory
   ansible.builtin.copy:
     src: .mpdignore
-    dest: /media/USB/.mpdignore
+    dest: "{{ mpd_music_directory }}/.mpdignore"
     mode: '0644'
     owner: "{{ target_user }}"
     group: audio

@@ -56,6 +56,17 @@ ask_config() {
     read -p "Install Snapcast client? [y/N]: "            INSTALL_SNAPCLIENT
     read -p "Install UPnP/DLNA renderer? [y/N]: "         INSTALL_UPMPDCLI
     read -p "Install Spotifyd (Spotify Connect)? [y/N]: " INSTALL_SPOTIFYD
+
+    if [[ "${INSTALL_MPD,,}" == "n" && "${INSTALL_MPD_DISCPLAYER,,}" == "y" ]] && command -v mpd &>/dev/null; then
+        local detected_conf=""
+        [[ -f "/home/${TARGET_USER}/.config/mpd/mpd.conf" ]] && detected_conf="/home/${TARGET_USER}/.config/mpd/mpd.conf"
+        [[ -z "$detected_conf" && -f /etc/mpd.conf ]] && detected_conf="/etc/mpd.conf"
+
+        echo ""
+        echo -e "${BLUE}External MPD${NC}"
+        read -p "MPD config path [${detected_conf}]: " MPD_CONF_PATH
+        MPD_CONF_PATH="${MPD_CONF_PATH:-$detected_conf}"
+    fi
     echo ""
 }
 
@@ -63,6 +74,8 @@ prompt_for_config() {
     [[ -t 0 ]] && ask_config
 
     TARGET_USER="${TARGET_USER:-$USER}"  # fallback for non-interactive mode
+    MPD_MUSIC_DIRECTORY="${MPD_MUSIC_DIRECTORY:-}"
+    MPD_CONF_PATH="${MPD_CONF_PATH:-}"
     INSTALL_PULSEAUDIO="${INSTALL_PULSEAUDIO:-Y}"
     INSTALL_BLUETOOTH="${INSTALL_BLUETOOTH:-Y}"
     INSTALL_MPD="${INSTALL_MPD:-Y}"
@@ -220,12 +233,16 @@ run_playbook() {
     echo ""
 
     local extra_vars
-    local hostname_var=""
-    [[ -n "${TARGET_HOSTNAME:-}" ]] && hostname_var="\"target_hostname\": \"${TARGET_HOSTNAME}\","
+    local hostname_var="" music_dir_var="" conf_path_var=""
+    [[ -n "${TARGET_HOSTNAME:-}" ]]      && hostname_var="\"target_hostname\": \"${TARGET_HOSTNAME}\","
+    [[ -n "${MPD_MUSIC_DIRECTORY:-}" ]]  && music_dir_var="\"mpd_music_directory\": \"${MPD_MUSIC_DIRECTORY}\","
+    [[ -n "${MPD_CONF_PATH:-}" ]]        && conf_path_var="\"mpd_conf_path\": \"${MPD_CONF_PATH}\","
 
     extra_vars=$(cat <<EOF
 {
   ${hostname_var}
+  ${music_dir_var}
+  ${conf_path_var}
   "target_user": "${TARGET_USER}",
   "install_pulseaudio": $([ "${INSTALL_PULSEAUDIO,,}" = "y" ] && echo "true" || echo "false"),
   "install_bluetooth": $([ "${INSTALL_BLUETOOTH,,}" = "y" ] && echo "true" || echo "false"),

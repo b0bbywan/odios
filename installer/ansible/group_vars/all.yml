@@ -6,6 +6,8 @@ spotifyd_version: "0.3.5"
 odio_gpg: "https://apt.odio.love/key.gpg"
 gpg_file: "/usr/share/keyrings/odio.gpg"
 
+mpd_music_directory: "/media/USB"
+
 # Core components (default: enabled)
 install_pulseaudio: true
 install_bluetooth: true
