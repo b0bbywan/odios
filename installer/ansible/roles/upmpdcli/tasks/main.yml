@@ -25,6 +25,11 @@
   become: true
   notify: Restart upmpdcli
 
+- name: Backup upmpdcli config before changes
+  ansible.builtin.include_tasks: "../../../tasks/backup_conf_before.yml"
+  vars:
+    conf_path: /etc/upmpdcli.conf
+
 - name: Configure upmpdcli friendly name
   ansible.builtin.lineinfile:
     path: /etc/upmpdcli.conf
@@ -64,6 +69,11 @@
     line: "mpdport = 6600"
   become: true
   notify: Restart upmpdcli
+
+- name: Backup upmpdcli config after changes
+  ansible.builtin.include_tasks: "../../../tasks/backup_conf_after.yml"
+  vars:
+    conf_path: /etc/upmpdcli.conf
 
 - name: Enable upmpdcli service
   ansible.builtin.systemd:

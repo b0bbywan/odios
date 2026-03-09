@@ -6,6 +6,11 @@
   become: true
   notify: Restart shairport-sync
 
+- name: Backup shairport-sync config before changes
+  ansible.builtin.include_tasks: "../../../tasks/backup_conf_before.yml"
+  vars:
+    conf_path: /etc/shairport-sync.conf
+
 - name: Configure shairport-sync name
   ansible.builtin.lineinfile:
     path: /etc/shairport-sync.conf
@@ -45,6 +50,11 @@
     line: '	application_name = "Shairport Sync";'
   become: true
   notify: Restart shairport-sync
+
+- name: Backup shairport-sync config after changes
+  ansible.builtin.include_tasks: "../../../tasks/backup_conf_after.yml"
+  vars:
+    conf_path: /etc/shairport-sync.conf
 
 - name: Configure dbus policy for shairport-sync
   ansible.builtin.blockinfile:

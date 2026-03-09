@@ -8,6 +8,11 @@
   become: true
   notify: Restart bluetooth
 
+- name: Backup Bluetooth config before changes
+  ansible.builtin.include_tasks: "../../../tasks/backup_conf_before.yml"
+  vars:
+    conf_path: /etc/bluetooth/main.conf
+
 - name: Configure Bluetooth main.conf
   ansible.builtin.template:
     src: bluetooth-main.conf.j2
@@ -15,6 +20,11 @@
     mode: '0644'
   become: true
   notify: Restart bluetooth
+
+- name: Backup Bluetooth config after changes
+  ansible.builtin.include_tasks: "../../../tasks/backup_conf_after.yml"
+  vars:
+    conf_path: /etc/bluetooth/main.conf
 
 - name: Enable Bluetooth service
   ansible.builtin.systemd:
