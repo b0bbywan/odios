@@ -1,0 +1,156 @@
+---
+- name: Install MPD packages
+  ansible.builtin.apt:
+    name:
+      - mpd
+      - mpc
+      - mpdris2
+    state: present
+  become: true
+
+- name: Disable system MPD service
+  ansible.builtin.systemd:
+    name: "{{ item }}"
+    enabled: false
+    state: stopped
+  loop:
+    - mpd.service
+    - mpd.socket
+  become: true
+  register: mpd_disable
+  failed_when:
+    - mpd_disable.failed | bool
+    - '"Could not find" not in (mpd_disable.msg | default(""))'
+
+- name: Create MPD config directory
+  ansible.builtin.file:
+    path: "/home/{{ target_user }}/.config/mpd"
+    state: directory
+    owner: "{{ target_user }}"
+    group: "{{ target_user }}"
+    mode: '0700'
+  become: true
+
+- name: Create MPD data directories
+  ansible.builtin.file:
+    path: "/home/{{ target_user }}/.local/share/mpd/{{ item }}"
+    state: directory
+    owner: "{{ target_user }}"
+    group: "{{ target_user }}"
+    mode: '0700'
+  loop:
+    - playlists
+    - cache
+  become: true
+
+- name: Backup MPD config before changes
+  ansible.builtin.include_tasks: "../../../tasks/backup_conf_before.yml"
+  vars:
+    conf_path: "/home/{{ target_user }}/.config/mpd/mpd.conf"
+    conf_mode: '0600'
+    conf_owner: "{{ target_user }}"
+    conf_group: "{{ target_user }}"
+
+- name: Create empty MPD config file
+  ansible.builtin.copy:
+    content: ""
+    dest: "/home/{{ target_user }}/.config/mpd/mpd.conf"
+    owner: "{{ target_user }}"
+    group: "{{ target_user }}"
+    mode: '0600'
+    force: false
+  become: true
+
+- name: MPD config - paths
+  ansible.builtin.blockinfile:
+    path: "/home/{{ target_user }}/.config/mpd/mpd.conf"
+    marker: "# {mark} ANSIBLE MANAGED BLOCK - paths"
+    block: |
+      music_directory         "{{ mpd_music_directory }}"
+      playlist_directory      "~/.local/share/mpd/playlists"
+      database {
+          plugin "simple"
+          path "~/.local/share/mpd/db"
+          cache_directory "~/.local/share/mpd/cache"
+      }
+      state_file              "~/.local/share/mpd/state"
+      sticker_file            "~/.local/share/mpd/sticker.sql"
+  become: true
+  become_user: "{{ target_user }}"
+  notify: Restart mpd
+
+- name: MPD config - network
+  ansible.builtin.blockinfile:
+    path: "/home/{{ target_user }}/.config/mpd/mpd.conf"
+    marker: "# {mark} ANSIBLE MANAGED BLOCK - network"
+    block: |
+      bind_to_address         "any"
+      bind_to_address         "/run/user/{{ target_user_uid }}/mpd.socket"
+      port                    "6600"
+      auto_update             "yes"
+  become: true
+  become_user: "{{ target_user }}"
+  notify: Restart mpd
+
+- name: MPD config - zeroconf
+  ansible.builtin.blockinfile:
+    path: "/home/{{ target_user }}/.config/mpd/mpd.conf"
+    marker: "# {mark} ANSIBLE MANAGED BLOCK - zeroconf"
+    block: |
+      zeroconf_enabled        "yes"
+      zeroconf_name           "Mpd-{{ target_hostname }}"
+  become: true
+  become_user: "{{ target_user }}"
+  notify: Restart mpd
+
+- name: MPD config - pulseaudio output
+  ansible.builtin.blockinfile:
+    path: "/home/{{ target_user }}/.config/mpd/mpd.conf"
+    marker: "# {mark} ANSIBLE MANAGED BLOCK - output pulseaudio"
+    block: |
+      audio_output {
+          type        "pulse"
+          name        "pulseaudio"
+          server      "127.0.0.1"
+      }
+  become: true
+  become_user: "{{ target_user }}"
+  notify: Restart mpd
+
+- name: Backup MPD config after changes
+  ansible.builtin.include_tasks: "../../../tasks/backup_conf_after.yml"
+  vars:
+    conf_path: "/home/{{ target_user }}/.config/mpd/mpd.conf"
+    conf_mode: '0600'
+    conf_owner: "{{ target_user }}"
+    conf_group: "{{ target_user }}"
+
+- name: Create empty MPD state file
+  ansible.builtin.copy:
+    content: ""
+    dest: "/home/{{ target_user }}/.local/share/mpd/state"
+    owner: "{{ target_user }}"
+    group: "{{ target_user }}"
+    mode: '0644'
+    force: false
+  become: true
+
+- name: Create music directory
+  ansible.builtin.file:
+    path: "{{ mpd_music_directory }}"
+    state: directory
+    owner: "{{ target_user }}"
+    group: audio
+    mode: '0775'
+  become: true
+
+- name: Enable user MPD service
+  ansible.builtin.systemd:
+    name: mpd.service
+    enabled: true
+    scope: user
+    daemon_reload: true
+  environment:
+    XDG_RUNTIME_DIR: "/run/user/{{ target_user_uid }}"
+  become: true
+  become_user: "{{ target_user }}"

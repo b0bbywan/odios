@@ -1,0 +1,58 @@
+---
+- name: Install snapclient
+  ansible.builtin.apt:
+    name: snapclient
+    state: present
+  become: true
+  notify: Restart snapclient
+
+- name: Backup snapclient config before changes
+  ansible.builtin.include_tasks: "../../../tasks/backup_conf_before.yml"
+  vars:
+    conf_path: /etc/default/snapclient
+
+- name: Configure snapclient default options
+  ansible.builtin.copy:
+    content: 'SNAPCLIENT_OPTS="--player pulse"'
+    dest: /etc/default/snapclient
+    mode: '0644'
+    owner: root
+    group: root
+  become: true
+  notify: Restart snapclient
+
+- name: Backup snapclient config after changes
+  ansible.builtin.include_tasks: "../../../tasks/backup_conf_after.yml"
+  vars:
+    conf_path: /etc/default/snapclient
+
+- name: Disable system snapclient service
+  ansible.builtin.systemd:
+    name: snapclient.service
+    enabled: false
+    state: stopped
+  become: true
+  register: snapclient_disable
+  failed_when:
+    - snapclient_disable.failed | bool
+    - '"Could not find" not in (snapclient_disable.msg | default(""))'
+
+- name: Copy user snapclient service
+  ansible.builtin.copy:
+    src: /usr/lib/systemd/system/snapclient.service
+    dest: /usr/lib/systemd/user/snapclient.service
+    mode: '0644'
+    owner: root
+    group: root
+  become: true
+
+- name: Enable user snapclient service
+  ansible.builtin.systemd:
+    name: snapclient.service
+    enabled: true
+    scope: user
+    daemon_reload: true
+  environment:
+    XDG_RUNTIME_DIR: "/run/user/{{ target_user_uid }}"
+  become: true
+  become_user: "{{ target_user }}"

@@ -1,0 +1,110 @@
+---
+# Validate an existing MPD installation (when install_mpd is false).
+# Extracts music_directory and checks database format.
+
+- name: Auto-detect MPD config path
+  when: not (mpd_conf_path is defined and mpd_conf_path)
+  block:
+    - name: Locate MPD config file (user)
+      ansible.builtin.stat:
+        path: "/home/{{ target_user }}/.config/mpd/mpd.conf"
+      register: mpd_discplayer_conf_user
+
+    - name: Locate MPD config file (system)
+      ansible.builtin.stat:
+        path: /etc/mpd.conf
+      register: mpd_discplayer_conf_system
+
+    - name: Set MPD config path from detection
+      ansible.builtin.set_fact:
+        mpd_discplayer_conf_path: >-
+          {{ "/home/" ~ target_user ~ "/.config/mpd/mpd.conf"
+             if mpd_discplayer_conf_user.stat.exists
+             else ("/etc/mpd.conf" if mpd_discplayer_conf_system.stat.exists else "") }}
+
+    - name: Fail if no MPD config found
+      ansible.builtin.fail:
+        msg: >-
+          mpd_discplayer requires a working MPD installation but no mpd.conf was found
+          at ~/.config/mpd/mpd.conf or /etc/mpd.conf.
+          Install MPD first or set install_mpd: true.
+      when: mpd_discplayer_conf_path | length == 0
+
+- name: Set mpd_discplayer_conf_path from provided value
+  ansible.builtin.set_fact:
+    mpd_discplayer_conf_path: "{{ mpd_conf_path }}"
+  when: mpd_conf_path is defined and mpd_conf_path
+
+- name: Read MPD config
+  ansible.builtin.slurp:
+    src: "{{ mpd_discplayer_conf_path }}"
+  register: mpd_discplayer_conf_raw
+  become: true
+
+- name: Set MPD config content fact
+  ansible.builtin.set_fact:
+    mpd_discplayer_conf_content: "{{ mpd_discplayer_conf_raw.content | b64decode }}"
+
+# --- Extract music_directory ---
+
+- name: Extract music_directory from MPD config
+  ansible.builtin.set_fact:
+    mpd_discplayer_music_dir_match: "{{ mpd_discplayer_conf_content | regex_search('(?m)^\\s*music_directory\\s+\"([^\"]+)\"', '\\1') }}"
+
+- name: Fail if music_directory not found
+  ansible.builtin.fail:
+    msg: >-
+      Could not find music_directory in {{ mpd_discplayer_conf_path }}.
+      mpd_discplayer needs to know the MPD library path.
+  when: mpd_discplayer_music_dir_match | length == 0
+
+- name: Set mpd_music_directory from existing config
+  ansible.builtin.set_fact:
+    mpd_music_directory: "{{ mpd_discplayer_music_dir_match | first }}" # noqa: var-naming[no-role-prefix]
+
+# --- Validate database format ---
+
+- name: Check for deprecated db_file directive
+  ansible.builtin.set_fact:
+    mpd_discplayer_has_db_file: "{{ mpd_discplayer_conf_content is regex('(?m)^\\s*db_file\\s') }}"
+
+- name: Check for database block (simple plugin)
+  ansible.builtin.set_fact:
+    mpd_discplayer_has_database_block: "{{ mpd_discplayer_conf_content is regex('(?ms)database\\s*\\{[^}]*plugin\\s+\"simple\"') }}"
+
+- name: Fail if MPD uses db_file instead of database block
+  ansible.builtin.fail:
+    msg: |
+      MPD config at {{ mpd_discplayer_conf_path }} uses the legacy 'db_file' directive.
+      mpd_discplayer requires the 'database { plugin "simple" }' block format.
+
+      Replace:
+        db_file "/path/to/db"
+
+      With:
+        database {
+            plugin "simple"
+            path   "/path/to/db"
+            cache_directory "~/.local/share/mpd/cache"
+        }
+
+      Then re-run the installer.
+  when: mpd_discplayer_has_db_file | bool
+
+- name: Warn if no database block detected
+  ansible.builtin.debug:
+    msg: >-
+      No 'database { plugin "simple" }' block found in {{ mpd_discplayer_conf_path }}.
+      mpd_discplayer expects the simple database plugin.
+      If you use a proxy database or another plugin, disc/USB detection may not work as expected.
+  when: not (mpd_discplayer_has_database_block | bool) and not (mpd_discplayer_has_db_file | bool)
+
+- name: Set mpd_conf_path for use by caller
+  ansible.builtin.set_fact:
+    mpd_conf_path: "{{ mpd_discplayer_conf_path }}" # noqa: var-naming[no-role-prefix]
+
+- name: Display detected MPD configuration
+  ansible.builtin.debug:
+    msg:
+      - "MPD config: {{ mpd_conf_path }}"
+      - "music_directory: {{ mpd_music_directory }}"

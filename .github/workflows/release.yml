@@ -1,0 +1,218 @@
+name: Publish Playbooks
+
+on:
+  push:
+    tags:
+      - '[0-9][0-9][0-9][0-9].*'
+  pull_request:
+
+permissions:
+  contents: write
+  packages: write
+
+env:
+  ANSIBLE_CORE_VERSION: '2.19.*'
+  ARCHIVE_PREFIX: odios
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    outputs:
+      archive_name: ${{ steps.meta.outputs.archive_name }}
+      version: ${{ steps.meta.outputs.version }}
+      is_release: ${{ steps.meta.outputs.is_release }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set build metadata
+        id: meta
+        run: |
+          if [[ "${{ github.ref }}" == refs/tags/[0-9]* ]]; then
+            VERSION="${GITHUB_REF#refs/tags/}"
+            echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
+            echo "archive_name=${ARCHIVE_PREFIX}-${VERSION}.tar.gz" >> "$GITHUB_OUTPUT"
+            echo "is_release=true" >> "$GITHUB_OUTPUT"
+          else
+            SHA="${{ github.event.pull_request.head.sha }}"
+            echo "version=dev-${SHA::8}" >> "$GITHUB_OUTPUT"
+            echo "archive_name=${ARCHIVE_PREFIX}-dev.tar.gz" >> "$GITHUB_OUTPUT"
+            echo "is_release=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Vendor ansible-core (pure Python)
+        run: |
+          pip install \
+            --target=staging/vendor \
+            --no-compile \
+            "ansible-core==${{ env.ANSIBLE_CORE_VERSION }}"
+
+          # Collect licenses before stripping dist-info
+          mkdir -p staging/licenses
+          curl -fsSL https://www.gnu.org/licenses/gpl-3.0.txt -o staging/licenses/ANSIBLE-LICENSE-GPLv3
+          cp LICENSE staging/licenses/ODIOS-LICENSE-BSD2
+
+          # Remove packages with unavoidable native extensions — provided by the system at install time
+          rm -rf staging/vendor/cryptography staging/vendor/cryptography-*.dist-info
+
+          # Strip remaining native extensions and bloat
+          find staging/vendor -name '*.so' -delete
+          find staging/vendor -type d -name '__pycache__' -exec rm -rf {} + 2>/dev/null || true
+          find staging/vendor -type d -name '*.dist-info' -exec rm -rf {} + 2>/dev/null || true
+
+          echo "Vendor size: $(du -sh staging/vendor | cut -f1)"
+
+      - name: Assemble archive
+        run: |
+          # Playbooks
+          cp -r installer/ansible staging/ansible
+
+          # Stamp version
+          echo "${{ steps.meta.outputs.version }}" > staging/VERSION
+
+          tar czf "${{ steps.meta.outputs.archive_name }}" -C staging ansible vendor licenses VERSION
+
+          echo "Archive size: $(du -sh ${{ steps.meta.outputs.archive_name }} | cut -f1)"
+          echo "Archive contents:"
+          tar tzf "${{ steps.meta.outputs.archive_name }}" | head -30
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: playbooks-archive
+          path: ${{ steps.meta.outputs.archive_name }}
+          retention-days: 5
+
+  release:
+    needs: build
+    if: needs.build.outputs.is_release == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: installer/install.sh
+          sparse-checkout-cone-mode: false
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: playbooks-archive
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            ${{ needs.build.outputs.archive_name }}
+            installer/install.sh
+          generate_release_notes: true
+
+  pre-release:
+    needs: build
+    if: needs.build.outputs.is_release == 'false' && github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: installer/install.sh
+          sparse-checkout-cone-mode: false
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: playbooks-archive
+
+      - name: Create GitHub Pre-Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: pr-${{ github.event.pull_request.number }}
+          name: "PR #${{ github.event.pull_request.number }} — ${{ needs.build.outputs.version }}"
+          prerelease: true
+          make_latest: false
+          files: |
+            ${{ needs.build.outputs.archive_name }}
+            installer/install.sh
+          body: |
+            Pre-release automatique pour la PR #${{ github.event.pull_request.number }}.
+
+            **Commit :** `${{ github.event.pull_request.head.sha }}`
+
+  build-test-image:
+    needs: build
+    runs-on: ubuntu-latest
+    outputs:
+      image: ${{ steps.meta.outputs.image }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set image tag
+        id: meta
+        run: |
+          if [[ "${{ needs.build.outputs.is_release }}" == "true" ]]; then
+            TAG="${{ needs.build.outputs.version }}"
+          else
+            TAG="pr-${{ github.event.pull_request.number }}"
+          fi
+          echo "image=ghcr.io/${{ github.repository }}/test:${TAG}" >> "$GITHUB_OUTPUT"
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: Dockerfile.test
+          push: true
+          tags: ${{ steps.meta.outputs.image }}
+          cache-from: type=registry,ref=ghcr.io/${{ github.repository }}/test:latest
+          cache-to: type=inline
+
+  test-playbook:
+    needs: build-test-image
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run playbook test
+        run: ./test.sh
+        env:
+          REMOTE_IMAGE: ${{ needs.build-test-image.outputs.image }}
+
+      - name: Re-run playbook (idempotence)
+        run: ./test.sh rerun
+
+      - name: Clean
+        if: always()
+        run: ./test.sh clean
+
+  test-install:
+    needs: [build, build-test-image, pre-release, release]
+    if: |
+      always() &&
+      needs.build.result == 'success' &&
+      needs.build-test-image.result == 'success' &&
+      (needs.pre-release.result == 'success' || needs.release.result == 'success')
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        mode: [install, install-root]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Resolve tag
+        id: tag
+        run: |
+          if [[ "${{ needs.build.outputs.is_release }}" == "true" ]]; then
+            echo "value=${{ needs.build.outputs.version }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "value=pr-${{ github.event.pull_request.number }}" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Test curl|bash (${{ matrix.mode }})
+        run: ./test.sh ${{ matrix.mode }} ${{ steps.tag.outputs.value }}
+        env:
+          REMOTE_IMAGE: ${{ needs.build-test-image.outputs.image }}
+
+      - name: Clean
+        if: always()
+        run: ./test.sh clean

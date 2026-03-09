@@ -1,0 +1,17 @@
+[Unit]
+Description=Shairport Sync - AirPlay Audio Receiver
+Documentation=man:shairport-sync(7)
+Documentation=file:///usr/share/doc/shairport-sync/README.md.gz
+Documentation=https://github.com/mikebrady/shairport-sync
+Wants=sound.target
+After=sound.target
+Wants=network-online.target
+After=network.target network-online.target
+
+[Service]
+ExecStart=/usr/bin/shairport-sync --configfile=/etc/shairport-sync.conf
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=default.target

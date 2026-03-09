@@ -1,0 +1,43 @@
+FROM debian:trixie
+
+ENV DEBIAN_FRONTEND=noninteractive
+
+# Bare minimum: systemd to run the container
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    systemd \
+    systemd-sysv \
+    dbus \
+    dbus-user-session \
+    sudo \
+    curl \
+    python3 \
+    python3-apt \
+    python3-pip \
+    python3-cryptography \
+    python3-jinja2 \
+    ca-certificates \
+    gnupg2 \
+    && rm -rf /var/lib/apt/lists/*
+
+# Systemd in container: remove unnecessary units
+RUN rm -f /lib/systemd/system/multi-user.target.wants/* \
+    /etc/systemd/system/*.wants/* \
+    /lib/systemd/system/local-fs.target.wants/* \
+    /lib/systemd/system/sockets.target.wants/*udev* \
+    /lib/systemd/system/sockets.target.wants/*initctl* \
+    /lib/systemd/system/sysinit.target.wants/systemd-tmpfiles-setup* \
+    /lib/systemd/system/systemd-update-utmp*
+
+# Create non-root user with passwordless sudo
+RUN useradd -m -s /bin/bash odios && \
+    echo 'odios ALL=(ALL) NOPASSWD:ALL' > /etc/sudoers.d/odios
+
+COPY installer/ansible /opt/odios/ansible
+RUN chown -R odios:odios /opt/odios
+
+WORKDIR /opt/odios/ansible
+
+VOLUME ["/sys/fs/cgroup"]
+STOPSIGNAL SIGRTMIN+3
+CMD ["/lib/systemd/systemd"]
+

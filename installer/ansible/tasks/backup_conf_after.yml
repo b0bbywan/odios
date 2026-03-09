@@ -1,0 +1,26 @@
+---
+- name: Stat config after changes
+  ansible.builtin.stat:
+    path: "{{ conf_path }}"
+    checksum_algorithm: sha256
+  register: conf_after
+  become: true
+  when: conf_before.stat.exists
+
+- name: Promote temp backup to .bak if config changed
+  ansible.builtin.copy:
+    src: "{{ conf_path }}.bak.tmp"
+    dest: "{{ conf_path }}.bak"
+    mode: "{{ conf_mode | default('0644') }}"
+    owner: "{{ conf_owner | default(omit) }}"
+    group: "{{ conf_group | default(omit) }}"
+    remote_src: true
+  become: true
+  when: conf_before.stat.exists and conf_before.stat.checksum != conf_after.stat.checksum
+
+- name: Remove temp backup if config unchanged
+  ansible.builtin.file:
+    path: "{{ conf_path }}.bak.tmp"
+    state: absent
+  become: true
+  when: conf_before.stat.exists

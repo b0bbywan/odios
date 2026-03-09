@@ -1,0 +1,13 @@
+[Unit]
+Description=PulseAudio TCP and Zeroconf modules
+After=pulseaudio.service
+Requires=pulseaudio.service
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/local/bin/pulse-tcp.sh start
+ExecStop=/usr/local/bin/pulse-tcp.sh stop
+
+[Install]
+WantedBy=default.target

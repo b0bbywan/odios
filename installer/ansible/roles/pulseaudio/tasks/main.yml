@@ -1,0 +1,44 @@
+---
+- name: Install PulseAudio packages
+  ansible.builtin.apt:
+    name:
+      - pulseaudio
+      - pulseaudio-module-zeroconf
+    state: present
+    update_cache: true
+  become: true
+  notify: Restart pulseaudio
+
+- name: Copy pulse-tcp script
+  ansible.builtin.copy:
+    src: pulse-tcp.sh
+    dest: /usr/local/bin/pulse-tcp.sh
+    mode: '0755'
+    owner: root
+    group: root
+  become: true
+  notify: Restart pulseaudio
+
+- name: Deploy pulse-tcp service
+  ansible.builtin.copy:
+    src: pulse-tcp.service
+    dest: "/usr/lib/systemd/user/pulse-tcp.service"
+    owner: "{{ target_user }}"
+    group: "{{ target_user }}"
+    mode: '0644'
+  become: true
+  notify: Restart pulseaudio
+
+- name: Enable user PulseAudio services
+  ansible.builtin.systemd:
+    name: "{{ item }}"
+    enabled: true
+    scope: user
+    daemon_reload: true
+  environment:
+    XDG_RUNTIME_DIR: "/run/user/{{ target_user_uid }}"
+  loop:
+    - pulseaudio.service
+    - pulse-tcp.service
+  become: true
+  become_user: "{{ target_user }}"

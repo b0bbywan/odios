@@ -1,0 +1,93 @@
+---
+- name: Audio Streaming System Installation
+  hosts: localhost
+
+  vars_files:
+    - group_vars/all.yml
+
+  pre_tasks:
+    - name: Ensure dbus running
+      ansible.builtin.systemd:
+        name: dbus.service
+        state: started
+      become: true
+
+    - name: Set hostname
+      ansible.builtin.hostname:
+        name: "{{ target_hostname }}"
+      become: true
+      when: target_hostname | length > 0 and target_hostname != ansible_hostname
+
+    - name: Create target user
+      ansible.builtin.user:
+        name: "{{ target_user }}"
+        shell: /bin/bash
+        create_home: true
+        state: present
+      become: true
+      when: target_user != ansible_user_id
+
+    - name: Get target user UID
+      ansible.builtin.command:
+        cmd: "id -u {{ target_user }}"
+      register: common_user_uid_result
+      changed_when: false
+
+    - name: Detect variables
+      ansible.builtin.set_fact:
+        system_arch: "{{ ansible_architecture }}"
+        spotifyd_arch: "{{ 'armv6' if ansible_architecture == 'armv6l' else
+                           'armv7' if ansible_architecture == 'armv7l' else
+                           'arm64' if ansible_architecture in ['aarch64', 'arm64'] else
+                           'amd64' if ansible_architecture == 'x86_64' else 'unknown' }}"
+        target_user_uid: "{{ common_user_uid_result.stdout }}"
+
+  roles:
+    - role: common
+    - role: pulseaudio
+      when: install_pulseaudio | bool
+    - role: bluetooth
+      when: install_bluetooth | bool
+    - role: mpd
+      when: install_mpd | bool
+    - role: odio_api
+      when: install_odio_api | bool
+    - role: mpd_discplayer
+      when: install_mpd_discplayer | bool
+    - role: shairport_sync
+      when: install_shairport_sync | bool
+    - role: snapclient
+      when: install_snapclient | bool
+    - role: upmpdcli
+      when: install_upmpdcli | bool
+  # - role: spotifyd
+  #   when: install_spotifyd | bool
+
+  post_tasks:
+    - name: Display installation summary
+      ansible.builtin.debug:
+        msg:
+          - "═══════════════════════════════════════════════════"
+          - "  Audio Streaming System - Installation Complete  "
+          - "═══════════════════════════════════════════════════"
+          - ""
+          - "Hostname: {{ target_hostname }}"
+          - "User: {{ target_user }}"
+          - ""
+          - "Core services installed:"
+          - "  ✓ PulseAudio with network streaming"
+          - "  ✓ Bluetooth audio (A2DP sink)"
+          - "  ✓ MPD (Music Player Daemon)"
+          - "  ✓ Odio API (REST control interface)"
+          - ""
+          - "Optional services:"
+          - "  {{ '✓' if install_mpd_discplayer else '✗' }} MPD disc player"
+#          - "  {{ '✓' if install_spotifyd else '✗' }} Spotifyd (Spotify Connect)"
+          - "  {{ '✓' if install_shairport_sync else '✗' }} Shairport Sync (AirPlay)"
+          - "  {{ '✓' if install_snapclient else '✗' }} Snapcast client"
+          - "  {{ '✓' if install_upmpdcli else '✗' }} UPnP/DLNA renderer"
+          - ""
+          - "System should already be running !"
+          - "Visit http://localhost:8018/ui"
+          - ""
+          - "═══════════════════════════════════════════════════"

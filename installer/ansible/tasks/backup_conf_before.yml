@@ -1,0 +1,18 @@
+---
+- name: Stat config before changes
+  ansible.builtin.stat:
+    path: "{{ conf_path }}"
+    checksum_algorithm: sha256
+  register: conf_before
+  become: true
+
+- name: Create temp backup of config
+  ansible.builtin.copy:
+    src: "{{ conf_path }}"
+    dest: "{{ conf_path }}.bak.tmp"
+    mode: "{{ conf_mode | default('0644') }}"
+    owner: "{{ conf_owner | default(omit) }}"
+    group: "{{ conf_group | default(omit) }}"
+    remote_src: true
+  become: true
+  when: conf_before.stat.exists

@@ -1,0 +1,38 @@
+---
+- name: Install go-odio-api
+  ansible.builtin.apt:
+    name: odio-api
+    state: present
+    update_cache: true
+  become: true
+  notify: Restart odio-api
+
+- name: Create odio-api config directory
+  ansible.builtin.file:
+    path: "/home/{{ target_user }}/.config/odio-api"
+    state: directory
+    owner: "{{ target_user }}"
+    group: "{{ target_user }}"
+    mode: '0700'
+  become: true
+
+- name: Deploy odio-api configuration
+  ansible.builtin.template:
+    src: config.yaml.j2
+    dest: "/home/{{ target_user }}/.config/odio-api/config.yaml"
+    owner: "{{ target_user }}"
+    group: "{{ target_user }}"
+    mode: '0640'
+  become: true
+  notify: Restart odio-api
+
+- name: Enable odio-api service
+  ansible.builtin.systemd:
+    name: odio-api.service
+    enabled: true
+    scope: user
+    daemon_reload: true
+  environment:
+    XDG_RUNTIME_DIR: "/run/user/{{ target_user_uid }}"
+  become: true
+  become_user: "{{ target_user }}"

@@ -1,0 +1,110 @@
+---
+- name: Install shairport-sync
+  ansible.builtin.apt:
+    name: shairport-sync
+    state: present
+  become: true
+  notify: Restart shairport-sync
+
+- name: Backup shairport-sync config before changes
+  ansible.builtin.include_tasks: "../../../tasks/backup_conf_before.yml"
+  vars:
+    conf_path: /etc/shairport-sync.conf
+
+- name: Configure shairport-sync name
+  ansible.builtin.lineinfile:
+    path: /etc/shairport-sync.conf
+    regexp: '^\s*//?\s*name\s*='
+    line: '	name = "%h";'
+  become: true
+  notify: Restart shairport-sync
+
+- name: Configure shairport-sync output backend
+  ansible.builtin.lineinfile:
+    path: /etc/shairport-sync.conf
+    regexp: '^\s*//?\s*output_backend\s*='
+    line: '	output_backend = "pa";'
+  become: true
+  notify: Restart shairport-sync
+
+- name: Configure shairport-sync mdns backend
+  ansible.builtin.lineinfile:
+    path: /etc/shairport-sync.conf
+    regexp: '^\s*//?\s*mdns_backend\s*='
+    line: '	mdns_backend = "avahi";'
+  become: true
+  notify: Restart shairport-sync
+
+- name: Configure shairport-sync pulseaudio server
+  ansible.builtin.lineinfile:
+    path: /etc/shairport-sync.conf
+    regexp: '^\s*//?\s*server\s*=\s*"host"'
+    line: '	server = "127.0.0.1";'
+  become: true
+  notify: Restart shairport-sync
+
+- name: Configure shairport-sync application name
+  ansible.builtin.lineinfile:
+    path: /etc/shairport-sync.conf
+    regexp: '^\s*//?\s*application_name\s*='
+    line: '	application_name = "Shairport Sync";'
+  become: true
+  notify: Restart shairport-sync
+
+- name: Backup shairport-sync config after changes
+  ansible.builtin.include_tasks: "../../../tasks/backup_conf_after.yml"
+  vars:
+    conf_path: /etc/shairport-sync.conf
+
+- name: Configure dbus policy for shairport-sync
+  ansible.builtin.blockinfile:
+    path: /usr/share/dbus-1/system.d/shairport-sync-dbus-policy.conf
+    marker: "<!-- {mark} ANSIBLE MANAGED BLOCK -->"
+    insertafter: '<busconfig>'
+    block: |
+        <policy user="{{ target_user }}">
+          <allow own="org.gnome.ShairportSync"/>
+        </policy>
+  become: true
+
+- name: Configure dbus policy for shairport-sync MPRIS
+  ansible.builtin.blockinfile:
+    path: /usr/share/dbus-1/system.d/shairport-sync-mpris-policy.conf
+    marker: "<!-- {mark} ANSIBLE MANAGED BLOCK -->"
+    insertafter: '<busconfig>'
+    block: |
+        <policy user="{{ target_user }}">
+          <allow own="org.mpris.MediaPlayer2.ShairportSync"/>
+        </policy>
+  become: true
+
+- name: Deploy shairport-sync user service
+  ansible.builtin.copy:
+    src: shairport-sync.service
+    dest: /usr/lib/systemd/user/shairport-sync.service
+    mode: '0644'
+    owner: root
+    group: root
+  become: true
+
+- name: Disable system shairport-sync service
+  ansible.builtin.systemd:
+    name: shairport-sync.service
+    enabled: false
+    state: stopped
+  become: true
+  register: shairport_sync_disable
+  failed_when:
+    - shairport_sync_disable.failed | bool
+    - '"Could not find" not in (shairport_sync_disable.msg | default(""))'
+
+- name: Enable user shairport-sync service
+  ansible.builtin.systemd:
+    name: shairport-sync.service
+    enabled: true
+    scope: user
+    daemon_reload: true
+  environment:
+    XDG_RUNTIME_DIR: "/run/user/{{ target_user_uid }}"
+  become: true
+  become_user: "{{ target_user }}"
