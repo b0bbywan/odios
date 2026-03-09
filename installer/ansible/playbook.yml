@@ -12,7 +12,6 @@
         state: started
       become: true
 
-
     - name: Set hostname
       ansible.builtin.hostname:
         name: "{{ target_hostname }}"
@@ -46,10 +45,13 @@
   roles:
     - role: common
     - role: pulseaudio
+      when: install_pulseaudio | bool
     - role: bluetooth
+      when: install_bluetooth | bool
     - role: mpd
+      when: install_mpd | bool
     - role: odio_api
-
+      when: install_odio_api | bool
     - role: mpd_discplayer
       when: install_mpd_discplayer | bool
     - role: shairport_sync

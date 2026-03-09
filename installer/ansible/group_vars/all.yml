@@ -6,7 +6,13 @@ spotifyd_version: "0.3.5"
 odio_gpg: "https://apt.odio.love/key.gpg"
 gpg_file: "/usr/share/keyrings/odio.gpg"
 
-# Composants optionnels (défauts)
+# Core components (default: enabled)
+install_pulseaudio: true
+install_bluetooth: true
+install_mpd: true
+install_odio_api: true
+
+# Optional components (default: disabled)
 install_spotifyd: false
 install_shairport_sync: false
 install_snapclient: false
