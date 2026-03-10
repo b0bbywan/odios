@@ -1,0 +1,63 @@
+---
+- name: Fail on unsupported architecture (armv6l)
+  ansible.builtin.fail:
+    msg: "spotifyd does not provide armv6l builds since v0.4.x"
+  when: ansible_architecture == "armv6l"
+
+- name: Check installed spotifyd version
+  ansible.builtin.command: /usr/local/bin/spotifyd --version
+  register: spotifyd_current_version
+  failed_when: false
+  changed_when: false
+
+- name: Download and install spotifyd
+  ansible.builtin.unarchive:
+    src: "https://github.com/Spotifyd/spotifyd/releases/download/v{{ spotifyd_version }}/spotifyd-linux-{{ spotifyd_arch }}-full.tar.gz"
+    dest: /usr/local/bin
+    remote_src: true
+    mode: '0755'
+    owner: root
+    group: root
+  become: true
+  when: spotifyd_current_version.rc != 0 or spotifyd_version not in spotifyd_current_version.stdout
+  notify: Restart spotifyd
+
+- name: Deploy spotifyd systemd user unit
+  ansible.builtin.template:
+    src: spotifyd.service.j2
+    dest: /usr/lib/systemd/user/spotifyd.service
+    owner: root
+    group: root
+    mode: '0644'
+  become: true
+  notify: Restart spotifyd
+
+- name: Create spotifyd config directory
+  ansible.builtin.file:
+    path: "/home/{{ target_user }}/.config/spotifyd"
+    state: directory
+    owner: "{{ target_user }}"
+    group: "{{ target_user }}"
+    mode: '0755'
+  become: true
+
+- name: Deploy spotifyd config
+  ansible.builtin.template:
+    src: spotifyd.conf.j2
+    dest: "/home/{{ target_user }}/.config/spotifyd/spotifyd.conf"
+    owner: "{{ target_user }}"
+    group: "{{ target_user }}"
+    mode: '0644'
+  become: true
+  notify: Restart spotifyd
+
+- name: Enable user spotifyd service
+  ansible.builtin.systemd:
+    name: spotifyd.service
+    enabled: true
+    scope: user
+    daemon_reload: true
+  environment:
+    XDG_RUNTIME_DIR: "/run/user/{{ target_user_uid }}"
+  become: true
+  become_user: "{{ target_user }}"
