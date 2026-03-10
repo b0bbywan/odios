@@ -22,7 +22,7 @@ jobs:
       version: ${{ steps.meta.outputs.version }}
       is_release: ${{ steps.meta.outputs.is_release }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Set build metadata
         id: meta
@@ -83,7 +83,7 @@ jobs:
           echo "Archive contents:"
           tar tzf "${{ steps.meta.outputs.archive_name }}" | head -30
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v5
         with:
           name: playbooks-archive
           path: ${{ steps.meta.outputs.archive_name }}
@@ -94,17 +94,17 @@ jobs:
     if: needs.build.outputs.is_release == 'true'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           sparse-checkout: installer/install.sh
           sparse-checkout-cone-mode: false
 
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v5
         with:
           name: playbooks-archive
 
       - name: Create GitHub Release
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           files: |
             ${{ needs.build.outputs.archive_name }}
@@ -116,7 +116,7 @@ jobs:
     if: needs.build.outputs.is_release == 'false' && github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           sparse-checkout: installer/install.sh
           sparse-checkout-cone-mode: false
@@ -146,7 +146,7 @@ jobs:
     outputs:
       image: ${{ steps.meta.outputs.image }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Set image tag
         id: meta
@@ -159,14 +159,14 @@ jobs:
           echo "image=ghcr.io/${{ github.repository }}/test:${TAG}" >> "$GITHUB_OUTPUT"
 
       - name: Log in to GHCR
-        uses: docker/login-action@v3
+        uses: docker/login-action@v4
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Build and push
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@v7
         with:
           context: .
           file: Dockerfile.test
@@ -179,7 +179,7 @@ jobs:
     needs: build-test-image
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Run playbook test
         run: ./test.sh
@@ -205,7 +205,7 @@ jobs:
       matrix:
         mode: [install, install-root]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Resolve tag
         id: tag
