@@ -1,0 +1,16 @@
+---
+- name: Configure Deezer user
+  ansible.builtin.lineinfile:
+    path: /etc/upmpdcli.conf
+    regexp: '^#?deezeruser\s*='
+    line: "deezeruser = {{ deezer_user }}"
+  become: true
+  notify: Restart upmpdcli
+
+- name: Configure Deezer password
+  ansible.builtin.lineinfile:
+    path: /etc/upmpdcli.conf
+    regexp: '^#?deezerpass\s*='
+    line: "deezerpass = {{ deezer_pass }}"
+  become: true
+  notify: Restart upmpdcli

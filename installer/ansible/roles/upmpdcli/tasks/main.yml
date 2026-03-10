@@ -70,6 +70,18 @@
   become: true
   notify: Restart upmpdcli
 
+- name: Configure Qobuz streaming
+  ansible.builtin.include_tasks: qobuz.yml
+  when: qobuz_user is defined and qobuz_user | length > 0
+
+- name: Configure Deezer streaming
+  ansible.builtin.include_tasks: deezer.yml
+  when: deezer_user is defined and deezer_user | length > 0
+
+- name: Configure Tidal streaming
+  ansible.builtin.include_tasks: tidal.yml
+  when: install_tidal | bool
+
 - name: Backup upmpdcli config after changes
   ansible.builtin.include_tasks: "../../../tasks/backup_conf_after.yml"
   vars:

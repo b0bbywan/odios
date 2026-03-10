@@ -1,0 +1,6 @@
+---
+- name: Install upmpdcli-tidal
+  ansible.builtin.apt:
+    name: upmpdcli-tidal
+    state: present
+  become: true

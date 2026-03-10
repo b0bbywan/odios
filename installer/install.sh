@@ -57,6 +57,17 @@ ask_config() {
     read -p "Install UPnP/DLNA renderer? [y/N]: "         INSTALL_UPMPDCLI
     read -p "Install Spotifyd (Spotify Connect)? [y/N]: " INSTALL_SPOTIFYD
 
+    if [[ "${INSTALL_UPMPDCLI,,}" == "y" ]]; then
+        echo ""
+        echo -e "${BLUE}Streaming services (upmpdcli) — leave blank to skip${NC}"
+        read -p "Qobuz username: "  QOBUZ_USER
+        if [[ -n "$QOBUZ_USER" ]]; then
+            read -sp "Qobuz password: " QOBUZ_PASS
+            echo ""
+        fi
+        read -p "Install Tidal support? [y/N]: " INSTALL_TIDAL
+    fi
+
     if [[ "${INSTALL_MPD,,}" == "n" && "${INSTALL_MPD_DISCPLAYER,,}" == "y" ]] && command -v mpd &>/dev/null; then
         local detected_conf=""
         [[ -f "/home/${TARGET_USER}/.config/mpd/mpd.conf" ]] && detected_conf="/home/${TARGET_USER}/.config/mpd/mpd.conf"
@@ -84,6 +95,7 @@ prompt_for_config() {
     INSTALL_SHAIRPORT_SYNC="${INSTALL_SHAIRPORT_SYNC:-N}"
     INSTALL_SNAPCLIENT="${INSTALL_SNAPCLIENT:-N}"
     INSTALL_UPMPDCLI="${INSTALL_UPMPDCLI:-N}"
+    INSTALL_TIDAL="${INSTALL_TIDAL:-N}"
     INSTALL_SPOTIFYD="${INSTALL_SPOTIFYD:-N}"
 }
 
@@ -189,9 +201,14 @@ preflight_checks() {
             echo -e "${YELLOW}  Recommended: use a dedicated user (e.g. 'odios') so PipeWire${NC}"
             echo -e "${YELLOW}  can be safely masked for that user only.${NC}"
             echo ""
-            read -p "  Continue anyway? [y/N]: " _pw_confirm
-            if [[ "${_pw_confirm,,}" != "y" ]]; then
-                echo -e "${RED}Aborting. Re-run and specify a dedicated username.${NC}"
+            if [[ -t 0 ]]; then
+                read -p "  Continue anyway? [y/N]: " _pw_confirm
+                if [[ "${_pw_confirm,,}" != "y" ]]; then
+                    echo -e "${RED}Aborting. Re-run and specify a dedicated username.${NC}"
+                    exit 1
+                fi
+            else
+                echo -e "${RED}Non-interactive mode: aborting. Set TARGET_USER to a dedicated user.${NC}"
                 exit 1
             fi
         else
@@ -252,16 +269,18 @@ run_playbook() {
     echo ""
 
     local extra_vars
-    local hostname_var="" music_dir_var="" conf_path_var=""
+    local hostname_var="" music_dir_var="" conf_path_var="" qobuz_var=""
     [[ -n "${TARGET_HOSTNAME:-}" ]]      && hostname_var="\"target_hostname\": \"${TARGET_HOSTNAME}\","
     [[ -n "${MPD_MUSIC_DIRECTORY:-}" ]]  && music_dir_var="\"mpd_music_directory\": \"${MPD_MUSIC_DIRECTORY}\","
     [[ -n "${MPD_CONF_PATH:-}" ]]        && conf_path_var="\"mpd_conf_path\": \"${MPD_CONF_PATH}\","
+    [[ -n "${QOBUZ_USER:-}" ]]           && qobuz_var="\"qobuz_user\": \"${QOBUZ_USER}\", \"qobuz_pass\": \"${QOBUZ_PASS}\","
 
     extra_vars=$(cat <<EOF
 {
   ${hostname_var}
   ${music_dir_var}
   ${conf_path_var}
+  ${qobuz_var}
   "target_user": "${TARGET_USER}",
   "install_pulseaudio": $([ "${INSTALL_PULSEAUDIO,,}" = "y" ] && echo "true" || echo "false"),
   "install_bluetooth": $([ "${INSTALL_BLUETOOTH,,}" = "y" ] && echo "true" || echo "false"),
@@ -271,6 +290,7 @@ run_playbook() {
   "install_shairport_sync": $([ "${INSTALL_SHAIRPORT_SYNC,,}" = "y" ] && echo "true" || echo "false"),
   "install_snapclient": $([ "${INSTALL_SNAPCLIENT,,}" = "y" ] && echo "true" || echo "false"),
   "install_upmpdcli": $([ "${INSTALL_UPMPDCLI,,}" = "y" ] && echo "true" || echo "false"),
+  "install_tidal": $([ "${INSTALL_TIDAL,,}" = "y" ] && echo "true" || echo "false"),
   "install_mpd_discplayer": $([ "${INSTALL_MPD_DISCPLAYER,,}" = "y" ] && echo "true" || echo "false")
 }
 EOF
