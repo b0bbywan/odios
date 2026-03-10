@@ -3,7 +3,8 @@ set -e
 
 CONTAINER_NAME="odios-test"
 GITHUB_REPO="b0bbywan/odios"
-REMOTE_IMAGE="${REMOTE_IMAGE:-ghcr.io/${GITHUB_REPO}/test:latest}"
+_DEFAULT_TAG="$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo latest)"
+REMOTE_IMAGE="${REMOTE_IMAGE:-ghcr.io/${GITHUB_REPO}/test:${_DEFAULT_TAG}}"
 BUILD_LOCAL=false
 
 # ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -60,10 +61,11 @@ run_install() {
     docker exec "${user_flag[@]}" "${CONTAINER_NAME}" \
       env \
         TARGET_USER=odios \
-        INSTALL_SPOTIFYD=N \
+        INSTALL_SPOTIFYD=Y \
         INSTALL_SHAIRPORT_SYNC=Y \
         INSTALL_SNAPCLIENT=Y \
         INSTALL_UPMPDCLI=Y \
+        INSTALL_TIDAL=Y \
         INSTALL_MPD_DISCPLAYER=Y \
         ODIOS_VERSION="${tag}" \
       bash -c "curl -fsSL '${url}' | bash"
@@ -119,8 +121,12 @@ case "${ACTION}" in
         /opt/odios/ansible/playbook.yml \
         -e "install_shairport_sync=true" \
         -e "install_upmpdcli=true" \
+        -e "install_tidal=true" \
         -e "install_snapclient=true" \
         -e "install_mpd_discplayer=true" \
+        -e "install_spotifyd=true" \
+        -e "qobuz_user=test@example.com" \
+        -e "qobuz_pass=boguspassword" \
         "$@"
 
     echo "=== Done ==="
@@ -136,8 +142,12 @@ case "${ACTION}" in
       ansible-playbook -i inventory/localhost.yml /opt/odios/ansible/playbook.yml \
         -e "install_shairport_sync=true" \
         -e "install_upmpdcli=true" \
+        -e "install_tidal=true" \
         -e "install_snapclient=true" \
         -e "install_mpd_discplayer=true" \
+        -e "install_spotifyd=true" \
+        -e "qobuz_user=test@example.com" \
+        -e "qobuz_pass=boguspassword" \
         "$@"
     ;;
 

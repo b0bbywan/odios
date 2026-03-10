@@ -146,7 +146,7 @@ jobs:
           if [[ "${{ needs.build.outputs.is_release }}" == "true" ]]; then
             TAG="${{ needs.build.outputs.version }}"
           else
-            TAG="pr-${{ github.event.pull_request.number }}"
+            TAG="${{ github.head_ref }}"
           fi
           echo "image=ghcr.io/${{ github.repository }}/test:${TAG}" >> "$GITHUB_OUTPUT"
 
