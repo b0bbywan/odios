@@ -13,7 +13,7 @@ Ansible-based "curl | bash" installer to set up a complete audio/multimedia syst
 ### Optional (disabled by default)
 - **Shairport Sync** - AirPlay receiver
 - **Snapcast** - Multi-room audio client
-- **UPnP/DLNA** - Renderer for UPnP application control, with optional Qobuz streaming (prompted at install time) and Tidal support (package only — tokens require manual configuration post-install in `/etc/upmpdcli.conf`).
+- **UPnP/DLNA** - Renderer for UPnP application control, with optional Qobuz streaming (prompted at install time) and Tidal support (package only — tokens require manual configuration post-install in `/etc/upmpdcli.conf`.
 - **MPD DiscPlayer** - CD/USB support for MPD
 
 ## Fresh install vs existing system
@@ -47,10 +47,11 @@ This applies to: `/etc/bluetooth/main.conf`, `/etc/shairport-sync.conf`, `/etc/d
 
 ## Requirements
 
-- OS: Debian 11+, Ubuntu 22.04+, or Raspberry Pi OS (Bullseye+)
+- OS: Debian 13, Ubuntu 22.04+, or Raspberry Pi OS (Trixie)
 - Architecture: ARM (armv6l, armv7l, aarch64) or x86_64
 - Python 3.10+
 - `python3-cryptography` (present by default on Debian/Ubuntu)
+- `python3-jinja`
 - `curl`
 - Sudo access (or root)
 - Internet connection
