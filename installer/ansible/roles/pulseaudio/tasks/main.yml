@@ -29,6 +29,38 @@
   become: true
   notify: Restart pulseaudio
 
+- name: Check if pipewire is installed
+  ansible.builtin.command: dpkg-query -W -f='${Status}' pipewire
+  register: pulseaudio_pw_status
+  failed_when: false
+  changed_when: false
+
+- name: Find existing PipeWire unit files
+  ansible.builtin.stat:
+    path: "/usr/lib/systemd/user/{{ item }}"
+  register: pulseaudio_pw_units
+  loop:
+    - pipewire.service
+    - pipewire.socket
+    - pipewire-pulse.service
+    - pipewire-pulse.socket
+    - wireplumber.service
+
+- name: Mask existing PipeWire units for target user
+  ansible.builtin.systemd:
+    name: "{{ item.item }}"
+    masked: true
+    scope: user
+    daemon_reload: true
+  environment:
+    XDG_RUNTIME_DIR: "/run/user/{{ target_user_uid }}"
+  loop: "{{ pulseaudio_pw_units.results }}"
+  when:
+    - "'install ok installed' in pulseaudio_pw_status.stdout"
+    - item.stat.exists
+  become: true
+  become_user: "{{ target_user }}"
+
 - name: Enable user PulseAudio services
   ansible.builtin.systemd:
     name: "{{ item }}"

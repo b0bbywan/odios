@@ -180,6 +180,25 @@ preflight_checks() {
         ((errors++))
     fi
 
+    # PipeWire conflict detection
+    if dpkg -l pipewire 2>/dev/null | grep -q '^ii'; then
+        if [[ "$TARGET_USER" == "$USER" ]]; then
+            echo ""
+            echo -e "${YELLOW}⚠ PipeWire is installed and you are installing for the current user '$USER'.${NC}"
+            echo -e "${YELLOW}  PulseAudio and PipeWire will conflict on the same user session.${NC}"
+            echo -e "${YELLOW}  Recommended: use a dedicated user (e.g. 'odios') so PipeWire${NC}"
+            echo -e "${YELLOW}  can be safely masked for that user only.${NC}"
+            echo ""
+            read -p "  Continue anyway? [y/N]: " _pw_confirm
+            if [[ "${_pw_confirm,,}" != "y" ]]; then
+                echo -e "${RED}Aborting. Re-run and specify a dedicated username.${NC}"
+                exit 1
+            fi
+        else
+            echo -e "${YELLOW}⚠ PipeWire detected — will be masked for user '$TARGET_USER'${NC}"
+        fi
+    fi
+
     echo ""
 
     if [[ $errors -gt 0 ]]; then
