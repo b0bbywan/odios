@@ -1,0 +1,82 @@
+---
+- name: Install PipeWire packages
+  ansible.builtin.apt:
+    name:
+      - pipewire
+      - pipewire-pulse
+      - wireplumber
+    state: present
+    update_cache: true
+  become: true
+  notify: Restart pipewire-pulse
+
+- name: Create user pipewire config directory
+  ansible.builtin.file:
+    path: "/home/{{ target_user }}/.config/pipewire"
+    state: directory
+    owner: "{{ target_user }}"
+    group: "{{ target_user }}"
+    mode: '0755'
+  become: true
+
+- name: Backup pipewire-pulse config before changes
+  ansible.builtin.include_tasks: ../../../tasks/backup_conf_before.yml
+  vars:
+    conf_path: "/home/{{ target_user }}/.config/pipewire/pipewire-pulse.conf"
+    conf_owner: "{{ target_user }}"
+    conf_group: "{{ target_user }}"
+
+- name: Deploy pipewire-pulse config
+  ansible.builtin.template:
+    src: pipewire-pulse.conf.j2
+    dest: "/home/{{ target_user }}/.config/pipewire/pipewire-pulse.conf"
+    owner: "{{ target_user }}"
+    group: "{{ target_user }}"
+    mode: '0644'
+  become: true
+  notify: Restart pipewire-pulse
+
+- name: Backup pipewire-pulse config after changes
+  ansible.builtin.include_tasks: ../../../tasks/backup_conf_after.yml
+  vars:
+    conf_path: "/home/{{ target_user }}/.config/pipewire/pipewire-pulse.conf"
+    conf_owner: "{{ target_user }}"
+    conf_group: "{{ target_user }}"
+
+- name: Create user pipewire.conf.d directory
+  ansible.builtin.file:
+    path: "/home/{{ target_user }}/.config/pipewire/pipewire.conf.d"
+    state: directory
+    owner: "{{ target_user }}"
+    group: "{{ target_user }}"
+    mode: '0755'
+  become: true
+  when: install_snapclient
+
+- name: Deploy snapcast-discover config
+  ansible.builtin.template:
+    src: snapcast-discover.conf.j2
+    dest: "/home/{{ target_user }}/.config/pipewire/pipewire.conf.d/snapcast-discover.conf"
+    owner: "{{ target_user }}"
+    group: "{{ target_user }}"
+    mode: '0644'
+  become: true
+  notify: Restart pipewire-pulse
+  when: install_snapclient
+
+- name: Enable user PipeWire services
+  ansible.builtin.systemd:
+    name: "{{ item }}"
+    enabled: true
+    scope: user
+    daemon_reload: true
+  environment:
+    XDG_RUNTIME_DIR: "/run/user/{{ target_user_uid }}"
+  loop:
+    - pipewire.socket
+    - pipewire.service
+    - pipewire-pulse.socket
+    - pipewire-pulse.service
+    - wireplumber.service
+  become: true
+  become_user: "{{ target_user }}"

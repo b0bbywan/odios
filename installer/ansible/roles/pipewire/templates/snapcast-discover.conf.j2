@@ -1,0 +1,18 @@
+context.modules = [
+{   name = libpipewire-module-snapcast-discover
+    args = {
+        stream.rules = [
+            {   matches = [
+                    { snapcast.ip = "~.*" }
+                ]
+                actions = {
+                    create-stream = {
+                      node.name = "Snapcast"
+                      node.description = "Snapcast Server"
+                    }
+                }
+            }
+        ]
+    }
+}
+]
