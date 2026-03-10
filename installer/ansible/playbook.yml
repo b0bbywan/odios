@@ -38,8 +38,8 @@
         system_arch: "{{ ansible_architecture }}"
         spotifyd_arch: "{{ 'armv6' if ansible_architecture == 'armv6l' else
                            'armv7' if ansible_architecture == 'armv7l' else
-                           'arm64' if ansible_architecture in ['aarch64', 'arm64'] else
-                           'amd64' if ansible_architecture == 'x86_64' else 'unknown' }}"
+                           'aarch64' if ansible_architecture in ['aarch64', 'arm64'] else
+                           'x86_64' if ansible_architecture == 'x86_64' else 'unknown' }}"
         target_user_uid: "{{ common_user_uid_result.stdout }}"
 
   roles:
@@ -60,8 +60,8 @@
       when: install_snapclient | bool
     - role: upmpdcli
       when: install_upmpdcli | bool
-  # - role: spotifyd
-  #   when: install_spotifyd | bool
+    - role: spotifyd
+      when: install_spotifyd | bool
 
   post_tasks:
     - name: Display installation summary
@@ -82,7 +82,7 @@
           - ""
           - "Optional services:"
           - "  {{ '✓' if install_mpd_discplayer else '✗' }} MPD disc player"
-#          - "  {{ '✓' if install_spotifyd else '✗' }} Spotifyd (Spotify Connect)"
+          - "  {{ '✓' if install_spotifyd else '✗' }} Spotifyd (Spotify Connect)"
           - "  {{ '✓' if install_shairport_sync else '✗' }} Shairport Sync (AirPlay)"
           - "  {{ '✓' if install_snapclient else '✗' }} Snapcast client"
           - "  {{ '✓' if install_upmpdcli else '✗' }} UPnP/DLNA renderer"
