@@ -8,29 +8,40 @@ port: 8018
 # Logging
 log_level: info
 
-# System services to monitor (read-only)
-system_services:
-  - bluetooth.service
-{% if install_upmpdcli %}
-  - upmpdcli.service
-{% endif %}
+power:
+  enabled: true
+  capabilities:
+    poweroff: true
+    reboot: true
 
-# User services to monitor and control
-user_services:
-  - mpd.service
-  - pulseaudio.service
-{% if install_mpd_discplayer %}
-  - mpd-discplayer.service
-{% endif %}
-{% if install_spotifyd %}
-  - spotifyd.service
-{% endif %}
-{% if install_shairport_sync %}
-  - shairport-sync.service
-{% endif %}
-{% if install_snapclient %}
-  - snapclient.service
-{% endif %}
+systemd:
+  enabled: true
+  system:
+  {% if install_bluetooth %}
+    - bluetooth.service
+  {% endif %}
+  {% if install_upmpdcli %}
+    - upmpdcli.service
+  {% endif %}
+  user:
+  {% if install_pulseaudio %}
+    - pulseaudio.service
+  {% endif %}
+  {% if install_mpd or install_mpd_discplayer %}
+    - mpd.service
+  {% endif %}
+  {% if install_mpd_discplayer %}
+    - mpd-discplayer.service
+  {% endif %}
+  {% if install_shairport_sync %}
+    - shairport-sync.service
+  {% endif %}
+  {% if install_snapclient %}
+    - snapclient.service
+  {% endif %}
+  {% if install_spotifyd %}
+    - spotifyd.service
+  {% endif %}
 
 # Features
 zeroconf:
@@ -43,7 +54,9 @@ mpris:
   enabled: true
   timeout: 5s
 
+{% if install_bluetooth %}
 bluetooth:
   enabled: true
   timeout: 5s
   pairing_timeout: 60s
+{% endif %}
