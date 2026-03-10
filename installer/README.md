@@ -13,8 +13,8 @@ Ansible-based "curl | bash" installer to set up a complete audio/multimedia syst
 ### Optional (disabled by default)
 - **Shairport Sync** - AirPlay receiver
 - **Snapcast** - Multi-room audio client
-- **UPnP/DLNA** - Renderer for UPnP application control
-- **MPD DiscPlayer** - CD/DVD support for MPD
+- **UPnP/DLNA** - Renderer for UPnP application control, with optional Qobuz streaming (prompted at install time) and Tidal support (package only — tokens require manual configuration post-install in `/etc/upmpdcli.conf`).
+- **MPD DiscPlayer** - CD/USB support for MPD
 
 ## Fresh install vs existing system
 
