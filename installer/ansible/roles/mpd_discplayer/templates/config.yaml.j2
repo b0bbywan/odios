@@ -9,3 +9,8 @@ MPDConnection:
 AudioBackend: "none"
 MPDLibraryFolder: "{{ mpd_music_directory }}"
 MountConfig: "mpd"
+
+{% if mpd_discplayer_gnu_email | default('') %}
+gnuHelloEmail: "{{ mpd_discplayer_gnu_email }}"
+gnuDbUrl: "https://gnudb.gnudb.org"
+{% endif %}

@@ -62,9 +62,17 @@ jobs:
           echo "Vendor size: $(du -sh staging/vendor | cut -f1)"
 
       - name: Assemble archive
+        env:
+          GNU_EMAIL: ${{ secrets.GNU_EMAIL }}
         run: |
           # Playbooks
           cp -r installer/ansible staging/ansible
+
+          # Inject secrets
+          if [[ -n "${GNU_EMAIL}" ]]; then
+            echo "mpd_discplayer_gnu_email: \"${GNU_EMAIL}\"" \
+              > staging/ansible/group_vars/all/secrets.yml
+          fi
 
           # Stamp version
           echo "${{ steps.meta.outputs.version }}" > staging/VERSION

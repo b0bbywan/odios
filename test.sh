@@ -127,6 +127,7 @@ case "${ACTION}" in
         -e "install_spotifyd=true" \
         -e "qobuz_user=test@example.com" \
         -e "qobuz_pass=boguspassword" \
+        -e "mpd_discplayer_gnu_email=test@example.com" \
         "$@"
 
     echo "=== Done ==="
@@ -148,6 +149,7 @@ case "${ACTION}" in
         -e "install_spotifyd=true" \
         -e "qobuz_user=test@example.com" \
         -e "qobuz_pass=boguspassword" \
+        -e "mpd_discplayer_gnu_email=test@example.com" \
         "$@"
     ;;
 
