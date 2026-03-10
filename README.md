@@ -61,6 +61,37 @@ See [installer/README.md](installer/README.md) for full installation options, en
 | [MALP](https://gitlab.com/gateship-one/malp) | MPD | Android |
 | [BubbleUPnP](https://bubblesoft.org/bubbleupnp/) | UPnP/DLNA | Android / iOS |
 
+
+## odio vs Volumio
+
+|  | **odio** | **Volumio** |
+|---|---|---|
+| **License** | 100% open source | Partially closed source |
+| **Price** | Free | Freemium — Premium at €60/year |
+| **Account required** | No | Yes |
+| **Cloud dependency** | None | Yes (account, Premium, plugins) |
+| **Minimum hardware** | **Raspberry Pi B+** (armv6l, 2014) | Raspberry Pi 3 |
+| **Music library management** | ❌ Streamer only: use your favorite app | ✅ Built-in library browser |
+| **Bluetooth A2DP** | ✅ Included | 💰 Premium only |
+| **AirPlay** | ✅ Included | ✅ Free plugin |
+| **Spotify Connect** | ✅ Included | ✅ Free plugin |
+| **Qobuz** | ✅ Included (via upmpdcli) | 💰 Premium only |
+| **Tidal / Tidal Connect** | ✅ Included (via upmpdcli) | 💰 Premium only |
+| **UPnP/DLNA** | ✅ Included | ✅ Included |
+| **Multi-room** | ✅ Included (Snapcast) | 💰 Premium only |
+| **CD playback** | ✅ Included with metadata | 💰 Premium only |
+| **Network audio sink** | ✅ PulseAudio/PipeWire TCP | ❌ Not supported |
+| **Home Assistant** | Native integration | Unofficial community plugin |
+| **Voice assistant / AI** | Via Home Assistant | 💰 CORRD (Premium) |
+| **Embedded UI** | Lightweight HTMX/Tailwind | Node.js/React |
+| **Multi-node remote** | Svelte PWA (install from browser, no store) | Native mobile app (iOS/Android) |
+| **Architecture** | User session, PulseAudio/PipeWire, Golang | System session, ALSA, Node.js |
+| **System philosophy** | Linux-native modular stack | Appliance-style distribution |
+| **Debian base** | Trixie (stable) | Bookworm (oldstable) |
+| **Installation** | One command (`curl \| bash`) | Image flash |
+| **Upgrade** | `apt upgrade` | OTA updates / Reflash between major versions |
+| **Long-term stability** | No reinstall between Buster and Trixie | Reflash between major versions |
+
 ## Related projects
 
 - [odio-pwa](https://github.com/b0bbywan/odio-pwa) — Progressive Web App to control multiple odios nodes ([live](https://odio-pwa.vercel.app/))

@@ -13,7 +13,7 @@ Ansible-based "curl | bash" installer to set up a complete audio/multimedia syst
 ### Optional (disabled by default)
 - **Shairport Sync** - AirPlay receiver
 - **Snapcast** - Multi-room audio client
-- **UPnP/DLNA** - Renderer for UPnP application control, with optional Qobuz streaming (prompted at install time) and Tidal support (package only — tokens require manual configuration post-install in `/etc/upmpdcli.conf`).
+- **UPnP/DLNA** - Renderer for UPnP application control, with optional Qobuz streaming (prompted at install time) and Tidal support (package only — tokens require manual configuration post-install in `~/.config/upmpdcli/upmpdcli.conf`).
 - **MPD DiscPlayer** - CD/USB support for MPD
 
 ## Fresh install vs existing system
@@ -43,14 +43,15 @@ When the installer modifies a configuration file that already exists, it **autom
 - If the file is modified: a backup is saved as `<config>.bak` (e.g. `/etc/shairport-sync.conf.bak`)
 - If the file ends up identical: no backup is kept
 
-This applies to: `/etc/bluetooth/main.conf`, `/etc/shairport-sync.conf`, `/etc/default/snapclient`, `/etc/upmpdcli.conf`, and `~/.config/mpd/mpd.conf` (modified by both the `mpd` and `mpd_discplayer` roles).
+This applies to: `/etc/bluetooth/main.conf`, `/etc/shairport-sync.conf`, `/etc/default/snapclient`, `~/.config/upmpdcli/upmpdcli.conf`, and `~/.config/mpd/mpd.conf` (modified by both the `mpd` and `mpd_discplayer` roles).
 
 ## Requirements
 
-- OS: Debian 11+, Ubuntu 22.04+, or Raspberry Pi OS (Bullseye+)
+- OS: Debian 13, Ubuntu 22.04+, or Raspberry Pi OS (Trixie)
 - Architecture: ARM (armv6l, armv7l, aarch64) or x86_64
 - Python 3.10+
 - `python3-cryptography` (present by default on Debian/Ubuntu)
+- `python3-jinja`
 - `curl`
 - Sudo access (or root)
 - Internet connection
@@ -151,8 +152,11 @@ installer/
     ├── inventory/localhost.yml
     ├── group_vars/all.yml       # Default variables
     ├── tasks/
-    │   ├── backup_conf_before.yml  # Shared: snapshot config before changes
-    │   └── backup_conf_after.yml   # Shared: promote/discard backup after changes
+    │   ├── backup_conf_before.yml      # Shared: snapshot config before changes
+    │   ├── backup_conf_after.yml       # Shared: promote/discard backup after changes
+    │   ├── systemd_enable_user.yml     # Shared: enable a user service (live + image_build)
+    │   ├── systemd_disable_system.yml  # Shared: disable + stop a system service
+    │   └── systemd_enable_system.yml   # Shared: enable + start a system service
     └── roles/
         ├── common/              # System prerequisites + linger
         ├── pulseaudio/          # PulseAudio + network streaming (PipeWire conflict handling)
