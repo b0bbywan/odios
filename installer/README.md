@@ -155,7 +155,8 @@ installer/
     │   └── backup_conf_after.yml   # Shared: promote/discard backup after changes
     └── roles/
         ├── common/              # System prerequisites + linger
-        ├── pulseaudio/          # PulseAudio + network streaming
+        ├── pulseaudio/          # PulseAudio + network streaming (PipeWire conflict handling)
+        ├── pipewire/            # PipeWire + pipewire-pulse (experimental, not yet exposed)
         ├── bluetooth/           # Bluetooth audio (A2DP)
         ├── mpd/                 # Music Player Daemon
         ├── odio_api/            # REST control API
@@ -271,6 +272,7 @@ ls -la /media/USB
 - [go-odio-api](https://github.com/b0bbywan/go-odio-api)
 - [go-mpd-discplayer](https://github.com/b0bbywan/go-mpd-discplayer)
 - [PulseAudio](https://www.freedesktop.org/wiki/Software/PulseAudio/)
+- [PipeWire](https://pipewire.org/)
 - [MPD — Music Player Daemon](https://www.musicpd.org/doc/)
 - [Shairport Sync](https://github.com/mikebrady/shairport-sync)
 - [Snapcast](https://github.com/badaix/snapcast)
