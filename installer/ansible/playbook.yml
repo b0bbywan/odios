@@ -6,6 +6,11 @@
     - group_vars/all.yml
 
   pre_tasks:
+    - name: Ensure target user is not root
+      ansible.builtin.fail:
+        msg: "target_user must not be root"
+      when: target_user == "root"
+
     - name: Ensure dbus running
       ansible.builtin.systemd:
         name: dbus.service
