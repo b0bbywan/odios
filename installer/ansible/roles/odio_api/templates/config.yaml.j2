@@ -20,9 +20,6 @@ systemd:
   {% if install_bluetooth %}
     - bluetooth.service
   {% endif %}
-  {% if install_upmpdcli %}
-    - upmpdcli.service
-  {% endif %}
   user:
   {% if install_pulseaudio %}
     - pulseaudio.service
@@ -41,6 +38,9 @@ systemd:
   {% endif %}
   {% if install_spotifyd %}
     - spotifyd.service
+  {% endif %}
+  {% if install_upmpdcli %}
+    - upmpdcli.service
   {% endif %}
 
 # Features

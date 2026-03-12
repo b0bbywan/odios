@@ -3,4 +3,8 @@
   ansible.builtin.systemd:
     name: upmpdcli.service
     state: restarted
+    scope: user
+  environment:
+    XDG_RUNTIME_DIR: "/run/user/{{ target_user_uid }}"
   become: true
+  become_user: "{{ target_user }}"
