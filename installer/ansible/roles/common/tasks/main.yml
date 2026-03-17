@@ -34,12 +34,38 @@
     path: "/var/lib/systemd/linger/{{ target_user }}"
   register: common_linger_stat
 
-- name: Enable user session persistence (linger)
+- name: Enable user session persistence (linger) - live
   ansible.builtin.command:
     cmd: "loginctl enable-linger {{ target_user }}"
   become: true
   changed_when: true
-  when: not common_linger_stat.stat.exists
+  when:
+    - not common_linger_stat.stat.exists
+    - install_mode == "live"
+
+- name: Ensure linger directory exists - image build
+  ansible.builtin.file:
+    path: /var/lib/systemd/linger
+    state: directory
+    owner: root
+    group: root
+    mode: '0755'
+  become: true
+  when:
+    - not common_linger_stat.stat.exists
+    - install_mode == "image"
+
+- name: Enable user session persistence (linger) - image build
+  ansible.builtin.file:
+    path: "/var/lib/systemd/linger/{{ target_user }}"
+    state: touch
+    mode: '0644'
+    modification_time: preserve
+    access_time: preserve
+  become: true
+  when:
+    - not common_linger_stat.stat.exists
+    - install_mode == "image"
 
 - name: Check odio gpg file
   ansible.builtin.stat:

@@ -94,17 +94,10 @@
     state: file
   become: true
 
-- name: Gather service facts
-  ansible.builtin.service_facts:
-
 - name: Disable upmpdcli system service
-  ansible.builtin.systemd:
-    name: upmpdcli.service
-    enabled: false
-    state: stopped
-    daemon_reload: true
-  become: true
-  when: "'upmpdcli.service' in ansible_facts.services"
+  ansible.builtin.include_tasks: "../../../tasks/systemd_disable_system.yml"
+  vars:
+    service_name: upmpdcli.service
 
 - name: Deploy upmpdcli user service
   ansible.builtin.copy:
@@ -114,13 +107,7 @@
   become: true
   notify: Restart upmpdcli
 
-- name: Enable user upmpdcli user service
-  ansible.builtin.systemd:
-    name: upmpdcli.service
-    enabled: true
-    scope: user
-    daemon_reload: true
-  environment:
-    XDG_RUNTIME_DIR: "/run/user/{{ target_user_uid }}"
-  become: true
-  become_user: "{{ target_user }}"
+- name: Enable user upmpdcli service
+  ansible.builtin.include_tasks: "../../../tasks/systemd_enable_user.yml"
+  vars:
+    service_name: upmpdcli.service
