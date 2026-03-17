@@ -167,11 +167,6 @@ check_python() {
     fi
     echo -e "${GREEN}✓ Python ${py_major}.${py_minor}${NC}"
 
-    if ! python3 -c 'import cryptography' 2>/dev/null; then
-        echo -e "${RED}✗ python3-cryptography not found (install: sudo apt install python3-cryptography)${NC}"
-        return 1
-    fi
-    echo -e "${GREEN}✓ python3-cryptography available${NC}"
 }
 
 check_sudo() {
@@ -233,13 +228,17 @@ preflight_checks() {
 # ─── Dependencies ─────────────────────────────────────────────────────────────
 
 install_dependencies() {
-    if ! python3 -c 'import jinja2' 2>/dev/null; then
-        echo -e "${BLUE}Installing python3-jinja2...${NC}"
+    local pkgs=()
+    python3 -c 'import jinja2' 2>/dev/null      || pkgs+=(python3-jinja2)
+    python3 -c 'import cryptography' 2>/dev/null || pkgs+=(python3-cryptography)
+
+    if [[ ${#pkgs[@]} -gt 0 ]]; then
+        echo -e "${BLUE}Installing ${pkgs[*]}...${NC}"
         sudo apt-get update -qq
-        sudo apt-get install -y python3-jinja2
-        echo -e "${GREEN}✓ python3-jinja2 installed${NC}"
+        sudo apt-get install -y "${pkgs[@]}"
+        echo -e "${GREEN}✓ ${pkgs[*]} installed${NC}"
     else
-        echo -e "${GREEN}✓ python3-jinja2 available${NC}"
+        echo -e "${GREEN}✓ python3-jinja2 and python3-cryptography available${NC}"
     fi
     echo ""
 }
