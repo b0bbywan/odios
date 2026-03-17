@@ -72,6 +72,7 @@ run_install() {
     echo "=== curl | bash ${exec_user:+as $exec_user }(${url}) ==="
     docker exec "${user_flag[@]}" "${CONTAINER_NAME}" \
       env \
+        INSTALL_MODE=image \
         TARGET_USER=odios \
         INSTALL_SPOTIFYD=Y \
         INSTALL_SHAIRPORT_SYNC=Y \

@@ -1,4 +1,14 @@
 #!/bin/bash
+if [[ ! -t 0 ]]; then
+    SELF=$(mktemp)
+    cat > "$SELF"
+    if { true </dev/tty; } 2>/dev/null; then
+        exec bash "$SELF" "$@" </dev/tty
+    else
+        exec bash "$SELF" "$@"
+    fi
+fi
+
 set -euo pipefail
 
 GITHUB_REPO="b0bbywan/odios"
@@ -22,7 +32,7 @@ display_banner() {
     cat << "EOF"
 ╔═══════════════════════════════════════════════════════════╗
 ║                                                           ║
-║        odio Streamer Installer                            ║
+║                 odio Streamer Installer                   ║
 ║                                                           ║
 ╚═══════════════════════════════════════════════════════════╝
 EOF
@@ -33,15 +43,26 @@ EOF
 ask_config() {
     echo -e "${BLUE}Configuration${NC}"
     echo ""
+
+    local pipewire_installed=false
+    dpkg -l pipewire 2>/dev/null | grep -q '^ii' && pipewire_installed=true
+
+    if $pipewire_installed; then
+        echo -e "${YELLOW}⚠ PipeWire is installed — it will conflict with PulseAudio for the current user '$USER'.${NC}"
+        echo -e "${YELLOW}  Tip: use a dedicated user (e.g. 'odios') to avoid this.${NC}"
+        echo ""
+    fi
+
     read -p "Target user [$USER]: " TARGET_USER
     TARGET_USER="${TARGET_USER:-$USER}"
 
+    if $pipewire_installed && [[ "$TARGET_USER" == "$USER" ]]; then
+        read -p "  ⚠ PipeWire conflict with '$USER' — continue anyway? [y/N]: " _pw_confirm
+        [[ "${_pw_confirm,,}" == "y" ]] || { echo -e "${RED}Aborting.${NC}"; exit 1; }
+    fi
+
     if id "$TARGET_USER" &>/dev/null; then
-        if [[ "$TARGET_USER" == "$USER" ]]; then
-            echo -e "${YELLOW}⚠ Installing for current user '$TARGET_USER' — existing config files will be backed up before modification.${NC}"
-        else
-            echo -e "${YELLOW}⚠ User '$TARGET_USER' already exists — existing config files will be backed up before modification.${NC}"
-        fi
+        echo -e "${YELLOW}⚠ User '$TARGET_USER' already exists — existing config files will be backed up.${NC}"
     else
         echo -e "${GREEN}✓ User '$TARGET_USER' will be created.${NC}"
     fi
@@ -86,9 +107,9 @@ ask_config() {
 }
 
 prompt_for_config() {
-    [[ -t 0 ]] && ask_config
+    [[ "$INSTALL_MODE" == "live" ]] && ask_config
 
-    TARGET_USER="${TARGET_USER:-$USER}"  # fallback for non-interactive mode
+    TARGET_USER="${TARGET_USER:-$USER}"
     MPD_MUSIC_DIRECTORY="${MPD_MUSIC_DIRECTORY:-}"
     MPD_CONF_PATH="${MPD_CONF_PATH:-}"
     INSTALL_PULSEAUDIO="${INSTALL_PULSEAUDIO:-Y}"
@@ -101,94 +122,100 @@ prompt_for_config() {
     INSTALL_UPMPDCLI="${INSTALL_UPMPDCLI:-N}"
     INSTALL_TIDAL="${INSTALL_TIDAL:-N}"
     INSTALL_SPOTIFYD="${INSTALL_SPOTIFYD:-N}"
+    QOBUZ_USER="${QOBUZ_USER:-}"
+    QOBUZ_PASS="${QOBUZ_PASS:-}"
 }
 
 # ─── Pre-flight checks ────────────────────────────────────────────────────────
 
-preflight_checks() {
-    local errors=0
-
-    echo -e "${BLUE}Running pre-flight checks...${NC}"
-
-    # OS
+check_os() {
     if [[ ! -f /etc/os-release ]]; then
         echo -e "${RED}✗ Cannot detect OS (missing /etc/os-release)${NC}"
-        ((errors++))
-    else
-        source /etc/os-release
-        if [[ "$ID" =~ ^(debian|ubuntu|raspbian)$ ]]; then
-            echo -e "${GREEN}✓ OS: $ID $VERSION_ID${NC}"
-        else
-            echo -e "${YELLOW}⚠ Unsupported OS: $ID (expected debian/ubuntu/raspbian)${NC}"
-        fi
+        return 1
     fi
+    source /etc/os-release
+    if [[ "$ID" =~ ^(debian|ubuntu|raspbian)$ ]]; then
+        echo -e "${GREEN}✓ OS: $ID $VERSION_ID${NC}"
+    else
+        echo -e "${YELLOW}⚠ Unsupported OS: $ID (expected debian/ubuntu/raspbian)${NC}"
+    fi
+}
 
-    # Architecture
+check_arch() {
     local arch
     arch=$(uname -m)
     if [[ "$arch" =~ ^(armv6l|armv7l|aarch64|x86_64)$ ]]; then
         echo -e "${GREEN}✓ Architecture: $arch${NC}"
     else
         echo -e "${RED}✗ Unsupported architecture: $arch${NC}"
-        ((errors++))
+        return 1
     fi
+}
 
-    # Python >= 3.10 (required by vendored ansible-core)
+check_python() {
     if ! command -v python3 &>/dev/null; then
         echo -e "${RED}✗ python3 not found (required)${NC}"
-        ((errors++))
-    else
-        local py_major py_minor
-        py_major=$(python3 -c 'import sys; print(sys.version_info.major)')
-        py_minor=$(python3 -c 'import sys; print(sys.version_info.minor)')
-        if [[ "$py_major" -lt 3 ]] || [[ "$py_major" -eq 3 && "$py_minor" -lt 10 ]]; then
-            echo -e "${RED}✗ Python 3.10+ required (found ${py_major}.${py_minor})${NC}"
-            ((errors++))
-        else
-            echo -e "${GREEN}✓ Python ${py_major}.${py_minor}${NC}"
-        fi
-
-        # cryptography is excluded from the vendor bundle (native extensions)
-        if ! python3 -c 'import cryptography' 2>/dev/null; then
-            echo -e "${RED}✗ python3-cryptography not found (install it with: sudo apt install python3-cryptography)${NC}"
-            ((errors++))
-        else
-            echo -e "${GREEN}✓ python3-cryptography available${NC}"
-        fi
+        return 1
     fi
 
-    # Sudo
+    local py_major py_minor
+    py_major=$(python3 -c 'import sys; print(sys.version_info.major)')
+    py_minor=$(python3 -c 'import sys; print(sys.version_info.minor)')
+    if [[ "$py_major" -lt 3 ]] || [[ "$py_major" -eq 3 && "$py_minor" -lt 10 ]]; then
+        echo -e "${RED}✗ Python 3.10+ required (found ${py_major}.${py_minor})${NC}"
+        return 1
+    fi
+    echo -e "${GREEN}✓ Python ${py_major}.${py_minor}${NC}"
+
+    if ! python3 -c 'import cryptography' 2>/dev/null; then
+        echo -e "${RED}✗ python3-cryptography not found (install: sudo apt install python3-cryptography)${NC}"
+        return 1
+    fi
+    echo -e "${GREEN}✓ python3-cryptography available${NC}"
+}
+
+check_sudo() {
     if sudo -n true 2>/dev/null; then
         echo -e "${GREEN}✓ Sudo access available${NC}"
-    else
-        echo -e "${YELLOW}⚠ This script requires sudo access${NC}"
-        if ! sudo true; then
-            echo -e "${RED}✗ Cannot obtain sudo access${NC}"
-            ((errors++))
-        else
-            echo -e "${GREEN}✓ Sudo access granted${NC}"
-        fi
+        return 0
     fi
-
-    # curl
-    if ! command -v curl &>/dev/null; then
-        echo -e "${RED}✗ curl not found (required to download archive)${NC}"
-        ((errors++))
+    echo -e "${YELLOW}⚠ This script requires sudo access${NC}"
+    if sudo true; then
+        echo -e "${GREEN}✓ Sudo access granted${NC}"
     else
-        echo -e "${GREEN}✓ curl available${NC}"
+        echo -e "${RED}✗ Cannot obtain sudo access${NC}"
+        return 1
     fi
+}
 
-    # Disk space (50 MB in /tmp)
+check_disk() {
     local available
     available=$(df /tmp | tail -1 | awk '{print $4}')
     if [[ $available -gt 51200 ]]; then
         echo -e "${GREEN}✓ Disk space: $((available / 1024)) MB available in /tmp${NC}"
     else
         echo -e "${RED}✗ Insufficient disk space (need 50 MB, have $((available / 1024)) MB)${NC}"
+        return 1
+    fi
+}
+
+preflight_checks() {
+    local errors=0
+    echo -e "${BLUE}Running pre-flight checks...${NC}"
+
+    check_os     || ((errors++))
+    check_arch   || ((errors++))
+    check_python || ((errors++))
+    check_sudo   || ((errors++))
+    check_disk   || ((errors++))
+
+    if command -v curl &>/dev/null; then
+        echo -e "${GREEN}✓ curl available${NC}"
+    else
+        echo -e "${RED}✗ curl not found (required to download archive)${NC}"
         ((errors++))
     fi
 
-    # Systemd
     if command -v systemctl &>/dev/null; then
         echo -e "${GREEN}✓ Systemd available${NC}"
     else
@@ -196,36 +223,11 @@ preflight_checks() {
         ((errors++))
     fi
 
-    # PipeWire conflict detection
-    if dpkg -l pipewire 2>/dev/null | grep -q '^ii'; then
-        if [[ "$TARGET_USER" == "$USER" ]]; then
-            echo ""
-            echo -e "${YELLOW}⚠ PipeWire is installed and you are installing for the current user '$USER'.${NC}"
-            echo -e "${YELLOW}  PulseAudio and PipeWire will conflict on the same user session.${NC}"
-            echo -e "${YELLOW}  Recommended: use a dedicated user (e.g. 'odios') so PipeWire${NC}"
-            echo -e "${YELLOW}  can be safely masked for that user only.${NC}"
-            echo ""
-            if [[ -t 0 ]]; then
-                read -p "  Continue anyway? [y/N]: " _pw_confirm
-                if [[ "${_pw_confirm,,}" != "y" ]]; then
-                    echo -e "${RED}Aborting. Re-run and specify a dedicated username.${NC}"
-                    exit 1
-                fi
-            else
-                echo -e "${RED}Non-interactive mode: aborting. Set TARGET_USER to a dedicated user.${NC}"
-                exit 1
-            fi
-        else
-            echo -e "${YELLOW}⚠ PipeWire detected — will be masked for user '$TARGET_USER'${NC}"
-        fi
-    fi
-
-    echo ""
-
     if [[ $errors -gt 0 ]]; then
         echo -e "${RED}Pre-flight checks failed with $errors error(s). Aborting.${NC}"
         exit 1
     fi
+    echo ""
 }
 
 # ─── Dependencies ─────────────────────────────────────────────────────────────
@@ -248,7 +250,6 @@ download_archive() {
     WORK_DIR=$(mktemp -d)
 
     local download_url
-
     if [[ "$ODIOS_VERSION" == "latest" ]]; then
         echo -e "${BLUE}Fetching latest release info...${NC}"
         download_url=$(curl -fsSL "https://api.github.com/repos/${GITHUB_REPO}/releases/latest" \
@@ -259,8 +260,7 @@ download_archive() {
     elif [[ "$ODIOS_VERSION" == pr-* ]]; then
         download_url="https://github.com/${GITHUB_REPO}/releases/download/${ODIOS_VERSION}/odios-dev.tar.gz"
     else
-        local tag="${ODIOS_VERSION}"
-        download_url="https://github.com/${GITHUB_REPO}/releases/download/${tag}/odios-${tag}.tar.gz"
+        download_url="https://github.com/${GITHUB_REPO}/releases/download/${ODIOS_VERSION}/odios-${ODIOS_VERSION}.tar.gz"
     fi
 
     if [[ -z "$download_url" ]]; then
@@ -282,35 +282,34 @@ download_archive() {
 
 # ─── Run playbook ─────────────────────────────────────────────────────────────
 
+bool() { [[ "${1,,}" == "y" ]] && echo "true" || echo "false"; }
+
 run_playbook() {
     echo -e "${BLUE}Running Ansible playbook...${NC}"
     echo ""
 
-    local extra_vars
-    local hostname_var="" music_dir_var="" conf_path_var="" qobuz_var=""
-    [[ -n "${TARGET_HOSTNAME:-}" ]]      && hostname_var="\"target_hostname\": \"${TARGET_HOSTNAME}\","
-    [[ -n "${MPD_MUSIC_DIRECTORY:-}" ]]  && music_dir_var="\"mpd_music_directory\": \"${MPD_MUSIC_DIRECTORY}\","
-    [[ -n "${MPD_CONF_PATH:-}" ]]        && conf_path_var="\"mpd_conf_path\": \"${MPD_CONF_PATH}\","
-    [[ -n "${QOBUZ_USER:-}" ]]           && qobuz_var="\"qobuz_user\": \"${QOBUZ_USER}\", \"qobuz_pass\": \"${QOBUZ_PASS}\","
+    local optional_vars=""
+    [[ -n "${TARGET_HOSTNAME:-}" ]]   && optional_vars+="\"target_hostname\": \"${TARGET_HOSTNAME}\","
+    [[ -n "${MPD_MUSIC_DIRECTORY}" ]] && optional_vars+="\"mpd_music_directory\": \"${MPD_MUSIC_DIRECTORY}\","
+    [[ -n "${MPD_CONF_PATH}" ]]       && optional_vars+="\"mpd_conf_path\": \"${MPD_CONF_PATH}\","
+    [[ -n "${QOBUZ_USER}" ]]          && optional_vars+="\"qobuz_user\": \"${QOBUZ_USER}\", \"qobuz_pass\": \"${QOBUZ_PASS}\","
 
+    local extra_vars
     extra_vars=$(cat <<EOF
 {
-  ${hostname_var}
-  ${music_dir_var}
-  ${conf_path_var}
-  ${qobuz_var}
-  "install_mode": "${INSTALL_MODE}",
-  "target_user": "${TARGET_USER}",
-  "install_pulseaudio": $([ "${INSTALL_PULSEAUDIO,,}" = "y" ] && echo "true" || echo "false"),
-  "install_bluetooth": $([ "${INSTALL_BLUETOOTH,,}" = "y" ] && echo "true" || echo "false"),
-  "install_mpd": $([ "${INSTALL_MPD,,}" = "y" ] && echo "true" || echo "false"),
-  "install_odio_api": $([ "${INSTALL_ODIO_API,,}" = "y" ] && echo "true" || echo "false"),
-  "install_spotifyd": $([ "${INSTALL_SPOTIFYD,,}" = "y" ] && echo "true" || echo "false"),
-  "install_shairport_sync": $([ "${INSTALL_SHAIRPORT_SYNC,,}" = "y" ] && echo "true" || echo "false"),
-  "install_snapclient": $([ "${INSTALL_SNAPCLIENT,,}" = "y" ] && echo "true" || echo "false"),
-  "install_upmpdcli": $([ "${INSTALL_UPMPDCLI,,}" = "y" ] && echo "true" || echo "false"),
-  "install_tidal": $([ "${INSTALL_TIDAL,,}" = "y" ] && echo "true" || echo "false"),
-  "install_mpd_discplayer": $([ "${INSTALL_MPD_DISCPLAYER,,}" = "y" ] && echo "true" || echo "false")
+  ${optional_vars}
+  "install_mode":           "${INSTALL_MODE}",
+  "target_user":            "${TARGET_USER}",
+  "install_pulseaudio":     $(bool "$INSTALL_PULSEAUDIO"),
+  "install_bluetooth":      $(bool "$INSTALL_BLUETOOTH"),
+  "install_mpd":            $(bool "$INSTALL_MPD"),
+  "install_odio_api":       $(bool "$INSTALL_ODIO_API"),
+  "install_spotifyd":       $(bool "$INSTALL_SPOTIFYD"),
+  "install_shairport_sync": $(bool "$INSTALL_SHAIRPORT_SYNC"),
+  "install_snapclient":     $(bool "$INSTALL_SNAPCLIENT"),
+  "install_upmpdcli":       $(bool "$INSTALL_UPMPDCLI"),
+  "install_tidal":          $(bool "$INSTALL_TIDAL"),
+  "install_mpd_discplayer": $(bool "$INSTALL_MPD_DISCPLAYER")
 }
 EOF
 )
@@ -333,10 +332,9 @@ EOF
 # ─── Cleanup ──────────────────────────────────────────────────────────────────
 
 cleanup() {
-    if [[ -n "${WORK_DIR}" && -d "${WORK_DIR}" ]]; then
-        echo -e "${BLUE}Cleaning up...${NC}"
-        rm -rf "${WORK_DIR}"
-    fi
+    [[ -n "${WORK_DIR}" && -d "${WORK_DIR}" ]] || return 0
+    echo -e "${BLUE}Cleaning up...${NC}"
+    rm -rf "${WORK_DIR}"
 }
 
 trap cleanup EXIT
@@ -346,7 +344,6 @@ trap cleanup EXIT
 main() {
     display_banner
     echo ""
-
     prompt_for_config
     preflight_checks
     install_dependencies
