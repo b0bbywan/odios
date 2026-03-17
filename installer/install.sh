@@ -3,6 +3,10 @@ set -euo pipefail
 
 GITHUB_REPO="b0bbywan/odios"
 ODIOS_VERSION="${ODIOS_VERSION:-latest}"
+INSTALL_MODE="${INSTALL_MODE:-live}"
+
+export LANG="${LANG:-C.UTF-8}"
+export LC_ALL="${LC_ALL:-C.UTF-8}"
 
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -18,7 +22,7 @@ display_banner() {
     cat << "EOF"
 ╔═══════════════════════════════════════════════════════════╗
 ║                                                           ║
-║        Audio Streaming System Installer                   ║
+║        odio Streamer Installer                            ║
 ║                                                           ║
 ╚═══════════════════════════════════════════════════════════╝
 EOF
@@ -85,7 +89,6 @@ prompt_for_config() {
     [[ -t 0 ]] && ask_config
 
     TARGET_USER="${TARGET_USER:-$USER}"  # fallback for non-interactive mode
-    INSTALL_MODE="${INSTALL_MODE:-live}"
     MPD_MUSIC_DIRECTORY="${MPD_MUSIC_DIRECTORY:-}"
     MPD_CONF_PATH="${MPD_CONF_PATH:-}"
     INSTALL_PULSEAUDIO="${INSTALL_PULSEAUDIO:-Y}"
@@ -312,11 +315,19 @@ run_playbook() {
 EOF
 )
 
+    local t_start t_end elapsed
+    t_start=$(date +%s)
+
     PYTHONPATH="${WORK_DIR}/vendor" \
         python3 "${WORK_DIR}/vendor/bin/ansible-playbook" \
         -i "${WORK_DIR}/ansible/inventory/localhost.yml" \
         "${WORK_DIR}/ansible/playbook.yml" \
         -e "${extra_vars}"
+
+    t_end=$(date +%s)
+    elapsed=$((t_end - t_start))
+    echo ""
+    echo -e "${BLUE}Playbook completed in $((elapsed / 60))m $((elapsed % 60))s${NC}"
 }
 
 # ─── Cleanup ──────────────────────────────────────────────────────────────────
