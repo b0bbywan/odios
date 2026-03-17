@@ -1,4 +1,14 @@
-FROM debian:trixie
+# Select base image per target architecture:
+#   amd64  → debian:trixie          (CI / local x86 tests)
+#   arm64  → vascoguita/raspios:arm64  (Pi 3/4/5 64-bit)
+#   arm    → vascoguita/raspios:armhf  (Pi armv6/armv7, same image)
+FROM debian:trixie AS base-amd64
+FROM vascoguita/raspios:arm64 AS base-arm64
+FROM vascoguita/raspios:armhf AS base-arm
+
+# hadolint ignore=DL3006
+ARG TARGETARCH=amd64
+FROM base-${TARGETARCH}
 
 ENV DEBIAN_FRONTEND=noninteractive
 

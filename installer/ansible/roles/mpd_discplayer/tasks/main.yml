@@ -121,12 +121,6 @@
   notify: Restart mpd-discplayer
 
 - name: Enable mpd-discplayer service
-  ansible.builtin.systemd:
-    name: mpd-discplayer.service
-    enabled: true
-    scope: user
-    daemon_reload: true
-  environment:
-    XDG_RUNTIME_DIR: "/run/user/{{ target_user_uid }}"
-  become: true
-  become_user: "{{ target_user }}"
+  ansible.builtin.include_tasks: "../../../tasks/systemd_enable_user.yml"
+  vars:
+    service_name: mpd-discplayer.service

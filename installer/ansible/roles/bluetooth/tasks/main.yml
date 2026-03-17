@@ -41,8 +41,6 @@
     conf_path: /etc/bluetooth/main.conf
 
 - name: Enable Bluetooth service
-  ansible.builtin.systemd:
-    name: bluetooth.service
-    enabled: true
-    state: started
-  become: true
+  ansible.builtin.include_tasks: "../../../tasks/systemd_enable_system.yml"
+  vars:
+    service_name: bluetooth.service

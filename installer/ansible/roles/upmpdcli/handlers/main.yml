@@ -8,3 +8,4 @@
     XDG_RUNTIME_DIR: "/run/user/{{ target_user_uid }}"
   become: true
   become_user: "{{ target_user }}"
+  when: install_mode == "live"
