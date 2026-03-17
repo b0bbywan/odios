@@ -225,6 +225,20 @@ preflight_checks() {
     fi
 }
 
+# ─── Dependencies ─────────────────────────────────────────────────────────────
+
+install_dependencies() {
+    if ! python3 -c 'import jinja2' 2>/dev/null; then
+        echo -e "${BLUE}Installing python3-jinja2...${NC}"
+        sudo apt-get update -qq
+        sudo apt-get install -y python3-jinja2
+        echo -e "${GREEN}✓ python3-jinja2 installed${NC}"
+    else
+        echo -e "${GREEN}✓ python3-jinja2 available${NC}"
+    fi
+    echo ""
+}
+
 # ─── Archive download ─────────────────────────────────────────────────────────
 
 download_archive() {
@@ -324,6 +338,7 @@ main() {
 
     prompt_for_config
     preflight_checks
+    install_dependencies
     download_archive
     run_playbook
 

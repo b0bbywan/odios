@@ -24,7 +24,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     python3-apt \
     python3-pip \
     python3-cryptography \
-    python3-jinja2 \
     ca-certificates \
     gnupg2 \
     && rm -rf /var/lib/apt/lists/*
