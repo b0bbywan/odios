@@ -12,6 +12,16 @@ FROM base-${TARGETARCH}
 
 ENV DEBIAN_FRONTEND=noninteractive
 
+# Pre-create system users so post-install scripts don't fail during build
+RUN useradd --system --home /var/run/pulse --shell /usr/sbin/nologin pulse && \
+    useradd --system --home /var/lib/mpd --shell /usr/sbin/nologin --gid audio mpd
+
+# Pre-install heavy core packages to speed up test runs
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    pulseaudio \
+    mpd \
+    && rm -rf /var/lib/apt/lists/*
+
 # Bare minimum: systemd to run the container
 RUN apt-get update && apt-get install -y --no-install-recommends \
     systemd \
