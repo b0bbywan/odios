@@ -7,32 +7,36 @@
 
 - name: Configure Qobuz user
   ansible.builtin.lineinfile:
-    path: /etc/upmpdcli.conf
+    path: /home/{{ target_user }}/.config/upmpdcli/upmpdcli.conf
     regexp: '^#?qobuzuser\s*='
     line: "qobuzuser = {{ qobuz_user }}"
   become: true
+  become_user: "{{ target_user }}"
   notify: Restart upmpdcli
 
 - name: Configure Qobuz password
   ansible.builtin.lineinfile:
-    path: /etc/upmpdcli.conf
+    path: /home/{{ target_user }}/.config/upmpdcli/upmpdcli.conf
     regexp: '^#?qobuzpass\s*='
     line: "qobuzpass = {{ qobuz_pass }}"
   become: true
+  become_user: "{{ target_user }}"
   notify: Restart upmpdcli
 
 - name: Configure Qobuz title
   ansible.builtin.lineinfile:
-    path: /etc/upmpdcli.conf
+    path: /home/{{ target_user }}/.config/upmpdcli/upmpdcli.conf
     regexp: '^#?qobuztitle\s*='
     line: "qobuztitle = Qobuz"
   become: true
+  become_user: "{{ target_user }}"
   notify: Restart upmpdcli
 
 - name: Configure Qobuz quality
   ansible.builtin.lineinfile:
-    path: /etc/upmpdcli.conf
+    path: /home/{{ target_user }}/.config/upmpdcli/upmpdcli.conf
     regexp: '^#?qobuzformatid\s*='
     line: "qobuzformatid = 5"
   become: true
+  become_user: "{{ target_user }}"
   notify: Restart upmpdcli

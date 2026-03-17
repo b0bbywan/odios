@@ -1,5 +1,6 @@
 ---
 # Variables par défaut
+install_mode: "live"  # live | image
 target_hostname: "{{ ansible_hostname }}"
 target_user: "{{ ansible_user_id }}"
 spotifyd_version: "0.4.2"

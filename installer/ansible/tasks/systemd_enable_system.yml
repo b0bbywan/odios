@@ -1,0 +1,19 @@
+---
+# Enable and start a system service.
+# enabled: true runs in all modes (filesystem-only, adds wants symlink).
+# state: started only runs in live mode (requires running systemd).
+# Variables:
+#   service_name: name of the service (e.g. bluetooth.service)
+
+- name: Enable system service
+  ansible.builtin.systemd:
+    name: "{{ service_name }}"
+    enabled: true
+  become: true
+
+- name: Start system service
+  ansible.builtin.systemd:
+    name: "{{ service_name }}"
+    state: started
+  become: true
+  when: install_mode == "live"

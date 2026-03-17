@@ -65,18 +65,12 @@
   when: install_snapclient
 
 - name: Enable user PipeWire services
-  ansible.builtin.systemd:
-    name: "{{ item }}"
-    enabled: true
-    scope: user
-    daemon_reload: true
-  environment:
-    XDG_RUNTIME_DIR: "/run/user/{{ target_user_uid }}"
+  ansible.builtin.include_tasks: "../../../tasks/systemd_enable_user.yml"
+  vars:
+    service_name: "{{ item }}"
   loop:
     - pipewire.socket
     - pipewire.service
     - pipewire-pulse.socket
     - pipewire-pulse.service
     - wireplumber.service
-  become: true
-  become_user: "{{ target_user }}"

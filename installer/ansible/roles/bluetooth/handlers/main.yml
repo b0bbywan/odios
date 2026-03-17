@@ -4,3 +4,4 @@
     name: bluetooth.service
     state: restarted
   become: true
+  when: install_mode == "live"

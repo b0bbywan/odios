@@ -25,49 +25,77 @@
   become: true
   notify: Restart upmpdcli
 
+- name: Create user upmpdcli config directory
+  ansible.builtin.file:
+    path: "/home/{{ target_user }}/.config/upmpdcli"
+    state: directory
+    owner: "{{ target_user }}"
+    group: "{{ target_user }}"
+    mode: '0755'
+  become: true
+
+- name: Copy upmpdcli system config to user directory
+  ansible.builtin.copy:
+    src: /etc/upmpdcli.conf
+    dest: "/home/{{ target_user }}/.config/upmpdcli/upmpdcli.conf"
+    owner: "{{ target_user }}"
+    group: "{{ target_user }}"
+    mode: '0600'
+    remote_src: true
+    force: false
+  become: true
+
 - name: Backup upmpdcli config before changes
   ansible.builtin.include_tasks: "../../../tasks/backup_conf_before.yml"
   vars:
-    conf_path: /etc/upmpdcli.conf
+    conf_path: "/home/{{ target_user }}/.config/upmpdcli/upmpdcli.conf"
+    conf_owner: "{{ target_user }}"
+    conf_group: "{{ target_user }}"
+    conf_mode: '0600'
 
 - name: Configure upmpdcli friendly name
   ansible.builtin.lineinfile:
-    path: /etc/upmpdcli.conf
+    path: "/home/{{ target_user }}/.config/upmpdcli/upmpdcli.conf"
     regexp: '^#?avfriendlyname\s*='
     line: "avfriendlyname = UpMpd/AV-{{ target_hostname }}"
   become: true
+  become_user: "{{ target_user }}"
   notify: Restart upmpdcli
 
 - name: Configure upmpdcli upnpav
   ansible.builtin.lineinfile:
-    path: /etc/upmpdcli.conf
+    path: "/home/{{ target_user }}/.config/upmpdcli/upmpdcli.conf"
     regexp: '^#?upnpav\s*='
     line: "upnpav = 1"
   become: true
+  become_user: "{{ target_user }}"
   notify: Restart upmpdcli
 
 - name: Configure upmpdcli openhome
   ansible.builtin.lineinfile:
-    path: /etc/upmpdcli.conf
+    path: "/home/{{ target_user }}/.config/upmpdcli/upmpdcli.conf"
     regexp: '^#?openhome\s*='
     line: "openhome = 1"
   become: true
+  become_user: "{{ target_user }}"
   notify: Restart upmpdcli
 
 - name: Configure upmpdcli mpdhost
   ansible.builtin.lineinfile:
-    path: /etc/upmpdcli.conf
+    path: "/home/{{ target_user }}/.config/upmpdcli/upmpdcli.conf"
     regexp: '^#?mpdhost\s*='
     line: "mpdhost = localhost"
   become: true
+  become_user: "{{ target_user }}"
   notify: Restart upmpdcli
 
 - name: Configure upmpdcli mpdport
   ansible.builtin.lineinfile:
-    path: /etc/upmpdcli.conf
+    path: "/home/{{ target_user }}/.config/upmpdcli/upmpdcli.conf"
     regexp: '^#?mpdport\s*='
     line: "mpdport = 6600"
   become: true
+  become_user: "{{ target_user }}"
   notify: Restart upmpdcli
 
 - name: Configure Qobuz streaming
@@ -85,26 +113,15 @@
 - name: Backup upmpdcli config after changes
   ansible.builtin.include_tasks: "../../../tasks/backup_conf_after.yml"
   vars:
-    conf_path: /etc/upmpdcli.conf
-
-- name: Ensure upmpdcli config is world-readable
-  ansible.builtin.file:
-    path: /etc/upmpdcli.conf
-    mode: '0644'
-    state: file
-  become: true
-
-- name: Gather service facts
-  ansible.builtin.service_facts:
+    conf_path: "/home/{{ target_user }}/.config/upmpdcli/upmpdcli.conf"
+    conf_owner: "{{ target_user }}"
+    conf_group: "{{ target_user }}"
+    conf_mode: '0600'
 
 - name: Disable upmpdcli system service
-  ansible.builtin.systemd:
-    name: upmpdcli.service
-    enabled: false
-    state: stopped
-    daemon_reload: true
-  become: true
-  when: "'upmpdcli.service' in ansible_facts.services"
+  ansible.builtin.include_tasks: "../../../tasks/systemd_disable_system.yml"
+  vars:
+    service_name: upmpdcli.service
 
 - name: Deploy upmpdcli user service
   ansible.builtin.copy:
@@ -114,13 +131,7 @@
   become: true
   notify: Restart upmpdcli
 
-- name: Enable user upmpdcli user service
-  ansible.builtin.systemd:
-    name: upmpdcli.service
-    enabled: true
-    scope: user
-    daemon_reload: true
-  environment:
-    XDG_RUNTIME_DIR: "/run/user/{{ target_user_uid }}"
-  become: true
-  become_user: "{{ target_user }}"
+- name: Enable user upmpdcli service
+  ansible.builtin.include_tasks: "../../../tasks/systemd_enable_user.yml"
+  vars:
+    service_name: upmpdcli.service

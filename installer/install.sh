@@ -85,6 +85,7 @@ prompt_for_config() {
     [[ -t 0 ]] && ask_config
 
     TARGET_USER="${TARGET_USER:-$USER}"  # fallback for non-interactive mode
+    INSTALL_MODE="${INSTALL_MODE:-live}"
     MPD_MUSIC_DIRECTORY="${MPD_MUSIC_DIRECTORY:-}"
     MPD_CONF_PATH="${MPD_CONF_PATH:-}"
     INSTALL_PULSEAUDIO="${INSTALL_PULSEAUDIO:-Y}"
@@ -281,6 +282,7 @@ run_playbook() {
   ${music_dir_var}
   ${conf_path_var}
   ${qobuz_var}
+  "install_mode": "${INSTALL_MODE}",
   "target_user": "${TARGET_USER}",
   "install_pulseaudio": $([ "${INSTALL_PULSEAUDIO,,}" = "y" ] && echo "true" || echo "false"),
   "install_bluetooth": $([ "${INSTALL_BLUETOOTH,,}" = "y" ] && echo "true" || echo "false"),
