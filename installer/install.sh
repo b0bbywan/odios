@@ -234,8 +234,9 @@ install_dependencies() {
 
     if [[ ${#pkgs[@]} -gt 0 ]]; then
         echo -e "${BLUE}Installing ${pkgs[*]}...${NC}"
+        local y; [[ "$INSTALL_MODE" == "image" ]] && y="-y" || y=""
         sudo apt-get update -qq
-        sudo apt-get install -y "${pkgs[@]}"
+        sudo apt-get install $y "${pkgs[@]}"
         echo -e "${GREEN}✓ ${pkgs[*]} installed${NC}"
     else
         echo -e "${GREEN}✓ python3-jinja2 and python3-cryptography available${NC}"
