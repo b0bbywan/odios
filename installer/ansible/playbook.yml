@@ -72,7 +72,7 @@
     - role: upmpdcli
       when: install_upmpdcli | bool
     - role: spotifyd
-      when: install_spotifyd | bool
+      when: install_spotifyd | bool and ansible_architecture != "armv6l"
 
   post_tasks:
     - name: Display installation summary
