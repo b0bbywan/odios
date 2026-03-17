@@ -38,6 +38,15 @@
       become: true
       when: target_user != ansible_user_id
 
+    - name: Create ansible remote_tmp directory
+      ansible.builtin.file:
+        path: "/home/{{ target_user }}/.ansible/tmp"
+        state: directory
+        owner: "{{ target_user }}"
+        group: "{{ target_user }}"
+        mode: '0700'
+      become: true
+
     - name: Get target user UID
       ansible.builtin.command:
         cmd: "id -u {{ target_user }}"
@@ -75,6 +84,12 @@
       when: install_spotifyd | bool and ansible_architecture != "armv6l"
 
   post_tasks:
+    - name: Remove ansible remote_tmp directory
+      ansible.builtin.file:
+        path: "/home/{{ target_user }}/.ansible/tmp"
+        state: absent
+      become: true
+
     - name: Display installation summary
       ansible.builtin.debug:
         msg:
