@@ -6,6 +6,11 @@
     - group_vars/all.yml
 
   pre_tasks:
+    - name: Ensure install_mode is valid
+      ansible.builtin.fail:
+        msg: "install_mode must be 'live' or 'image', got: '{{ install_mode }}'"
+      when: install_mode not in ["live", "image"]
+
     - name: Ensure target user is not root
       ansible.builtin.fail:
         msg: "target_user must not be root"
@@ -16,6 +21,7 @@
         name: dbus.service
         state: started
       become: true
+      when: install_mode == "live"
 
     - name: Set hostname
       ansible.builtin.hostname:
@@ -66,7 +72,7 @@
     - role: upmpdcli
       when: install_upmpdcli | bool
     - role: spotifyd
-      when: install_spotifyd | bool
+      when: install_spotifyd | bool and ansible_architecture != "armv6l"
 
   post_tasks:
     - name: Display installation summary

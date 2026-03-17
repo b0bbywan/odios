@@ -88,23 +88,11 @@
   become: true
 
 - name: Disable system shairport-sync service
-  ansible.builtin.systemd:
-    name: shairport-sync.service
-    enabled: false
-    state: stopped
-  become: true
-  register: shairport_sync_disable
-  failed_when:
-    - shairport_sync_disable.failed | bool
-    - '"Could not find" not in (shairport_sync_disable.msg | default(""))'
+  ansible.builtin.include_tasks: "../../../tasks/systemd_disable_system.yml"
+  vars:
+    service_name: shairport-sync.service
 
 - name: Enable user shairport-sync service
-  ansible.builtin.systemd:
-    name: shairport-sync.service
-    enabled: true
-    scope: user
-    daemon_reload: true
-  environment:
-    XDG_RUNTIME_DIR: "/run/user/{{ target_user_uid }}"
-  become: true
-  become_user: "{{ target_user }}"
+  ansible.builtin.include_tasks: "../../../tasks/systemd_enable_user.yml"
+  vars:
+    service_name: shairport-sync.service

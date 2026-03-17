@@ -12,3 +12,4 @@
     - wireplumber.service
   become: true
   become_user: "{{ target_user }}"
+  when: install_mode == "live"

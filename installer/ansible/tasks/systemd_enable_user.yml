@@ -1,0 +1,25 @@
+---
+# Enable a systemd user service.
+# In image_build mode, uses global scope (no user session needed).
+# Variables:
+#   service_name: name of the service (e.g. pulseaudio.service)
+
+- name: Enable user service - live
+  ansible.builtin.systemd:
+    name: "{{ service_name }}"
+    enabled: true
+    scope: user
+    daemon_reload: true
+  environment:
+    XDG_RUNTIME_DIR: "/run/user/{{ target_user_uid }}"
+  become: true
+  become_user: "{{ target_user }}"
+  when: install_mode == "live"
+
+- name: Enable user service - image build
+  ansible.builtin.systemd:
+    name: "{{ service_name }}"
+    enabled: true
+    scope: global
+  become: true
+  when: install_mode == "image"

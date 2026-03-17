@@ -1,6 +1,32 @@
-FROM debian:trixie
+# Select base image per target architecture:
+#   amd64  → debian:trixie          (CI / local x86 tests)
+#   arm64  → vascoguita/raspios:arm64  (Pi 3/4/5 64-bit)
+#   arm    → vascoguita/raspios:armhf  (Pi armv6/armv7, same image)
+FROM debian:trixie AS base-amd64
+FROM vascoguita/raspios:arm64 AS base-arm64
+FROM vascoguita/raspios:armhf AS base-arm
+
+# hadolint ignore=DL3006
+ARG TARGETARCH=amd64
+FROM base-${TARGETARCH}
 
 ENV DEBIAN_FRONTEND=noninteractive
+
+# Pre-create system users so post-install scripts don't fail during build
+RUN useradd --system --home /var/run/pulse --shell /usr/sbin/nologin pulse && \
+    useradd --system --home /var/lib/mpd --shell /usr/sbin/nologin --gid audio mpd
+
+# Stubs to prevent postinst scripts from starting services during build
+RUN for f in /usr/sbin/invoke-rc.d /usr/bin/deb-systemd-invoke /usr/bin/deb-systemd-helper; do \
+        printf '#!/bin/sh\nexit 0\n' > "$f" && chmod +x "$f"; \
+    done && \
+    printf '#!/bin/sh\nexit 101\n' > /usr/sbin/policy-rc.d && chmod +x /usr/sbin/policy-rc.d
+
+# Pre-install heavy core packages to speed up test runs
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    pulseaudio \
+    mpd \
+    && rm -rf /var/lib/apt/lists/*
 
 # Bare minimum: systemd to run the container
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -18,6 +44,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     ca-certificates \
     gnupg2 \
     && rm -rf /var/lib/apt/lists/*
+
+# Remove stubs now that all packages are installed
+RUN rm -f /usr/sbin/invoke-rc.d /usr/bin/deb-systemd-invoke /usr/bin/deb-systemd-helper /usr/sbin/policy-rc.d
 
 # Systemd in container: remove unnecessary units
 RUN rm -f /lib/systemd/system/multi-user.target.wants/* \
@@ -40,4 +69,3 @@ WORKDIR /opt/odios/ansible
 VOLUME ["/sys/fs/cgroup"]
 STOPSIGNAL SIGRTMIN+3
 CMD ["/lib/systemd/systemd"]
-

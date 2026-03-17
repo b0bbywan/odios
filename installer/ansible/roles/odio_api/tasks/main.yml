@@ -27,12 +27,6 @@
   notify: Restart odio-api
 
 - name: Enable odio-api service
-  ansible.builtin.systemd:
-    name: odio-api.service
-    enabled: true
-    scope: user
-    daemon_reload: true
-  environment:
-    XDG_RUNTIME_DIR: "/run/user/{{ target_user_uid }}"
-  become: true
-  become_user: "{{ target_user }}"
+  ansible.builtin.include_tasks: "../../../tasks/systemd_enable_user.yml"
+  vars:
+    service_name: odio-api.service

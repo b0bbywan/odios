@@ -9,18 +9,12 @@
   become: true
 
 - name: Disable system MPD service
-  ansible.builtin.systemd:
-    name: "{{ item }}"
-    enabled: false
-    state: stopped
+  ansible.builtin.include_tasks: "../../../tasks/systemd_disable_system.yml"
+  vars:
+    service_name: "{{ item }}"
   loop:
     - mpd.service
     - mpd.socket
-  become: true
-  register: mpd_disable
-  failed_when:
-    - mpd_disable.failed | bool
-    - '"Could not find" not in (mpd_disable.msg | default(""))'
 
 - name: Create MPD config directory
   ansible.builtin.file:
@@ -145,12 +139,6 @@
   become: true
 
 - name: Enable user MPD service
-  ansible.builtin.systemd:
-    name: mpd.service
-    enabled: true
-    scope: user
-    daemon_reload: true
-  environment:
-    XDG_RUNTIME_DIR: "/run/user/{{ target_user_uid }}"
-  become: true
-  become_user: "{{ target_user }}"
+  ansible.builtin.include_tasks: "../../../tasks/systemd_enable_user.yml"
+  vars:
+    service_name: mpd.service

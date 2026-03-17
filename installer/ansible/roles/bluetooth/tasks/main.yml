@@ -44,5 +44,11 @@
   ansible.builtin.systemd:
     name: bluetooth.service
     enabled: true
+  become: true
+
+- name: Start Bluetooth service
+  ansible.builtin.systemd:
+    name: bluetooth.service
     state: started
   become: true
+  when: install_mode == "live"
