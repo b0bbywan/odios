@@ -17,31 +17,31 @@ power:
 systemd:
   enabled: true
   system:
-  {% if install_bluetooth %}
+{% if install_bluetooth %}
     - bluetooth.service
-  {% endif %}
+{% endif %}
   user:
-  {% if install_pulseaudio %}
+{% if install_pulseaudio %}
     - pulseaudio.service
-  {% endif %}
-  {% if install_mpd or install_mpd_discplayer %}
+{% endif %}
+{% if install_mpd or install_mpd_discplayer %}
     - mpd.service
-  {% endif %}
-  {% if install_mpd_discplayer %}
+{% endif %}
+{% if install_mpd_discplayer %}
     - mpd-discplayer.service
-  {% endif %}
-  {% if install_shairport_sync %}
+{% endif %}
+{% if install_shairport_sync %}
     - shairport-sync.service
-  {% endif %}
-  {% if install_snapclient %}
+{% endif %}
+{% if install_snapclient %}
     - snapclient.service
-  {% endif %}
-  {% if install_spotifyd %}
+{% endif %}
+{% if install_spotifyd %}
     - spotifyd.service
-  {% endif %}
-  {% if install_upmpdcli %}
+{% endif %}
+{% if install_upmpdcli %}
     - upmpdcli.service
-  {% endif %}
+{% endif %}
 
 # Features
 zeroconf:
