@@ -9,10 +9,10 @@ port: 8018
 log_level: info
 
 power:
-  enabled: true
+  enabled: {{ (odio_api_power_can_reboot or odio_api_power_can_poweroff) | lower }}
   capabilities:
-    poweroff: true
-    reboot: true
+    poweroff: {{ odio_api_power_can_poweroff | lower }}
+    reboot: {{ odio_api_power_can_reboot | lower }}
 
 systemd:
   enabled: true
