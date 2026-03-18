@@ -1,5 +1,5 @@
 ---
-- name: Audio Streaming System Installation
+- name: Odio Streamer Installation
   hosts: localhost
 
   vars_files:
