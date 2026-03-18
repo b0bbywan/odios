@@ -33,7 +33,7 @@
 
 - name: Copy user snapclient service
   ansible.builtin.copy:
-    src: /usr/lib/systemd/system/snapclient.service
+    src: snapclient.service
     dest: /usr/lib/systemd/user/snapclient.service
     mode: '0644'
     owner: root
