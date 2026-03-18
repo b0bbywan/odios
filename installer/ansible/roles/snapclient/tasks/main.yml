@@ -6,6 +6,13 @@
   become: true
   notify: Restart snapclient
 
+- name: Add user to _snapclient group
+  ansible.builtin.user:
+    name: "{{ target_user }}"
+    groups: _snapclient
+    append: true
+  become: true
+
 - name: Backup snapclient config before changes
   ansible.builtin.include_tasks: "../../../tasks/backup_conf_before.yml"
   vars:
