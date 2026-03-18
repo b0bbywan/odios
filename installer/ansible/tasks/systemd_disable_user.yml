@@ -1,0 +1,41 @@
+---
+# Disable and stop a systemd user service.
+# enabled: false runs in all modes (filesystem-only, removes wants symlink).
+# state: stopped only runs in live mode (requires running user session).
+# Variables:
+#   service_name: name of the service (e.g. pipewire.service)
+
+- name: Disable user service - live
+  ansible.builtin.systemd:
+    name: "{{ service_name }}"
+    enabled: false
+    scope: user
+    daemon_reload: true
+  environment:
+    XDG_RUNTIME_DIR: "/run/user/{{ target_user_uid }}"
+  become: true
+  become_user: "{{ target_user }}"
+  when: install_mode == "live"
+
+- name: Stop user service - live
+  ansible.builtin.systemd:
+    name: "{{ service_name }}"
+    state: stopped
+    scope: user
+  environment:
+    XDG_RUNTIME_DIR: "/run/user/{{ target_user_uid }}"
+  become: true
+  become_user: "{{ target_user }}"
+  register: _disable_user_result
+  failed_when:
+    - _disable_user_result.failed | bool
+    - '"Could not find" not in (_disable_user_result.msg | default(""))'
+  when: install_mode == "live"
+
+- name: Disable user service - image build
+  ansible.builtin.systemd:
+    name: "{{ service_name }}"
+    enabled: false
+    scope: global
+  become: true
+  when: install_mode == "image"

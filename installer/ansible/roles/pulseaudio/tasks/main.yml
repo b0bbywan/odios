@@ -46,6 +46,15 @@
     - pipewire-pulse.socket
     - wireplumber.service
 
+- name: Disable and stop existing PipeWire units for target user
+  ansible.builtin.include_tasks: "../../../tasks/systemd_disable_user.yml"
+  vars:
+    service_name: "{{ item.item }}"
+  loop: "{{ pulseaudio_pw_units.results }}"
+  when:
+    - "'install ok installed' in pulseaudio_pw_status.stdout"
+    - item.stat.exists
+
 - name: Mask existing PipeWire units for target user
   ansible.builtin.include_tasks: "../../../tasks/systemd_mask_user.yml"
   vars:
