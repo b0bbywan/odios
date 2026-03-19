@@ -3,4 +3,5 @@
   ansible.builtin.apt:
     name: upmpdcli-tidal
     state: present
+    install_recommends: false
   become: true

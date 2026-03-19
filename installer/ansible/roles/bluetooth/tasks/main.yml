@@ -5,6 +5,7 @@
       - bluez
       - pulseaudio-module-bluetooth
     state: present
+    install_recommends: false
   become: true
   notify: Restart bluetooth
 

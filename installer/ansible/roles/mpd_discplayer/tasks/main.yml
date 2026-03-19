@@ -89,6 +89,7 @@
   ansible.builtin.apt:
     name: mpd-discplayer
     state: present
+    install_recommends: false
   become: true
   notify: Restart mpd-discplayer
 
