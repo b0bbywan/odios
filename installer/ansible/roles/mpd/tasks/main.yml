@@ -79,7 +79,7 @@
     path: "/home/{{ target_user }}/.config/mpd/mpd.conf"
     marker: "# {mark} ANSIBLE MANAGED BLOCK - network"
     block: |
-      bind_to_address         "any"
+      bind_to_address         "0.0.0.0"
       bind_to_address         "/run/user/{{ target_user_uid }}/mpd.socket"
       port                    "6600"
       auto_update             "yes"
@@ -94,6 +94,20 @@
     block: |
       zeroconf_enabled        "yes"
       zeroconf_name           "Mpd-{{ target_hostname }}"
+  become: true
+  become_user: "{{ target_user }}"
+  notify: Restart mpd
+
+- name: MPD config - wildmidi decoder
+  ansible.builtin.blockinfile:
+    path: "/home/{{ target_user }}/.config/mpd/mpd.conf"
+    marker: "# {mark} ANSIBLE MANAGED BLOCK - decoder wildmidi"
+    block: |
+      decoder {
+             enabled                  "no"
+             plugin                   "wildmidi"
+             config_file              "/etc/timidity/timidity.cfg"
+      }
   become: true
   become_user: "{{ target_user }}"
   notify: Restart mpd

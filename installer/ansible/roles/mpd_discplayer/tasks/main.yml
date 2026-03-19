@@ -57,7 +57,7 @@
       playlist_plugin {
         name "cue"
         enabled "true"
-        as_folder "true"
+        as_directory "true"
       }
   become: true
   become_user: "{{ target_user }}"
