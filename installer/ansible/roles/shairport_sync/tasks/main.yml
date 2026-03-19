@@ -3,6 +3,7 @@
   ansible.builtin.apt:
     name: shairport-sync
     state: present
+    install_recommends: false
   become: true
   notify: Restart shairport-sync
 

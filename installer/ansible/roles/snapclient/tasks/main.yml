@@ -3,6 +3,7 @@
   ansible.builtin.apt:
     name: snapclient
     state: present
+    install_recommends: false
   become: true
   notify: Restart snapclient
 

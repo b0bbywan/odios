@@ -3,6 +3,7 @@
   ansible.builtin.apt:
     name: upmpdcli-qobuz
     state: present
+    install_recommends: false
   become: true
 
 - name: Configure Qobuz user

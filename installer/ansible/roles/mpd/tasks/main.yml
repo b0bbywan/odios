@@ -6,6 +6,7 @@
       - mpc
       - mpdris2
     state: present
+    install_recommends: false
   become: true
 
 - name: Disable system MPD service
