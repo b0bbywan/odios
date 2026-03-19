@@ -1,4 +1,11 @@
 ---
+- name: Reload udev rules
+  ansible.builtin.command: udevadm control --reload-rules
+  become: true
+  changed_when: false
+  args:
+    removes: /run/udev/control
+
 - name: Restart bluetooth
   ansible.builtin.systemd:
     name: bluetooth.service
