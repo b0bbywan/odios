@@ -4,6 +4,7 @@
     name:
       - bluez
       - pulseaudio-module-bluetooth
+      - rfkill
     state: present
     install_recommends: false
   become: true
@@ -11,9 +12,12 @@
 
 - name: Ensure bluetooth group exists
   ansible.builtin.group:
-    name: bluetooth
+    name: "{{ item }}"
     state: present
   become: true
+  loop:
+    - bluetooth
+    - rfkill
 
 - name: Ensure user in bluetooth group
   ansible.builtin.user:
@@ -21,6 +25,7 @@
     append: true
     groups:
       - bluetooth
+      - rfkill
   become: true
 
 - name: Backup Bluetooth config before changes
@@ -40,6 +45,17 @@
   ansible.builtin.include_tasks: "../../../tasks/backup_conf_after.yml"
   vars:
     conf_path: /etc/bluetooth/main.conf
+
+- name: Deploy rfkill udev rule
+  ansible.builtin.copy:
+    dest: /etc/udev/rules.d/60-rfkill.rules
+    content: |
+      KERNEL=="rfkill", GROUP="rfkill", MODE="0664"
+    owner: root
+    group: root
+    mode: '0644'
+  become: true
+  notify: Reload udev rules
 
 - name: Enable Bluetooth service
   ansible.builtin.include_tasks: "../../../tasks/systemd_enable_system.yml"
