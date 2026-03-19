@@ -46,6 +46,7 @@
     - pipewire-pulse.service
     - pipewire-pulse.socket
     - wireplumber.service
+  when: "'install ok installed' in pulseaudio_pw_status.stdout"
 
 - name: Disable and stop existing PipeWire units for target user
   ansible.builtin.include_tasks: "../../../tasks/systemd_disable_user.yml"
@@ -53,7 +54,8 @@
     service_name: "{{ item.item }}"
   loop: "{{ pulseaudio_pw_units.results }}"
   when:
-    - "'install ok installed' in pulseaudio_pw_status.stdout"
+    - pulseaudio_pw_units is defined
+    - item.stat is defined
     - item.stat.exists
 
 - name: Mask existing PipeWire units for target user
@@ -62,7 +64,8 @@
     service_name: "{{ item.item }}"
   loop: "{{ pulseaudio_pw_units.results }}"
   when:
-    - "'install ok installed' in pulseaudio_pw_status.stdout"
+    - pulseaudio_pw_units is defined
+    - item.stat is defined
     - item.stat.exists
 
 - name: Enable user PulseAudio services
