@@ -78,7 +78,7 @@ ask_config() {
     read -rp "Install UPnP/DLNA renderer? [Y/n]: "         INSTALL_UPMPDCLI
     read -rp "Install Spotifyd (Spotify Connect)? [y/N]: " INSTALL_SPOTIFYD
 
-    if [[ "${INSTALL_UPMPDCLI,,}" == "y" ]]; then
+    if [[ "${INSTALL_UPMPDCLI:-Y}" != "n" && "${INSTALL_UPMPDCLI:-Y}" != "N" ]]; then
         echo ""
         echo -e "${BLUE}Streaming services (upmpdcli) — leave blank to skip${NC}"
         read -rp "Qobuz username: "  QOBUZ_USER
