@@ -70,8 +70,6 @@
       when: install_bluetooth | bool
     - role: mpd
       when: install_mpd | bool
-    - role: odio_api
-      when: install_odio_api | bool
     - role: mpd_discplayer
       when: install_mpd_discplayer | bool
     - role: shairport_sync
@@ -82,6 +80,8 @@
       when: install_upmpdcli | bool
     - role: spotifyd
       when: install_spotifyd | bool and ansible_architecture != "armv6l"
+    - role: odio_api
+      when: install_odio_api | bool
 
   post_tasks:
     - name: Remove ansible remote_tmp directory
