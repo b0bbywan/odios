@@ -67,6 +67,7 @@
           <allow own="org.gnome.ShairportSync"/>
         </policy>
   become: true
+  notify: Reload dbus
 
 - name: Configure dbus policy for shairport-sync MPRIS
   ansible.builtin.blockinfile:
@@ -78,6 +79,7 @@
           <allow own="org.mpris.MediaPlayer2.ShairportSync"/>
         </policy>
   become: true
+  notify: Reload dbus
 
 - name: Deploy shairport-sync user service
   ansible.builtin.copy:
