@@ -1,4 +1,11 @@
 ---
+- name: Reload dbus
+  ansible.builtin.systemd:
+    name: dbus.service
+    state: reloaded
+  become: true
+  when: ansible_facts.services['dbus.service'] is defined
+
 - name: Restart shairport-sync
   ansible.builtin.systemd:
     name: shairport-sync.service
