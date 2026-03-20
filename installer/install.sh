@@ -169,6 +169,8 @@ check_python() {
 
 }
 
+NEEDS_BECOME_PASS=false
+
 check_sudo() {
     if sudo -n true 2>/dev/null; then
         echo -e "${GREEN}✓ Sudo access available${NC}"
@@ -176,6 +178,7 @@ check_sudo() {
     fi
     echo -e "${YELLOW}⚠ This script requires sudo access${NC}"
     if sudo true; then
+        NEEDS_BECOME_PASS=true
         echo -e "${GREEN}✓ Sudo access granted${NC}"
     else
         echo -e "${RED}✗ Cannot obtain sudo access${NC}"
@@ -317,10 +320,14 @@ EOF
     local t_start t_end elapsed
     t_start=$(date +%s)
 
+    local become_flag=""
+    $NEEDS_BECOME_PASS && become_flag="--ask-become-pass"
+
     PYTHONPATH="${WORK_DIR}/vendor" \
         python3 "${WORK_DIR}/vendor/bin/ansible-playbook" \
         -i "${WORK_DIR}/ansible/inventory/localhost.yml" \
         "${WORK_DIR}/ansible/playbook.yml" \
+        ${become_flag} \
         -e "${extra_vars}"
 
     t_end=$(date +%s)
