@@ -15,9 +15,10 @@ install_bluetooth: true
 install_mpd: true
 install_odio_api: true
 
-# Optional components (default: disabled)
+# Optional components
+install_mpd_discplayer: true
+install_shairport_sync: true
+install_snapclient: true
+install_upmpdcli: true
+install_tidal: false
 install_spotifyd: false
-install_shairport_sync: false
-install_snapclient: false
-install_upmpdcli: false
-install_mpd_discplayer: false
