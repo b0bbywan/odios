@@ -56,8 +56,15 @@
     mode: '0644'
   become: true
   notify: Reload udev rules
+  when: ansible_architecture in ['armv6l', 'armv7l', 'aarch64']
 
 - name: Enable Bluetooth service
   ansible.builtin.include_tasks: "../../../tasks/systemd_enable_system.yml"
   vars:
     service_name: bluetooth.service
+
+- name: Unblock bluetooth via rfkill
+  ansible.builtin.command: rfkill unblock bluetooth
+  become: true
+  changed_when: false
+  when: install_mode == "live"
