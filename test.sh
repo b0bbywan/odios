@@ -149,12 +149,8 @@ case "${ACTION}" in
       ansible-playbook -v -i inventory/localhost.yml \
         /opt/odios/ansible/playbook.yml \
         $(ansible_extra_flags) \
-        -e "install_shairport_sync=true" \
-        -e "install_upmpdcli=true" \
-        -e "install_tidal=true" \
-        -e "install_snapclient=true" \
-        -e "install_mpd_discplayer=true" \
         -e "install_spotifyd=true" \
+        -e "install_tidal=true" \
         -e "qobuz_user=test@example.com" \
         -e "qobuz_pass=boguspassword" \
         -e "mpd_discplayer_gnu_email=test@example.com" \
@@ -174,12 +170,8 @@ case "${ACTION}" in
     docker exec $(ansible_exec_user) "${CONTAINER_NAME}" \
       ansible-playbook -i inventory/localhost.yml /opt/odios/ansible/playbook.yml \
         $(ansible_extra_flags) \
-        -e "install_shairport_sync=true" \
-        -e "install_upmpdcli=true" \
-        -e "install_tidal=true" \
-        -e "install_snapclient=true" \
-        -e "install_mpd_discplayer=true" \
         -e "install_spotifyd=true" \
+        -e "install_tidal=true" \
         -e "qobuz_user=test@example.com" \
         -e "qobuz_pass=boguspassword" \
         -e "mpd_discplayer_gnu_email=test@example.com" \

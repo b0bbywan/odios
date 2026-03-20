@@ -53,12 +53,12 @@ ask_config() {
         echo ""
     fi
 
-    read -p "Target user [$USER]: " TARGET_USER
+    read -rp "Target user [$USER]: " TARGET_USER
     TARGET_USER="${TARGET_USER:-$USER}"
 
     if $pipewire_installed && [[ "$TARGET_USER" == "$USER" ]]; then
-        read -p "  ⚠ PipeWire conflict with '$USER' — continue anyway? [y/N]: " _pw_confirm
-        [[ "${_pw_confirm,,}" == "y" ]] || { echo -e "${RED}Aborting.${NC}"; exit 1; }
+        read -rp "  ⚠ PipeWire conflict with '$TARGET_USER' — continue anyway? [y/N]: " _pw_confirm
+        [[ $(bool "${_pw_confirm:-N}") == "true" ]] || { echo -e "${RED}Aborting.${NC}"; exit 1; }
     fi
 
     if id "$TARGET_USER" &>/dev/null; then
@@ -68,29 +68,25 @@ ask_config() {
     fi
 
     echo ""
-    echo -e "${BLUE}Core components${NC}"
-    read -p "Install PulseAudio? [Y/n]: "   INSTALL_PULSEAUDIO
-    read -p "Install Bluetooth? [Y/n]: "    INSTALL_BLUETOOTH
-    read -p "Install MPD? [Y/n]: "          INSTALL_MPD
-    read -p "Install Odio API? [Y/n]: "     INSTALL_ODIO_API
-
-    echo ""
-    echo -e "${BLUE}Optional components${NC}"
-    read -p "Install MPD disc player? [y/N]: "           INSTALL_MPD_DISCPLAYER
-    read -p "Install Shairport Sync (AirPlay)? [y/N]: "  INSTALL_SHAIRPORT_SYNC
-    read -p "Install Snapcast client? [y/N]: "            INSTALL_SNAPCLIENT
-    read -p "Install UPnP/DLNA renderer? [y/N]: "         INSTALL_UPMPDCLI
-    read -p "Install Spotifyd (Spotify Connect)? [y/N]: " INSTALL_SPOTIFYD
+    read -rp "Install PulseAudio? [Y/n]: "                 INSTALL_PULSEAUDIO
+    read -rp "Install Bluetooth? [Y/n]: "                  INSTALL_BLUETOOTH
+    read -rp "Install MPD? [Y/n]: "                        INSTALL_MPD
+    read -rp "Install MPD disc player? [Y/n]: "            INSTALL_MPD_DISCPLAYER
+    read -rp "Install Odio API? [Y/n]: "                   INSTALL_ODIO_API
+    read -rp "Install Shairport Sync (AirPlay)? [Y/n]: "   INSTALL_SHAIRPORT_SYNC
+    read -rp "Install Snapcast client? [Y/n]: "            INSTALL_SNAPCLIENT
+    read -rp "Install UPnP/DLNA renderer? [Y/n]: "         INSTALL_UPMPDCLI
+    read -rp "Install Spotifyd (Spotify Connect)? [y/N]: " INSTALL_SPOTIFYD
 
     if [[ "${INSTALL_UPMPDCLI,,}" == "y" ]]; then
         echo ""
         echo -e "${BLUE}Streaming services (upmpdcli) — leave blank to skip${NC}"
-        read -p "Qobuz username: "  QOBUZ_USER
+        read -rp "Qobuz username: "  QOBUZ_USER
         if [[ -n "$QOBUZ_USER" ]]; then
-            read -sp "Qobuz password: " QOBUZ_PASS
+            read -rsp "Qobuz password: " QOBUZ_PASS
             echo ""
         fi
-        read -p "Install Tidal support? [y/N]: " INSTALL_TIDAL
+        read -rp "Install Tidal support? [y/N]: " INSTALL_TIDAL
     fi
 
     if [[ "${INSTALL_MPD,,}" == "n" && "${INSTALL_MPD_DISCPLAYER,,}" == "y" ]] && command -v mpd &>/dev/null; then
@@ -100,7 +96,7 @@ ask_config() {
 
         echo ""
         echo -e "${BLUE}External MPD${NC}"
-        read -p "MPD config path [${detected_conf}]: " MPD_CONF_PATH
+        read -rp "MPD config path [${detected_conf}]: " MPD_CONF_PATH
         MPD_CONF_PATH="${MPD_CONF_PATH:-$detected_conf}"
     fi
     echo ""
@@ -116,10 +112,10 @@ prompt_for_config() {
     INSTALL_BLUETOOTH="${INSTALL_BLUETOOTH:-Y}"
     INSTALL_MPD="${INSTALL_MPD:-Y}"
     INSTALL_ODIO_API="${INSTALL_ODIO_API:-Y}"
-    INSTALL_MPD_DISCPLAYER="${INSTALL_MPD_DISCPLAYER:-N}"
-    INSTALL_SHAIRPORT_SYNC="${INSTALL_SHAIRPORT_SYNC:-N}"
-    INSTALL_SNAPCLIENT="${INSTALL_SNAPCLIENT:-N}"
-    INSTALL_UPMPDCLI="${INSTALL_UPMPDCLI:-N}"
+    INSTALL_MPD_DISCPLAYER="${INSTALL_MPD_DISCPLAYER:-Y}"
+    INSTALL_SHAIRPORT_SYNC="${INSTALL_SHAIRPORT_SYNC:-Y}"
+    INSTALL_SNAPCLIENT="${INSTALL_SNAPCLIENT:-Y}"
+    INSTALL_UPMPDCLI="${INSTALL_UPMPDCLI:-Y}"
     INSTALL_TIDAL="${INSTALL_TIDAL:-N}"
     INSTALL_SPOTIFYD="${INSTALL_SPOTIFYD:-N}"
     QOBUZ_USER="${QOBUZ_USER:-}"
@@ -133,6 +129,7 @@ check_os() {
         echo -e "${RED}✗ Cannot detect OS (missing /etc/os-release)${NC}"
         return 1
     fi
+    # shellcheck source=/dev/null
     source /etc/os-release
     if [[ "$ID" =~ ^(debian|ubuntu|raspbian)$ ]]; then
         echo -e "${GREEN}✓ OS: $ID $VERSION_ID${NC}"
@@ -323,6 +320,7 @@ EOF
     local become_flag=""
     $NEEDS_BECOME_PASS && become_flag="--ask-become-pass"
 
+    # shellcheck disable=SC2086
     PYTHONPATH="${WORK_DIR}/vendor" \
         python3 "${WORK_DIR}/vendor/bin/ansible-playbook" \
         -i "${WORK_DIR}/ansible/inventory/localhost.yml" \
