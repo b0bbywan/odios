@@ -60,6 +60,7 @@
                            'armv7' if ansible_architecture == 'armv7l' else
                            'aarch64' if ansible_architecture in ['aarch64', 'arm64'] else
                            'x86_64' if ansible_architecture == 'x86_64' else 'unknown' }}"
+        spotifyd_version: "{{ '0.4.1' if ansible_architecture in ['armv7l', 'aarch64', 'arm64'] else spotifyd_version }}"
         target_user_uid: "{{ common_user_uid_result.stdout }}"
 
   roles:
