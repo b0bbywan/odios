@@ -1,0 +1,10 @@
+// /etc/polkit-1/rules.d/10-allow-shutdown.rules
+polkit.addRule(function(action, subject) {
+    if ((action.id == "org.freedesktop.login1.power-off" ||
+         action.id == "org.freedesktop.login1.power-off-multiple-sessions" ||
+         action.id == "org.freedesktop.login1.reboot" ||
+         action.id == "org.freedesktop.login1.reboot-multiple-sessions") &&
+        subject.user == "{{ target_user }}") {
+        return polkit.Result.YES;
+    }
+});
