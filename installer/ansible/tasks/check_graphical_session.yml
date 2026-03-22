@@ -1,0 +1,13 @@
+---
+# Check whether the system boots into a graphical desktop session.
+# Sets fact: is_headless (bool) — true when no DE manages the session.
+# Variables: none
+
+- name: Check systemd default target
+  ansible.builtin.command: systemctl get-default
+  register: _systemd_default_target
+  changed_when: false
+
+- name: Set is_headless fact
+  ansible.builtin.set_fact:
+    is_headless: "{{ _systemd_default_target.stdout != 'graphical.target' }}"
