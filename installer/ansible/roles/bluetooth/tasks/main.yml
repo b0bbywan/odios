@@ -46,6 +46,9 @@
   vars:
     conf_path: /etc/bluetooth/main.conf
 
+- name: Check for graphical session
+  ansible.builtin.include_tasks: "../../../tasks/check_graphical_session.yml"
+
 - name: Deploy rfkill udev rule
   ansible.builtin.copy:
     dest: /etc/udev/rules.d/60-rfkill.rules
@@ -56,7 +59,7 @@
     mode: '0644'
   become: true
   notify: Reload udev rules
-  when: ansible_architecture in ['armv6l', 'armv7l', 'aarch64']
+  when: is_headless
 
 - name: Enable Bluetooth service
   ansible.builtin.include_tasks: "../../../tasks/systemd_enable_system.yml"

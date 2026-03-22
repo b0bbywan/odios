@@ -17,6 +17,19 @@
     mode: '0700'
   become: true
 
+- name: Check for graphical session
+  ansible.builtin.include_tasks: "../../../tasks/check_graphical_session.yml"
+
+- name: Deploy polkit shutdown rule
+  ansible.builtin.template:
+    src: 10-allow-shutdown.rules.j2
+    dest: /etc/polkit-1/rules.d/10-allow-shutdown.rules
+    owner: root
+    group: root
+    mode: '0644'
+  become: true
+  when: is_headless
+
 - name: Check CanReboot via logind DBus
   ansible.builtin.command: >
     busctl --system call org.freedesktop.login1 /org/freedesktop/login1
