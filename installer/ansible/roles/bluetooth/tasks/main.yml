@@ -27,6 +27,7 @@
       - bluetooth
       - rfkill
   become: true
+  register: bluetooth_group_result
 
 - name: Backup Bluetooth config before changes
   ansible.builtin.include_tasks: "../../../tasks/backup_conf_before.yml"
@@ -57,6 +58,10 @@
   become: true
   notify: Reload udev rules
   when: ansible_architecture in ['armv6l', 'armv7l', 'aarch64']
+
+- name: Reset connection to reload group memberships  # noqa: no-handler
+  ansible.builtin.meta: reset_connection
+  when: bluetooth_group_result.changed
 
 - name: Enable Bluetooth service
   ansible.builtin.include_tasks: "../../../tasks/systemd_enable_system.yml"

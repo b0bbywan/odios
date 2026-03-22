@@ -19,6 +19,11 @@
       - input
       - plugdev
   become: true
+  register: common_group_result
+
+- name: Reset connection to reload group memberships  # noqa: no-handler
+  ansible.builtin.meta: reset_connection
+  when: common_group_result.changed
 
 - name: User systemd directory
   ansible.builtin.file:
