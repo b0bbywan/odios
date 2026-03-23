@@ -8,7 +8,7 @@ FROM vascoguita/raspios:armhf AS base-arm
 
 # hadolint ignore=DL3006
 ARG TARGETARCH=amd64
-FROM base-${TARGETARCH}
+FROM base-${TARGETARCH} AS system
 
 ENV DEBIAN_FRONTEND=noninteractive
 
@@ -28,18 +28,24 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     gnupg2 \
     && rm -rf /var/lib/apt/lists/*
 
-# Systemd in container: remove unnecessary units
+# Systemd in container: remove unnecessary units, keep logind and dbus
 RUN rm -f /lib/systemd/system/multi-user.target.wants/* \
     /etc/systemd/system/*.wants/* \
     /lib/systemd/system/local-fs.target.wants/* \
     /lib/systemd/system/sockets.target.wants/*udev* \
     /lib/systemd/system/sockets.target.wants/*initctl* \
     /lib/systemd/system/sysinit.target.wants/systemd-tmpfiles-setup* \
-    /lib/systemd/system/systemd-update-utmp*
+    /lib/systemd/system/systemd-update-utmp* && \
+    ln -sf /lib/systemd/system/systemd-logind.service \
+           /lib/systemd/system/multi-user.target.wants/systemd-logind.service && \
+    ln -sf /lib/systemd/system/dbus.service \
+           /lib/systemd/system/multi-user.target.wants/dbus.service
 
 # Create non-root user with passwordless sudo
 RUN useradd -m -s /bin/bash odios && \
     echo 'odios ALL=(ALL) NOPASSWD:ALL' > /etc/sudoers.d/odios
+
+FROM system AS final
 
 COPY installer/ansible /opt/odios/ansible
 RUN chown -R odios:odios /opt/odios
@@ -49,4 +55,3 @@ WORKDIR /opt/odios/ansible
 VOLUME ["/sys/fs/cgroup"]
 STOPSIGNAL SIGRTMIN+3
 CMD ["/lib/systemd/systemd"]
-
