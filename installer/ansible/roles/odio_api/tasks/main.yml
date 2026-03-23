@@ -20,6 +20,14 @@
 - name: Check for graphical session
   ansible.builtin.include_tasks: "../../../tasks/check_graphical_session.yml"
 
+- name: Install polkit
+  ansible.builtin.apt:
+    name: polkitd
+    state: present
+    install_recommends: false
+  become: true
+  when: is_headless
+
 - name: Deploy polkit shutdown rule
   ansible.builtin.template:
     src: 10-allow-shutdown.rules.j2
@@ -29,6 +37,17 @@
     mode: '0644'
   become: true
   when: is_headless
+  register: odio_api_polkit_rule
+
+- name: Restart polkit to apply shutdown rule
+  ansible.builtin.systemd:
+    name: polkit.service
+    state: restarted
+  become: true
+  when:
+    - is_headless
+    - odio_api_polkit_rule.changed
+    - install_mode == "live"
 
 - name: Check CanReboot via logind DBus
   ansible.builtin.command: >
@@ -36,7 +55,8 @@
     org.freedesktop.login1.Manager CanReboot
   register: odio_api_can_reboot
   changed_when: false
-  become: false
+  become: true
+  become_user: "{{ target_user }}"
   ignore_errors: true
 
 - name: Check CanPoweroff via logind DBus
@@ -45,7 +65,8 @@
     org.freedesktop.login1.Manager CanPoweroff
   register: odio_api_can_poweroff
   changed_when: false
-  become: false
+  become: true
+  become_user: "{{ target_user }}"
   ignore_errors: true
 
 - name: Set power capability facts

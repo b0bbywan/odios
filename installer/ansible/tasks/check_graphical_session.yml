@@ -8,6 +8,13 @@
   register: _systemd_default_target
   changed_when: false
 
+- name: Gather display manager service facts
+  ansible.builtin.service_facts:
+
 - name: Set is_headless fact
   ansible.builtin.set_fact:
-    is_headless: "{{ _systemd_default_target.stdout != 'graphical.target' }}"
+    is_headless: >-
+      {{
+        _systemd_default_target.stdout != 'graphical.target' or
+        ansible_facts.services.get('display-manager.service', {}).get('state') != 'running'
+      }}
