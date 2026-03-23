@@ -56,10 +56,6 @@
     - name: Detect variables
       ansible.builtin.set_fact:
         system_arch: "{{ ansible_architecture }}"
-        spotifyd_arch: "{{ 'armv6' if ansible_architecture == 'armv6l' else
-                           'armv7' if ansible_architecture == 'armv7l' else
-                           'aarch64' if ansible_architecture in ['aarch64', 'arm64'] else
-                           'x86_64' if ansible_architecture == 'x86_64' else 'unknown' }}"
         target_user_uid: "{{ common_user_uid_result.stdout }}"
 
   roles:
@@ -79,7 +75,7 @@
     - role: upmpdcli
       when: install_upmpdcli | bool
     - role: spotifyd
-      when: install_spotifyd | bool and ansible_architecture != "armv6l"
+      when: install_spotifyd | bool
     - role: odio_api
       when: install_odio_api | bool
 

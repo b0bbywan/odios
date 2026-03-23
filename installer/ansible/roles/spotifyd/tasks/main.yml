@@ -1,29 +1,9 @@
 ---
-- name: Check installed spotifyd version
-  ansible.builtin.command: /usr/local/bin/spotifyd --version
-  register: spotifyd_current_version
-  failed_when: false
-  changed_when: false
-
-- name: Download and install spotifyd
-  ansible.builtin.unarchive:
-    src: "https://github.com/Spotifyd/spotifyd/releases/download/v{{ spotifyd_version }}/spotifyd-linux-{{ spotifyd_arch }}-full.tar.gz"
-    dest: /usr/local/bin
-    remote_src: true
-    mode: '0755'
-    owner: root
-    group: root
-  become: true
-  when: spotifyd_current_version.rc != 0 or spotifyd_version not in spotifyd_current_version.stdout
-  notify: Restart spotifyd
-
-- name: Deploy spotifyd systemd user unit
-  ansible.builtin.template:
-    src: spotifyd.service.j2
-    dest: /usr/lib/systemd/user/spotifyd.service
-    owner: root
-    group: root
-    mode: '0644'
+- name: Install spotifyd
+  ansible.builtin.apt:
+    name: spotifyd
+    state: present
+    update_cache: false
   become: true
   notify: Restart spotifyd
 
