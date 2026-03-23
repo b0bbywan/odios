@@ -8,7 +8,7 @@ FROM vascoguita/raspios:armhf AS base-arm
 
 # hadolint ignore=DL3006
 ARG TARGETARCH=amd64
-FROM base-${TARGETARCH}
+FROM base-${TARGETARCH} AS system
 
 ENV DEBIAN_FRONTEND=noninteractive
 
@@ -41,6 +41,8 @@ RUN rm -f /lib/systemd/system/multi-user.target.wants/* \
 RUN useradd -m -s /bin/bash odios && \
     echo 'odios ALL=(ALL) NOPASSWD:ALL' > /etc/sudoers.d/odios
 
+FROM system AS final
+
 COPY installer/ansible /opt/odios/ansible
 RUN chown -R odios:odios /opt/odios
 
@@ -49,4 +51,3 @@ WORKDIR /opt/odios/ansible
 VOLUME ["/sys/fs/cgroup"]
 STOPSIGNAL SIGRTMIN+3
 CMD ["/lib/systemd/systemd"]
-
