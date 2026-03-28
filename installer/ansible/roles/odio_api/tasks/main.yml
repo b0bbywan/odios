@@ -36,16 +36,18 @@
     org.freedesktop.login1.Manager CanReboot
   register: odio_api_can_reboot
   changed_when: false
-  become: false
+  become: true
+  become_user: "{{ target_user }}"
   ignore_errors: true
 
 - name: Check CanPoweroff via logind DBus
   ansible.builtin.command: >
     busctl --system call org.freedesktop.login1 /org/freedesktop/login1
-    org.freedesktop.login1.Manager CanPoweroff
+    org.freedesktop.login1.Manager CanPowerOff
   register: odio_api_can_poweroff
   changed_when: false
-  become: false
+  become: true
+  become_user: "{{ target_user }}"
   ignore_errors: true
 
 - name: Set power capability facts
