@@ -166,6 +166,25 @@
     mode: '0775'
   become: true
 
+- name: Create mpDris2 systemd override directory
+  ansible.builtin.file:
+    path: "/usr/lib/systemd/user/mpDris2.service.d"
+    state: directory
+    owner: root
+    group: root
+    mode: '0755'
+  become: true
+
+- name: Deploy mpDris2 systemd override
+  ansible.builtin.copy:
+    src: mpDris2-override.conf
+    dest: "/usr/lib/systemd/user/mpDris2.service.d/override.conf"
+    owner: root
+    group: root
+    mode: '0644'
+  become: true
+  notify: Restart mpd
+
 - name: Enable user MPD service
   ansible.builtin.include_tasks: "../../../tasks/systemd_enable_user.yml"
   vars:
