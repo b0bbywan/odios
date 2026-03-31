@@ -10,10 +10,3 @@
     name: "{{ service_name }}"
     enabled: true
   become: true
-
-- name: Start system service
-  ansible.builtin.systemd:
-    name: "{{ service_name }}"
-    state: started
-  become: true
-  when: install_mode == "live"
