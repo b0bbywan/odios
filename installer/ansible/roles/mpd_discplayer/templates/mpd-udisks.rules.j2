@@ -1,0 +1,8 @@
+// /etc/polkit-1/rules.d/80-mpd-udisks.rules
+polkit.addRule(function(action, subject) {
+    if ((action.id == "org.freedesktop.udisks2.filesystem-mount" ||
+         action.id == "org.freedesktop.udisks2.filesystem-mount-other-seat") &&
+        subject.user == "{{ target_user }}") {
+        return polkit.Result.YES;
+    }
+});

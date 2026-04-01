@@ -25,6 +25,16 @@
       - cdrom
   become: true
 
+- name: Deploy udisk polkit rule
+  ansible.builtin.template:
+    src: mpd-udisks.rules.j2
+    dest: "/etc/polkit-1/rules.d/80-mpd-udisks.rules"
+    owner: "root"
+    group: "root"
+    mode: '0644'
+  become: true
+  when: is_headless
+
 - name: Backup MPD config before changes (external MPD only)
   ansible.builtin.include_tasks: "../../../tasks/backup_conf_before.yml"
   vars:
