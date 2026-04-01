@@ -48,7 +48,7 @@ jobs:
 
           # Collect licenses before stripping dist-info
           mkdir -p staging/licenses
-          curl -fsSL https://www.gnu.org/licenses/gpl-3.0.txt -o staging/licenses/ANSIBLE-LICENSE-GPLv3
+          cp licences/ANSIBLE-LICENSE-GPLv3 staging/licenses/ANSIBLE-LICENSE-GPLv3
           cp LICENSE staging/licenses/ODIOS-LICENSE-BSD2
 
           # Remove packages with unavoidable native extensions — provided by the system at install time
