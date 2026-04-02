@@ -1,12 +1,17 @@
 # odios
 
-Open-source audiophile distribution for Debian/Ubuntu and Raspberry Pi.
+[![Build](https://github.com/b0bbywan/odios/actions/workflows/release.yml/badge.svg)](https://github.com/b0bbywan/odios/actions/workflows/release.yml)
+[![GitHub Sponsors](https://img.shields.io/github/sponsors/b0bbywan?label=Sponsor&logo=GitHub)](https://github.com/sponsors/b0bbywan)
+
+### [odio](https://beta.odio.love/) — Open-source audiophile distribution for Debian/Ubuntu and Raspberry Pi with native Home Assistant integration.
 
 odios turns a €35 Raspberry Pi into what commercial streamers sell for €300–500: Bluetooth A2DP, AirPlay, Snapcast multi-room, UPnP/DLNA, CD playback with metadata — all in one box, controlled from a web app, no account or subscription required. Other PCs running PulseAudio or PipeWire can also stream directly to it over the network, making it a true whole-home audio sink.
 
-Built on modern foundations: everything runs as unprivileged systemd user services (no root daemons), orchestrated through a unified REST API written in Go. No PHP, no legacy scripts, no cloud dependency. Battle-tested on a Raspberry Pi B+ (armv6l) for over 6 years without reinstall.
+Built on modern foundations: everything runs as unprivileged systemd user services (no root daemons), orchestrated through a unified REST API written in Go. Battle-tested on a Raspberry Pi B+ (armv6l) for over 6 years without reinstall.
 
 Full Home Assistant integration included — odios nodes appear as native media players in your HA dashboard.
+
+[![Home Assistant integration](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=b0bbywan&repository=odio-ha&category=integration)
 
 ## Architecture
 
