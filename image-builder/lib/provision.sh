@@ -59,6 +59,11 @@ PYTHONPATH="vendor" python3 vendor/bin/ansible-playbook \\
     --connection=local
 PROVISION
 
+    log_info "Installing firstboot script and vendor-data..."
+    cp "$SCRIPT_DIR/files/odios-firstboot.sh" "$rootfs/usr/local/bin/odios-firstboot.sh"
+    chmod 755 "$rootfs/usr/local/bin/odios-firstboot.sh"
+    cp "$SCRIPT_DIR/files/vendor-data" "$rootfs/boot/firmware/vendor-data"
+
     log_info "Purging unnecessary packages..."
     local purge_list
     purge_list=$(chroot "$rootfs" dpkg -l "${PURGE_PACKAGES[@]}" 2>/dev/null \
@@ -77,7 +82,7 @@ set -euo pipefail
 export LC_ALL=C.UTF-8
 export LANG=C.UTF-8
 apt-get update
-apt-get upgrade -y
+apt-get upgrade --auto-remove -y
 UPGRADE
 
     log_info "Cleaning up chroot..."

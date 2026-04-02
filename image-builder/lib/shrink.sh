@@ -31,12 +31,19 @@ shrink_image() {
 
     # Detach loop device
     losetup -d "$loop"
-    LOOP=""  # Prevent double-detach in cleanup
+    # shellcheck disable=SC2034  # global used by cleanup in build.sh
+    LOOP=""
 
     # Truncate the image file
     local truncate_bytes=$(( (p2_end_sector + 1) * sector_size ))
     log_info "Truncating image to $(( truncate_bytes / 1024 / 1024 )) MiB..."
     truncate -s "$truncate_bytes" "$image_path"
+
+    # Capture uncompressed image metadata for manifest
+    # shellcheck disable=SC2034  # globals used by generate_manifest_entry in build.sh
+    EXTRACT_SHA256=$(sha256sum "$image_path" | awk '{print $1}')
+    # shellcheck disable=SC2034
+    EXTRACT_SIZE=$(stat -c%s "$image_path")
 
     # Compress
     log_info "Compressing with xz (level ${XZ_COMPRESSION_LEVEL}, threads ${XZ_THREADS})..."

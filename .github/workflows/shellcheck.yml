@@ -18,3 +18,5 @@ jobs:
         uses: ludeeus/action-shellcheck@master
         with:
           additional_files: 'installer/install.sh test.sh image-builder/*.sh image-builder/lib/*.sh image-builder/files/*.sh'
+          scandir: '.'
+          severity: 'warning'
