@@ -28,7 +28,13 @@
     group: root
     mode: '0644'
   become: true
-  when: is_headless
+  when: is_headless or install_mode == "image"
+
+- name: Set power capability facts (image build)
+  ansible.builtin.set_fact:
+    odio_api_power_can_reboot: true
+    odio_api_power_can_poweroff: true
+  when: install_mode == "image"
 
 - name: Check CanReboot via logind DBus
   ansible.builtin.command: >
@@ -39,6 +45,7 @@
   become: true
   become_user: "{{ target_user }}"
   ignore_errors: true
+  when: install_mode == "live"
 
 - name: Check CanPoweroff via logind DBus
   ansible.builtin.command: >
@@ -49,11 +56,13 @@
   become: true
   become_user: "{{ target_user }}"
   ignore_errors: true
+  when: install_mode == "live"
 
-- name: Set power capability facts
+- name: Set power capability facts (live)
   ansible.builtin.set_fact:
     odio_api_power_can_reboot: "{{ '\"yes\"' in odio_api_can_reboot.stdout }}"
     odio_api_power_can_poweroff: "{{ '\"yes\"' in odio_api_can_poweroff.stdout }}"
+  when: install_mode == "live"
 
 - name: Deploy odio-api configuration
   ansible.builtin.template:

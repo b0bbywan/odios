@@ -59,7 +59,7 @@
     mode: '0644'
   become: true
   notify: Reload udev rules
-  when: is_headless
+  when: is_headless or install_mode == "image"
 
 - name: Enable Bluetooth service
   ansible.builtin.include_tasks: "../../../tasks/systemd_enable_system.yml"
