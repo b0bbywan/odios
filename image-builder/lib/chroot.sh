@@ -42,6 +42,12 @@ setup_qemu() {
             ;;
     esac
 
+    # Skip QEMU when running natively (arm64 host building arm64)
+    if [[ "$arch" == "arm64" && "$(uname -m)" == "aarch64" ]]; then
+        log_info "Native arm64 build detected, skipping QEMU"
+        return 0
+    fi
+
     log_info "Setting up QEMU (${qemu_bin})..."
     cp "/usr/bin/${qemu_bin}" "$rootfs/usr/bin/"
 

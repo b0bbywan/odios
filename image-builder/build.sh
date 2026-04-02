@@ -9,6 +9,7 @@ source "$SCRIPT_DIR/lib/image.sh"
 source "$SCRIPT_DIR/lib/chroot.sh"
 source "$SCRIPT_DIR/lib/provision.sh"
 source "$SCRIPT_DIR/lib/shrink.sh"
+source "$SCRIPT_DIR/lib/manifest.sh"
 
 # ─── Defaults ────────────────────────────────────────────────────────────────
 
@@ -18,13 +19,17 @@ VERSION=""
 WORKDIR="/tmp/odios-build"
 OUTPUT_DIR="./output"
 KEEP="false"
-SKIP_DOWNLOAD="false"
+export SKIP_DOWNLOAD="false"
 SKIP_SHRINK="false"
 
 # Global state for cleanup trap
-LOOP=""
-ROOTFS=""
-IMAGE_PATH=""
+export LOOP=""
+export ROOTFS=""
+export IMAGE_PATH=""
+
+# Manifest metadata (captured before compression)
+export EXTRACT_SHA256=""
+export EXTRACT_SIZE=""
 
 # ─── Usage ───────────────────────────────────────────────────────────────────
 
@@ -113,21 +118,28 @@ case "$COMMAND" in
         unmount_chroot "$ROOTFS"
         ROOTFS=""  # Prevent cleanup from re-unmounting
 
-        # 7. Shrink + compress
+        # 7. Shrink + capture metadata + compress
         if [[ "$SKIP_SHRINK" != "true" ]]; then
             shrink_image "$LOOP" "$IMAGE_PATH"
-            # shrink_image detaches loop and compresses
+            # shrink_image detaches loop, captures metadata, and compresses
         else
             losetup -d "$LOOP"
             LOOP=""
+            # Capture uncompressed image metadata for manifest
+            # shellcheck disable=SC2034  # used by generate_manifest_entry
+            EXTRACT_SHA256=$(sha256sum "$IMAGE_PATH" | awk '{print $1}')
+            # shellcheck disable=SC2034
+            EXTRACT_SIZE=$(stat -c%s "$IMAGE_PATH")
             log_info "Compressing (skipping shrink)..."
             xz "-${XZ_COMPRESSION_LEVEL}" "-T${XZ_THREADS}" "$IMAGE_PATH"
         fi
 
-        # 8. Move to output
+        # 8. Move to output + generate manifest
         mkdir -p "$OUTPUT_DIR"
         FINAL_NAME="odios-${VERSION}-${ARCH}.img.xz"
         mv "${IMAGE_PATH}.xz" "${OUTPUT_DIR}/${FINAL_NAME}"
+
+        generate_manifest_entry "$OUTPUT_DIR" "$VERSION" "$ARCH"
 
         log_info "Done: ${OUTPUT_DIR}/${FINAL_NAME}"
         log_info "Size: $(du -h "${OUTPUT_DIR}/${FINAL_NAME}" | cut -f1)"

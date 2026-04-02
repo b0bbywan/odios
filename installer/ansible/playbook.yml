@@ -24,10 +24,8 @@
       when: install_mode == "live"
 
     - name: Set hostname
-      ansible.builtin.hostname:
-        name: "{{ target_hostname }}"
-      become: true
-      when: target_hostname | length > 0 and target_hostname != ansible_hostname
+      ansible.builtin.include_tasks: "tasks/set_hostname.yml"
+      when: target_hostname | length > 0
 
     - name: Create target user
       ansible.builtin.user:

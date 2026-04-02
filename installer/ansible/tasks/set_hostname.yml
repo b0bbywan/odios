@@ -1,0 +1,26 @@
+---
+- name: Set hostname - live
+  ansible.builtin.hostname:
+    name: "{{ target_hostname }}"
+  become: true
+  when: install_mode == "live" and target_hostname != ansible_hostname
+
+- name: Set hostname - image build (/etc/hostname)
+  ansible.builtin.copy:
+    content: "{{ target_hostname }}\n"
+    dest: /etc/hostname
+    owner: root
+    group: root
+    mode: '0644'
+  become: true
+  when: install_mode == "image"
+
+- name: Set hostname - image build (/etc/hosts)
+  ansible.builtin.lineinfile:
+    path: /etc/hosts
+    regexp: '^127\.0\.1\.1'
+    line: "127.0.1.1\t{{ target_hostname }}"
+    state: present
+    unsafe_writes: true
+  become: true
+  when: install_mode == "image"

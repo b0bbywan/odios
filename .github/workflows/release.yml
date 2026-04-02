@@ -6,6 +6,10 @@ on:
       - '[0-9][0-9][0-9][0-9].*'
   pull_request:
 
+concurrency:
+  group: release-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 permissions:
   contents: write
   packages: write
@@ -236,7 +240,7 @@ jobs:
   test-install:
     needs: [build, build-test-image, pre-release, release]
     if: |
-      always() &&
+      !cancelled() &&
       needs.build.result == 'success' &&
       needs.build-test-image.result == 'success' &&
       (needs.pre-release.result == 'success' || needs.release.result == 'success')
@@ -264,3 +268,109 @@ jobs:
       - name: Clean
         if: always()
         run: ./test.sh clean
+
+  build-image:
+    needs: [build, pre-release, release]
+    if: |
+      !cancelled() &&
+      needs.build.result == 'success' &&
+      (needs.pre-release.result == 'success' || needs.release.result == 'success')
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: armhf
+            runner: ubuntu-latest
+          - arch: arm64
+            runner: ubuntu-24.04-arm
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Install build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y qemu-user-static binfmt-support parted \
+            e2fsprogs xz-utils wget psmisc zerofree
+
+      - name: Resolve version tag
+        id: tag
+        run: |
+          if [[ "${{ needs.build.outputs.is_release }}" == "true" ]]; then
+            echo "value=${{ needs.build.outputs.version }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "value=pr-${{ github.event.pull_request.number }}" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Build image
+        run: |
+          sudo ./image-builder/build.sh build \
+            --arch ${{ matrix.arch }} \
+            --version ${{ steps.tag.outputs.value }} \
+            --output ./output
+
+      - name: Upload image to release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.tag.outputs.value }}
+          files: output/odios-*.img.xz
+
+      - name: Upload manifest entry
+        uses: actions/upload-artifact@v6
+        with:
+          name: manifest-${{ matrix.arch }}
+          path: output/odios-*.json
+
+      - name: Upload image as artifact
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: odios-${{ matrix.arch }}-${{ steps.tag.outputs.value }}
+          path: output/odios-*.img.xz
+
+  publish-manifest:
+    needs: [build, build-image]
+    if: |
+      !cancelled() &&
+      needs.build-image.result == 'success'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download manifest entries
+        uses: actions/download-artifact@v7
+        with:
+          pattern: manifest-*
+          path: entries
+
+      - name: Resolve version tag
+        id: tag
+        run: |
+          if [[ "${{ needs.build.outputs.is_release }}" == "true" ]]; then
+            echo "value=${{ needs.build.outputs.version }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "value=pr-${{ github.event.pull_request.number }}" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Merge manifest
+        run: |
+          # Collect all JSON entries into a single os_list
+          echo '{"os_list": [' > manifest.json
+          first=true
+          for f in entries/manifest-*/*.json; do
+            if [ "$first" = true ]; then
+              first=false
+            else
+              echo ',' >> manifest.json
+            fi
+            cat "$f" >> manifest.json
+          done
+          echo ']}' >> manifest.json
+
+          # Pretty-print
+          python3 -m json.tool manifest.json > odios.rpi-imager-manifest
+          cat odios.rpi-imager-manifest
+
+      - name: Upload manifest to release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.tag.outputs.value }}
+          files: odios.rpi-imager-manifest

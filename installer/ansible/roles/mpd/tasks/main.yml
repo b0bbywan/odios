@@ -106,7 +106,7 @@
     marker: "# {mark} ANSIBLE MANAGED BLOCK - zeroconf"
     block: |
       zeroconf_enabled        "yes"
-      zeroconf_name           "Mpd-{{ target_hostname }}"
+      zeroconf_name           "Mpd-%h"
   become: true
   become_user: "{{ target_user }}"
   notify: Restart mpd

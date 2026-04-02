@@ -1,0 +1,2 @@
+#!/bin/bash
+/usr/local/bin/odios-firstboot.sh > /var/log/odios-firstboot.log
