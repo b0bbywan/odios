@@ -33,7 +33,7 @@
     group: "root"
     mode: '0644'
   become: true
-  when: is_headless
+  when: is_headless or install_mode == "image"
 
 - name: Backup MPD config before changes (external MPD only)
   ansible.builtin.include_tasks: "../../../tasks/backup_conf_before.yml"
