@@ -25,6 +25,16 @@
       - cdrom
   become: true
 
+- name: Ensure polkit rules directory exists
+  ansible.builtin.file:
+    path: /etc/polkit-1/rules.d
+    state: directory
+    owner: root
+    group: root
+    mode: '0755'
+  become: true
+  when: is_headless or install_mode == "image"
+
 - name: Deploy udisk polkit rule
   ansible.builtin.template:
     src: mpd-udisks.rules.j2

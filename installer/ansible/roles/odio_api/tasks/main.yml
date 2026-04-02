@@ -20,6 +20,16 @@
 - name: Check for graphical session
   ansible.builtin.include_tasks: "../../../tasks/check_graphical_session.yml"
 
+- name: Ensure polkit rules directory exists
+  ansible.builtin.file:
+    path: /etc/polkit-1/rules.d
+    state: directory
+    owner: root
+    group: root
+    mode: '0755'
+  become: true
+  when: is_headless or install_mode == "image"
+
 - name: Deploy polkit shutdown rule
   ansible.builtin.template:
     src: 10-allow-shutdown.rules.j2
