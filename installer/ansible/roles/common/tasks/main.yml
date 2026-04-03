@@ -18,6 +18,7 @@
       - users
       - input
       - plugdev
+      - systemd-journal
   become: true
 
 - name: User systemd directory
