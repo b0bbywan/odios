@@ -3,6 +3,7 @@
 # In image_build mode, uses global scope (no user session needed).
 # Variables:
 #   service_name: name of the service (e.g. pulseaudio.service)
+#   service_unit_path: (optional) override, defaults to /usr/lib/systemd/user/{{ service_name }}
 
 - name: Enable user service - live
   ansible.builtin.systemd:
@@ -17,9 +18,11 @@
   when: install_mode == "live"
 
 - name: Enable user service - image build
-  ansible.builtin.systemd:
-    name: "{{ service_name }}"
-    enabled: true
-    scope: global
+  ansible.builtin.file:
+    src: "{{ service_unit_path | default('/usr/lib/systemd/user/' + service_name) }}"
+    dest: "/home/{{ target_user }}/.config/systemd/user/default.target.wants/{{ service_name }}"
+    state: link
+    owner: "{{ target_user }}"
+    group: "{{ target_user }}"
   become: true
   when: install_mode == "image"
