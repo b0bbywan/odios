@@ -21,14 +21,17 @@
       - systemd-journal
   become: true
 
-- name: User systemd directory
+- name: User systemd directories
   ansible.builtin.file:
-    path: "/home/{{ target_user }}/.config/systemd/user"
+    path: "{{ item }}"
     state: directory
     owner: "{{ target_user }}"
     group: "{{ target_user }}"
     mode: '0755'
   become: true
+  loop:
+    - "/home/{{ target_user }}/.config/systemd/user"
+    - "/home/{{ target_user }}/.config/systemd/user/default.target.wants"
 
 - name: Check linger status
   ansible.builtin.stat:
