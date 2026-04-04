@@ -9,7 +9,7 @@ Wants=network-online.target
 After=network.target network-online.target
 
 [Service]
-ExecStart=/usr/bin/shairport-sync --configfile=/etc/shairport-sync.conf
+ExecStart=/usr/bin/shairport-sync --configfile=%h/.config/shairport-sync/shairport-sync.conf
 Restart=always
 RestartSec=5
 
