@@ -1,4 +1,21 @@
 ---
+- name: Check if pi-bluetooth is available
+  ansible.builtin.shell:
+    cmd: apt-cache show pi-bluetooth > /dev/null 2>&1
+  register: bluetooth_pi_bluetooth_available
+  changed_when: false
+  failed_when: false
+  become: true
+
+- name: Install pi-bluetooth
+  ansible.builtin.apt:
+    name: pi-bluetooth
+    state: present
+    install_recommends: false
+  become: true
+  when: bluetooth_pi_bluetooth_available.rc == 0
+  notify: Restart bluetooth
+
 - name: Install Bluetooth packages
   ansible.builtin.apt:
     name:
