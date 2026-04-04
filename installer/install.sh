@@ -258,9 +258,9 @@ download_archive() {
             | head -1 \
             | cut -d'"' -f4)
     elif [[ "$ODIOS_VERSION" == pr-* ]]; then
-        download_url="https://github.com/${GITHUB_REPO}/releases/download/${ODIOS_VERSION}/odios-dev.tar.gz"
+        download_url="https://github.com/${GITHUB_REPO}/releases/download/${ODIOS_VERSION}/odio-dev.tar.gz"
     else
-        download_url="https://github.com/${GITHUB_REPO}/releases/download/${ODIOS_VERSION}/odios-${ODIOS_VERSION}.tar.gz"
+        download_url="https://github.com/${GITHUB_REPO}/releases/download/${ODIOS_VERSION}/odio-${ODIOS_VERSION}.tar.gz"
     fi
 
     if [[ -z "$download_url" ]]; then

@@ -58,7 +58,7 @@ The fastest way to get started on a Raspberry Pi: flash a pre-built image with R
 2. Go to **Options app** > **Content Repository** > **Use custom URL**
 3. Enter:
    ```
-   https://github.com/b0bbywan/odios/releases/latest/download/odios.rpi-imager-manifest
+   https://github.com/b0bbywan/odios/releases/latest/download/odio.rpi-imager-manifest
    ```
 4. Select your image, configure hostname/SSH/WiFi/user, and flash
 
@@ -124,6 +124,6 @@ See [installer/README.md](installer/README.md) for full installation options, en
 
 This project is licensed under the BSD 2-Clause License — see [LICENSE](LICENSE).
 
-The installer distribution (`odios-*.tar.gz`) includes [ansible-core](https://github.com/ansible/ansible), which is licensed under the GNU General Public License v3.0. A copy of that license is included in the archive under `licenses/ANSIBLE-LICENSE-GPLv3`.
+The installer distribution (`odio-*.tar.gz`) includes [ansible-core](https://github.com/ansible/ansible), which is licensed under the GNU General Public License v3.0. A copy of that license is included in the archive under `licenses/ANSIBLE-LICENSE-GPLv3`.
 
 The odios playbooks and scripts are independent works that invoke ansible-core as an external tool and are not subject to the GPL.

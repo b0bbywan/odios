@@ -16,7 +16,7 @@ permissions:
 
 env:
   ANSIBLE_CORE_VERSION: '2.19.*'
-  ARCHIVE_PREFIX: odios
+  ARCHIVE_PREFIX: odio
 
 jobs:
   build:
@@ -313,20 +313,20 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ steps.tag.outputs.value }}
-          files: output/odios-*.img.xz
+          files: output/odio-*.img.xz
 
       - name: Upload manifest entry
         uses: actions/upload-artifact@v6
         with:
           name: manifest-${{ matrix.arch }}
-          path: output/odios-*.json
+          path: output/odio-*.json
 
       - name: Upload image as artifact
         if: always()
         uses: actions/upload-artifact@v6
         with:
-          name: odios-${{ matrix.arch }}-${{ steps.tag.outputs.value }}
-          path: output/odios-*.img.xz
+          name: odio-${{ matrix.arch }}-${{ steps.tag.outputs.value }}
+          path: output/odio-*.img.xz
 
   publish-manifest:
     needs: [build, build-image]
@@ -366,11 +366,11 @@ jobs:
           echo ']}' >> manifest.json
 
           # Pretty-print
-          python3 -m json.tool manifest.json > odios.rpi-imager-manifest
-          cat odios.rpi-imager-manifest
+          python3 -m json.tool manifest.json > odio.rpi-imager-manifest
+          cat odio.rpi-imager-manifest
 
       - name: Upload manifest to release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ steps.tag.outputs.value }}
-          files: odios.rpi-imager-manifest
+          files: odio.rpi-imager-manifest

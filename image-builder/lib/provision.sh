@@ -15,9 +15,9 @@ provision_image() {
             | head -1 \
             | cut -d'"' -f4)
     elif [[ "$version" == pr-* ]]; then
-        download_url="https://github.com/${GITHUB_REPO}/releases/download/${version}/odios-dev.tar.gz"
+        download_url="https://github.com/${GITHUB_REPO}/releases/download/${version}/odio-dev.tar.gz"
     else
-        download_url="https://github.com/${GITHUB_REPO}/releases/download/${version}/odios-${version}.tar.gz"
+        download_url="https://github.com/${GITHUB_REPO}/releases/download/${version}/odio-${version}.tar.gz"
     fi
 
     if [[ -z "$download_url" ]]; then

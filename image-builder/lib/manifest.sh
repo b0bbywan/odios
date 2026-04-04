@@ -6,9 +6,9 @@ generate_manifest_entry() {
     local version="$2"
     local arch="$3"
 
-    local xz_name="odios-${version}-${arch}.img.xz"
+    local xz_name="odio-${version}-${arch}.img.xz"
     local xz_path="${output_dir}/${xz_name}"
-    local entry_path="${output_dir}/odios-${version}-${arch}.json"
+    local entry_path="${output_dir}/odio-${version}-${arch}.json"
 
     if [[ ! -f "$xz_path" ]]; then
         log_error "Cannot generate manifest entry: ${xz_path} not found"

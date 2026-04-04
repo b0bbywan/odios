@@ -136,7 +136,7 @@ case "$COMMAND" in
 
         # 8. Move to output + generate manifest
         mkdir -p "$OUTPUT_DIR"
-        FINAL_NAME="odios-${VERSION}-${ARCH}.img.xz"
+        FINAL_NAME="odio-${VERSION}-${ARCH}.img.xz"
         mv "${IMAGE_PATH}.xz" "${OUTPUT_DIR}/${FINAL_NAME}"
 
         generate_manifest_entry "$OUTPUT_DIR" "$VERSION" "$ARCH"
