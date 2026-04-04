@@ -7,55 +7,86 @@
   become: true
   notify: Restart shairport-sync
 
+- name: Create user shairport-sync config directory
+  ansible.builtin.file:
+    path: "/home/{{ target_user }}/.config/shairport-sync"
+    state: directory
+    owner: "{{ target_user }}"
+    group: "{{ target_user }}"
+    mode: '0755'
+  become: true
+
+- name: Copy shairport-sync system config to user directory
+  ansible.builtin.copy:
+    src: /etc/shairport-sync.conf
+    dest: "/home/{{ target_user }}/.config/shairport-sync/shairport-sync.conf"
+    owner: "{{ target_user }}"
+    group: "{{ target_user }}"
+    mode: '0600'
+    remote_src: true
+    force: false
+  become: true
+
 - name: Backup shairport-sync config before changes
   ansible.builtin.include_tasks: "../../../tasks/backup_conf_before.yml"
   vars:
-    conf_path: /etc/shairport-sync.conf
+    conf_path: "/home/{{ target_user }}/.config/shairport-sync/shairport-sync.conf"
+    conf_owner: "{{ target_user }}"
+    conf_group: "{{ target_user }}"
+    conf_mode: '0600'
 
 - name: Configure shairport-sync name
   ansible.builtin.lineinfile:
-    path: /etc/shairport-sync.conf
+    path: "/home/{{ target_user }}/.config/shairport-sync/shairport-sync.conf"
     regexp: '^\s*//?\s*name\s*='
     line: '	name = "%h";'
   become: true
+  become_user: "{{ target_user }}"
   notify: Restart shairport-sync
 
 - name: Configure shairport-sync output backend
   ansible.builtin.lineinfile:
-    path: /etc/shairport-sync.conf
+    path: "/home/{{ target_user }}/.config/shairport-sync/shairport-sync.conf"
     regexp: '^\s*//?\s*output_backend\s*='
     line: '	output_backend = "pa";'
   become: true
+  become_user: "{{ target_user }}"
   notify: Restart shairport-sync
 
 - name: Configure shairport-sync mdns backend
   ansible.builtin.lineinfile:
-    path: /etc/shairport-sync.conf
+    path: "/home/{{ target_user }}/.config/shairport-sync/shairport-sync.conf"
     regexp: '^\s*//?\s*mdns_backend\s*='
     line: '	mdns_backend = "avahi";'
   become: true
+  become_user: "{{ target_user }}"
   notify: Restart shairport-sync
 
 - name: Configure shairport-sync pulseaudio server
   ansible.builtin.lineinfile:
-    path: /etc/shairport-sync.conf
+    path: "/home/{{ target_user }}/.config/shairport-sync/shairport-sync.conf"
     regexp: '^\s*//?\s*server\s*=\s*"host"'
     line: '	server = "127.0.0.1";'
   become: true
+  become_user: "{{ target_user }}"
   notify: Restart shairport-sync
 
 - name: Configure shairport-sync application name
   ansible.builtin.lineinfile:
-    path: /etc/shairport-sync.conf
+    path: "/home/{{ target_user }}/.config/shairport-sync/shairport-sync.conf"
     regexp: '^\s*//?\s*application_name\s*='
     line: '	application_name = "Shairport Sync";'
   become: true
+  become_user: "{{ target_user }}"
   notify: Restart shairport-sync
 
 - name: Backup shairport-sync config after changes
   ansible.builtin.include_tasks: "../../../tasks/backup_conf_after.yml"
   vars:
-    conf_path: /etc/shairport-sync.conf
+    conf_path: "/home/{{ target_user }}/.config/shairport-sync/shairport-sync.conf"
+    conf_owner: "{{ target_user }}"
+    conf_group: "{{ target_user }}"
+    conf_mode: '0600'
 
 - name: Configure dbus policy for shairport-sync
   ansible.builtin.blockinfile:
