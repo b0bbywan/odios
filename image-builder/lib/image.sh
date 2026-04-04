@@ -52,7 +52,7 @@ prepare_image() {
     local workdir="$2"
     local base_img="${workdir}/base-${arch}.img"
 
-    IMAGE_PATH="${workdir}/odios-${arch}.img"
+    IMAGE_PATH="${workdir}/odio-${arch}.img"
 
     log_info "Copying base image..."
     cp "$base_img" "$IMAGE_PATH"

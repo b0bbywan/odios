@@ -8,8 +8,8 @@ The builder runs on x86_64 Debian/Ubuntu (local machine or GitHub Actions runner
 
 | Architecture | Base image | Output |
 |---|---|---|
-| armhf (32-bit) | Raspberry Pi OS Lite (Trixie) armhf | `odios-<version>-armhf.img.xz` |
-| arm64 (64-bit) | Raspberry Pi OS Lite (Trixie) arm64 | `odios-<version>-arm64.img.xz` |
+| armhf (32-bit) | Raspberry Pi OS Lite (Trixie) armhf | `odio-<version>-armhf.img.xz` |
+| arm64 (64-bit) | Raspberry Pi OS Lite (Trixie) arm64 | `odio-<version>-arm64.img.xz` |
 
 ## Dependencies
 
@@ -75,7 +75,7 @@ sudo ./image-builder/build.sh clean --workdir /tmp/odios-build
 
 ## Flashing with Raspberry Pi Imager
 
-The CI produces a combined `odios.rpi-imager-manifest` uploaded to each release. This manifest points Pi Imager directly to the image download URLs on GitHub, so there is no need to download images manually -- Pi Imager handles the download and flashing.
+The CI produces a combined `odio.rpi-imager-manifest` uploaded to each release. This manifest points Pi Imager directly to the image download URLs on GitHub, so there is no need to download images manually -- Pi Imager handles the download and flashing.
 
 Cloud-init customization (hostname, SSH, WiFi, user creation) is fully supported via the manifest, as Pi OS Trixie includes cloud-init natively.
 
@@ -85,7 +85,7 @@ Cloud-init customization (hostname, SSH, WiFi, user creation) is fully supported
 2. Go to **Options app** > **Content Repository** > **Use custom URL**
 3. Enter the manifest URL:
    ```
-   https://github.com/b0bbywan/odios/releases/latest/download/odios.rpi-imager-manifest
+   https://github.com/b0bbywan/odios/releases/latest/download/odio.rpi-imager-manifest
    ```
 4. The available images appear in the OS list
 5. Configure hostname, SSH, WiFi, and user, then flash
@@ -131,7 +131,7 @@ network:
 rpi-imager --cli \
   --cloudinit-userdata user-data \
   --cloudinit-networkconfig network-config \
-  odios-<version>-<arch>.img.xz /dev/sdX
+  odio-<version>-<arch>.img.xz /dev/sdX
 ```
 
 ## First boot

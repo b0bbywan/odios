@@ -131,7 +131,7 @@ ODIOS_VERSION=pr-5 curl -fsSL https://github.com/b0bbywan/odios/releases/downloa
 
 ### Release archive
 
-The archive (`odios-{version}.tar.gz`) contains:
+The archive (`odio-{version}.tar.gz`) contains:
 
 ```
 ansible/        — playbooks and roles
