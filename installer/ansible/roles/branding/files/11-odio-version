@@ -1,0 +1,15 @@
+#!/bin/bash
+if [ -f /etc/odio-release ]; then
+    printf 'odio v%s\n' "$(cat /etc/odio-release)"
+fi
+if [ -f /etc/os-release ]; then
+    . /etc/os-release
+    if [ -n "$VERSION_CODENAME" ]; then
+        printf '%s %s (%s)\n' "${ID^}" "$VERSION_ID" "$VERSION_CODENAME"
+    else
+        printf '%s %s\n' "${ID^}" "$VERSION_ID"
+    fi
+fi
+echo
+echo "odio comes with ABSOLUTELY NO WARRANTY, to the extent"
+echo "permitted by applicable law."
