@@ -5,8 +5,7 @@ Wants=network-online.target avahi-daemon.service
 After=network-online.target time-sync.target sound.target avahi-daemon.service
 
 [Service]
-EnvironmentFile=-/etc/default/snapclient
-ExecStart=/usr/bin/snapclient --logsink=system $SNAPCLIENT_OPTS
+ExecStart=/usr/bin/snapclient --logsink=system --player pulse
 # very noisy on stdout
 StandardOutput=null
 Restart=on-failure
