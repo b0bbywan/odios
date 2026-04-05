@@ -1,0 +1,73 @@
+---
+- name: Ensure ~/.local/bin exists
+  ansible.builtin.file:
+    path: "/home/{{ target_user }}/.local/bin"
+    state: directory
+    owner: "{{ target_user }}"
+    group: "{{ target_user }}"
+    mode: '0755'
+  become: true
+
+- name: Install odio-check-upgrade script
+  ansible.builtin.copy:
+    src: odio-check-upgrade
+    dest: "/home/{{ target_user }}/.local/bin/odio-check-upgrade"
+    owner: "{{ target_user }}"
+    group: "{{ target_user }}"
+    mode: '0755'
+  become: true
+
+- name: Install odio-motd script
+  ansible.builtin.copy:
+    src: odio-motd
+    dest: "/home/{{ target_user }}/.local/bin/odio-motd"
+    owner: "{{ target_user }}"
+    group: "{{ target_user }}"
+    mode: '0755'
+  become: true
+  when: install_mode == "image"
+
+- name: Hook odio-motd into ~/.profile
+  ansible.builtin.blockinfile:
+    path: "/home/{{ target_user }}/.profile"
+    create: true
+    owner: "{{ target_user }}"
+    group: "{{ target_user }}"
+    mode: '0644'
+    marker: "# {mark} ANSIBLE MANAGED BLOCK - odio-motd"
+    block: |
+      case $- in
+          *i*) [ -x "$HOME/.local/bin/odio-motd" ] && "$HOME/.local/bin/odio-motd" ;;
+      esac
+  become: true
+  when: install_mode == "image"
+
+- name: Suppress system motd for odio user
+  ansible.builtin.file:
+    path: "/home/{{ target_user }}/.hushlogin"
+    state: touch
+    owner: "{{ target_user }}"
+    group: "{{ target_user }}"
+    mode: '0644'
+    modification_time: preserve
+    access_time: preserve
+  become: true
+  when: install_mode == "image"
+
+- name: Deploy odio-check-upgrade systemd units
+  ansible.builtin.template:
+    src: "{{ item }}.j2"
+    dest: "/home/{{ target_user }}/.config/systemd/user/{{ item }}"
+    owner: "{{ target_user }}"
+    group: "{{ target_user }}"
+    mode: '0644'
+  become: true
+  loop:
+    - odio-check-upgrade.service
+    - odio-check-upgrade.timer
+
+- name: Enable odio-check-upgrade timer
+  ansible.builtin.include_tasks: "../../../tasks/systemd_enable_user.yml"
+  vars:
+    service_name: odio-check-upgrade.timer
+    service_unit_path: "/home/{{ target_user }}/.config/systemd/user/odio-check-upgrade.timer"

@@ -58,6 +58,7 @@
 
   roles:
     - role: common
+    - role: branding
     - role: pulseaudio
       when: install_pulseaudio | bool
     - role: bluetooth

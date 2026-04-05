@@ -1,0 +1,10 @@
+[Unit]
+Description=Daily odio upgrade check
+
+[Timer]
+OnCalendar=daily
+RandomizedDelaySec=1h
+Persistent=true
+
+[Install]
+WantedBy=timers.target

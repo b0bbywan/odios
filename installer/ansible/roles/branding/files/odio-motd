@@ -1,0 +1,40 @@
+#!/bin/bash
+cat <<'BANNER'
+ .----------------.   .----------------.   .----------------.
+| .--------------. | | .--------------. | | .--------------. |
+| |     ____     | | | |              | | | |     ____     | |
+| |   .'    `.   | | | |      ___     | | | |   .'    `.   | |
+| |  /  .--.  \  | | | |    _|  (_)   | | | |  /  .--.  \  | |
+| |  | |    | |  | | | |   / _` | |   | | | |  | |    | |  | |
+| |  \  `--'  /  | | | |  | (_| | |   | | | |  \  `--'  /  | |
+| |   `.____.'   | | | |   \__,_|_|   | | | |   `.____.'   | |
+| '--------------' | | '--------------' | | '--------------' |
+ '----------------'   '----------------'   '----------------'
+BANNER
+
+uname -snrvm
+
+STATE="$HOME/.cache/odio/state.json"
+if [ -f "$STATE" ]; then
+    version=$(python3 -c "import json; print(json.load(open('$STATE')).get('odios', ''))" 2>/dev/null)
+    [ -n "$version" ] && printf 'odio v%s\n' "$version"
+fi
+
+UPGRADES="$HOME/.cache/odio/upgrades.json"
+if [ -f "$UPGRADES" ]; then
+    upgrade=$(python3 -c "
+import json, sys
+with open('$UPGRADES') as f:
+    data = json.load(f)
+if not data.get('upgrade_available'):
+    sys.exit(0)
+print('\033[1;33m⬆ Update available: %s → %s\033[0m' % (data['current'], data['latest']))
+for r in data.get('roles', []):
+    print('  %s: %s → %s' % (r['name'], r['installed'], r['available']))
+" 2>/dev/null)
+    [ -n "$upgrade" ] && printf '\n%s\n' "$upgrade"
+fi
+
+echo
+echo "odio comes with ABSOLUTELY NO WARRANTY, to the extent"
+echo "permitted by applicable law."

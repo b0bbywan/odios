@@ -1,0 +1,104 @@
+#!/usr/bin/env python3
+"""Compare local odio state against the remote manifest and report available upgrades.
+
+Usage: check-upgrade.py [--state PATH] [--url URL] [--output PATH]
+
+Exit codes: 0 = up to date, 1 = upgrades available, 2 = error.
+"""
+import argparse
+import json
+import os
+import re
+import sys
+import urllib.request
+from datetime import datetime, timezone
+
+MANIFEST_URL = "https://odio.love/manifest.json"
+STATE_PATH = os.path.expanduser("~/.cache/odio/state.json")
+OUTPUT_PATH = os.path.expanduser("~/.cache/odio/upgrades.json")
+
+_PRE_PHASES = {"a": 0, "b": 1, "rc": 2}
+_VERSION_RE = re.compile(r"^(\d+)\.(\d+)\.(\d+)(?:(a|b|rc)(\d+))?$")
+
+
+def parse_version(v: str) -> tuple:
+    m = _VERSION_RE.match(v)
+    if not m:
+        return (0,)
+    year, month, patch = int(m.group(1)), int(m.group(2)), int(m.group(3))
+    if m.group(4):
+        phase = _PRE_PHASES[m.group(4)]
+        pre_num = int(m.group(5))
+    else:
+        phase = 3
+        pre_num = 0
+    return (year, month, patch, phase, pre_num)
+
+
+def fetch_manifest(url: str) -> dict:
+    req = urllib.request.Request(url, headers={"User-Agent": "odio-check-upgrade/1"})
+    with urllib.request.urlopen(req, timeout=10) as resp:
+        return json.loads(resp.read())
+
+
+def main() -> int:
+    p = argparse.ArgumentParser(description=__doc__)
+    p.add_argument("--state", default=STATE_PATH)
+    p.add_argument("--url", default=MANIFEST_URL)
+    p.add_argument("--output", default=OUTPUT_PATH)
+    args = p.parse_args()
+
+    try:
+        with open(args.state) as f:
+            state = json.load(f)
+    except (OSError, json.JSONDecodeError) as e:
+        print(f"Error reading state: {e}", file=sys.stderr)
+        return 2
+
+    try:
+        manifest = fetch_manifest(args.url)
+    except Exception as e:
+        print(f"Error fetching manifest: {e}", file=sys.stderr)
+        return 2
+
+    upgrades = []
+    for role, installed in state.get("roles", {}).items():
+        available = manifest.get("roles", {}).get(role)
+        if available and parse_version(available) > parse_version(installed):
+            upgrades.append({
+                "name": role,
+                "installed": installed,
+                "available": available,
+            })
+
+    current = state.get("odios", "unknown")
+    latest = manifest.get("odios", "unknown")
+    upgrade_available = bool(upgrades) or (
+        parse_version(latest) > parse_version(current)
+    )
+
+    result = {
+        "current": current,
+        "latest": latest,
+        "upgrade_available": upgrade_available,
+        "roles": sorted(upgrades, key=lambda r: r["name"]),
+        "checked_at": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+    }
+
+    os.makedirs(os.path.dirname(args.output), exist_ok=True)
+    with open(args.output, "w") as f:
+        json.dump(result, f, indent=2)
+        f.write("\n")
+
+    if upgrade_available:
+        print(f"Upgrades available: {current} → {latest}")
+        for r in result["roles"]:
+            print(f"  {r['name']}: {r['installed']} → {r['available']}")
+        return 1
+    else:
+        print(f"Up to date ({current})")
+        return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())
