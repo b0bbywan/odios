@@ -1,0 +1,29 @@
+---
+- name: Write /etc/odio-release
+  ansible.builtin.copy:
+    content: "{{ odio_version }}\n"
+    dest: /etc/odio-release
+    mode: '0644'
+    owner: root
+    group: root
+  become: true
+
+- name: Deploy odio motd scripts
+  ansible.builtin.copy:
+    src: "{{ item }}"
+    dest: "/etc/update-motd.d/{{ item }}"
+    mode: '0755'
+    owner: root
+    group: root
+  become: true
+  when: install_mode == "image"
+  loop:
+    - 05-odio
+    - 11-odio-version
+
+- name: Remove default static motd
+  ansible.builtin.file:
+    path: /etc/motd
+    state: absent
+  become: true
+  when: install_mode == "image"

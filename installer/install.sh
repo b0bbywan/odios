@@ -298,6 +298,7 @@ run_playbook() {
     extra_vars=$(cat <<EOF
 {
   ${optional_vars}
+  "odio_version":           "$(cat "${WORK_DIR}/VERSION" 2>/dev/null || echo "unknown")",
   "install_mode":           "${INSTALL_MODE}",
   "target_user":            "${TARGET_USER}",
   "install_pulseaudio":     $(bool "$INSTALL_PULSEAUDIO"),
