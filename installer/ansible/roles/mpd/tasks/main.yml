@@ -4,11 +4,12 @@
     name:
       - mpd
       - mpc
-      - mpdris2
-      - python3-mutagen
     state: present
     install_recommends: false
   become: true
+
+- name: Install mpDris2 fork
+  ansible.builtin.include_tasks: mpdris2.yml
 
 - name: Disable system MPD service
   ansible.builtin.include_tasks: "../../../tasks/systemd_disable_system.yml"
@@ -20,20 +21,8 @@
 
 - name: Create MPD config directory
   ansible.builtin.file:
-    path: "/home/{{ target_user }}/.config/{{ item }}"
+    path: "/home/{{ target_user }}/.config/mpd"
     state: directory
-    owner: "{{ target_user }}"
-    group: "{{ target_user }}"
-    mode: '0700'
-  become: true
-  loop:
-    - mpDris2
-    - mpd
-
-- name: Create mpDris2 config file
-  ansible.builtin.template:
-    src: mpDris2.conf.j2
-    dest: "/home/{{ target_user }}/.config/mpDris2/mpDris2.conf"
     owner: "{{ target_user }}"
     group: "{{ target_user }}"
     mode: '0700'
@@ -166,29 +155,13 @@
     mode: '0775'
   become: true
 
-- name: Create mpDris2 systemd override directory
+- name: Remove legacy mpDris2 systemd override directory
   ansible.builtin.file:
     path: "/usr/lib/systemd/user/mpDris2.service.d"
-    state: directory
-    owner: root
-    group: root
-    mode: '0755'
+    state: absent
   become: true
-
-- name: Deploy mpDris2 systemd override
-  ansible.builtin.copy:
-    src: mpDris2-override.conf
-    dest: "/usr/lib/systemd/user/mpDris2.service.d/override.conf"
-    owner: root
-    group: root
-    mode: '0644'
-  become: true
-  notify: Restart mpd
 
 - name: Enable user MPD service
   ansible.builtin.include_tasks: "../../../tasks/systemd_enable_user.yml"
   vars:
-    service_name: "{{ item }}.service"
-  loop:
-    - mpd
-    - mpDris2
+    service_name: mpd.service
