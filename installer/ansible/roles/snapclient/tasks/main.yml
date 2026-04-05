@@ -7,26 +7,6 @@
   become: true
   notify: Restart snapclient
 
-- name: Backup snapclient config before changes
-  ansible.builtin.include_tasks: "../../../tasks/backup_conf_before.yml"
-  vars:
-    conf_path: /etc/default/snapclient
-
-- name: Configure snapclient default options
-  ansible.builtin.copy:
-    content: 'SNAPCLIENT_OPTS="--player pulse"'
-    dest: /etc/default/snapclient
-    mode: '0644'
-    owner: root
-    group: root
-  become: true
-  notify: Restart snapclient
-
-- name: Backup snapclient config after changes
-  ansible.builtin.include_tasks: "../../../tasks/backup_conf_after.yml"
-  vars:
-    conf_path: /etc/default/snapclient
-
 - name: Disable system snapclient service
   ansible.builtin.include_tasks: "../../../tasks/systemd_disable_system.yml"
   vars:
