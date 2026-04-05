@@ -43,6 +43,7 @@ Most service run as **systemd user services** — no root daemons, full per-user
 | [go-mpd-discplayer](https://github.com/b0bbywan/go-mpd-discplayer) | Automatic CD/USB playback with metadata via MPD | user |
 | PulseAudio | Central audio server, routes all sources to the DAC output — other PCs running PulseAudio or PipeWire can stream to it over the network via TCP/Zeroconf | user |
 | MPD | Music Player Daemon (network, CD/USB) | user |
+| [mpDris2](https://github.com/b0bbywan/mpDris2) (fork) | MPRIS bridge for MPD with CD cover art support | user |
 | Shairport Sync | AirPlay receiver | user |
 | Snapcast | Multi-room audio client | user |
 | upmpdcli | UPnP/DLNA renderer | system |

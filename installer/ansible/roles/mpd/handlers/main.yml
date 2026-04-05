@@ -1,7 +1,7 @@
 ---
 - name: Restart mpd
   ansible.builtin.systemd:
-    name: "{{ item }}.service"
+    name: mpd.service
     state: restarted
     scope: user
   environment:
@@ -9,6 +9,21 @@
   become: true
   become_user: "{{ target_user }}"
   when: install_mode == "live"
-  loop:
-    - mpd
-    - mpDris2
+
+- name: Reload dbus
+  ansible.builtin.systemd:
+    name: dbus.service
+    state: reloaded
+  become: true
+  when: ansible_facts.services['dbus.service'] is defined
+
+- name: Restart mpDris2
+  ansible.builtin.systemd:
+    name: mpDris2.service
+    state: restarted
+    scope: user
+  environment:
+    XDG_RUNTIME_DIR: "/run/user/{{ target_user_uid }}"
+  become: true
+  become_user: "{{ target_user }}"
+  when: install_mode == "live"
