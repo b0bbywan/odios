@@ -1,9 +1,9 @@
-# odios
+# [odio](https://beta.odio.love/)
 
 [![Build](https://github.com/b0bbywan/odios/actions/workflows/release.yml/badge.svg)](https://github.com/b0bbywan/odios/actions/workflows/release.yml)
 [![GitHub Sponsors](https://img.shields.io/github/sponsors/b0bbywan?label=Sponsor&logo=GitHub)](https://github.com/sponsors/b0bbywan)
 
-### [odio](https://beta.odio.love/) — Open-source audiophile distribution for Debian/Ubuntu and Raspberry Pi with native Home Assistant integration.
+### Open-source audiophile distribution for Debian/Ubuntu and Raspberry Pi with native Home Assistant integration.
 
 odios turns a €35 Raspberry Pi into what commercial streamers sell for €300–500: Bluetooth A2DP, AirPlay, Snapcast multi-room, UPnP/DLNA, CD playback with metadata — all in one box, controlled from a web app, no account or subscription required. Other PCs running PulseAudio or PipeWire can also stream directly to it over the network, making it a true whole-home audio sink.
 
