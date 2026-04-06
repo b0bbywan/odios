@@ -6,7 +6,6 @@
       - pipewire-pulse
       - wireplumber
     state: present
-    update_cache: true
     install_recommends: false
   become: true
   notify: Restart pipewire-pulse

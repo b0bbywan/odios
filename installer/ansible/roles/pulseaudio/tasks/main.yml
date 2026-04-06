@@ -5,7 +5,6 @@
       - pulseaudio
       - pulseaudio-module-zeroconf
     state: present
-    update_cache: true
     install_recommends: false
   become: true
   notify: Restart pulseaudio

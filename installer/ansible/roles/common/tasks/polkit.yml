@@ -1,0 +1,17 @@
+---
+- name: Install polkit
+  ansible.builtin.apt:
+    name: polkitd
+    state: present
+    update_cache: true
+    install_recommends: false
+  become: true
+
+- name: Ensure polkit rules directory exists
+  ansible.builtin.file:
+    path: /etc/polkit-1/rules.d
+    state: directory
+    owner: root
+    group: polkitd
+    mode: '0750'
+  become: true

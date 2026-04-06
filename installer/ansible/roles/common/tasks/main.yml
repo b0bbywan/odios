@@ -97,3 +97,6 @@
     owner: root
     group: root
   become: true
+
+- name: Setup polkit
+  ansible.builtin.include_tasks: polkit.yml
