@@ -122,7 +122,6 @@
       audio_output {
           type        "pulse"
           name        "pulseaudio"
-          server      "127.0.0.1"
       }
   become: true
   become_user: "{{ target_user }}"
