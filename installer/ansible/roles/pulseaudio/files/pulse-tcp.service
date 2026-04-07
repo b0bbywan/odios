@@ -1,11 +1,16 @@
 [Unit]
 Description=PulseAudio TCP and Zeroconf modules
-After=pulseaudio.service
+After=pulseaudio.service network-online.target
 Requires=pulseaudio.service
+Wants=network-online.target
 
 [Service]
 Type=oneshot
 RemainAfterExit=yes
+Restart=on-failure
+RestartSec=2
+StartLimitIntervalSec=60
+StartLimitBurst=15
 ExecStart=/usr/local/bin/pulse-tcp.sh start
 ExecStop=/usr/local/bin/pulse-tcp.sh stop
 

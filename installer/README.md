@@ -5,7 +5,7 @@ Ansible-based "curl | bash" installer to set up a complete audio/multimedia syst
 ## Components
 
 ### Core (enabled by default, can be disabled)
-- **PulseAudio** - Audio server with network streaming (TCP + Zeroconf)
+- **PulseAudio** - Audio server with network streaming (TCP + Zeroconf, wired only)
 - **Bluetooth Audio** - Authentication agent and automatic connection
 - **MPD** - Music Player Daemon with USB, CD/DVD and network support
 - **Odio API** - REST control interface
@@ -92,7 +92,7 @@ curl -fsSL https://github.com/b0bbywan/odios/releases/latest/download/install.sh
 | `TARGET_HOSTNAME`        | *(unchanged)* | Hostname (optional)                  |
 | `MPD_MUSIC_DIRECTORY`    | `/media/USB`  | MPD music library path               |
 | `MPD_CONF_PATH`          | *(detected)*  | Path to external mpd.conf (when `INSTALL_MPD=n` + `INSTALL_MPD_DISCPLAYER=y`) ⚠ experimental |
-| `INSTALL_PULSEAUDIO`     | `Y`           | PulseAudio + network streaming       |
+| `INSTALL_PULSEAUDIO`     | `Y`           | PulseAudio + network streaming (wired only) |
 | `INSTALL_BLUETOOTH`      | `Y`           | Bluetooth A2DP sink                  |
 | `INSTALL_MPD`            | `Y`           | Music Player Daemon                  |
 | `INSTALL_ODIO_API`       | `Y`           | REST control API                     |
@@ -159,7 +159,7 @@ installer/
     │   └── systemd_enable_system.yml   # Shared: enable + start a system service
     └── roles/
         ├── common/              # System prerequisites + linger
-        ├── pulseaudio/          # PulseAudio + network streaming (PipeWire conflict handling)
+        ├── pulseaudio/          # PulseAudio + network streaming (wired only, PipeWire conflict handling)
         ├── pipewire/            # PipeWire + pipewire-pulse (experimental, not yet exposed)
         ├── bluetooth/           # Bluetooth audio (A2DP)
         ├── mpd/                 # Music Player Daemon
