@@ -21,32 +21,6 @@ get_ip_addresses() {
     ip -o -f inet addr show scope global | awk '{print $4}'
 }
 
-filter_private_ips() {
-    local ip_info=("$@")
-    local private_ips=()
-
-    for ip in "${ip_info[@]}"; do
-        if is_private_ip "$ip"; then
-            private_ips+=("$ip")
-        fi
-    done
-    echo "${private_ips[@]}"
-}
-
-build_acl_string() {
-    local ip_info=("$@")
-    local network_addresses=("127.0.0.1")
-
-    for ip in "${ip_info[@]}"; do
-        ip_address=$(echo "$ip" | cut -d/ -f1)
-        cidr_prefix=$(echo "$ip" | cut -d/ -f2)
-        subnet_mask=$(convert_cidr_to_mask "$cidr_prefix")
-        network_address=$(calculate_network_address "$ip_address" "$subnet_mask")
-        network_addresses+=("$network_address/$cidr_prefix")
-    done
-    echo "${network_addresses[*]}" | tr ' ' ';'
-}
-
 is_private_ip() {
     local ip=$1
     if [[ $ip =~ ^10\. ]] ||
@@ -58,11 +32,23 @@ is_private_ip() {
 }
 
 get_acl() {
-    local ip_info
-    ip_info=$(get_ip_addresses)
-    local private_ips
-    private_ips=$(filter_private_ips "$ip_info")
-    build_acl_string "$private_ips"
+    local acl="127.0.0.1"
+    while IFS= read -r cidr; do
+        [[ -z "$cidr" ]] && continue
+        local ip_address="${cidr%/*}"
+        local cidr_prefix="${cidr#*/}"
+        is_private_ip "$cidr" || continue
+        local subnet_mask
+        subnet_mask=$(convert_cidr_to_mask "$cidr_prefix")
+        local network_address
+        network_address=$(calculate_network_address "$ip_address" "$subnet_mask")
+        acl="${acl};${network_address}/${cidr_prefix}"
+    done < <(get_ip_addresses)
+    if [[ "$acl" == "127.0.0.1" ]]; then
+        logger "pulse-tcp: no private IP found, aborting"
+        return 1
+    fi
+    echo "$acl"
 }
 
 module_is_loaded() {
@@ -101,7 +87,9 @@ check_pulseaudio_status() {
 }
 
 load_pulseaudio_modules() {
-    load_module "module-native-protocol-tcp" "auth-ip-acl=$(get_acl)"
+    local acl
+    acl=$(get_acl) || exit 1
+    load_module "module-native-protocol-tcp" "auth-ip-acl=${acl}"
     load_module "module-zeroconf-publish"
 }
 
@@ -123,8 +111,22 @@ remove_module_id_file() {
     rm --force "$MODULE_ID_FILE"
 }
 
+is_wired() {
+    local iface name
+    for iface in /sys/class/net/*; do
+        name="${iface##*/}"
+        [[ "$name" == "lo" || "$name" == wl* ]] && continue
+        [[ "$(cat "$iface/operstate" 2>/dev/null)" == "up" ]] && return 0
+    done
+    return 1
+}
+
 load_modules() {
     check_pulseaudio_status
+    if ! is_wired; then
+        logger "pulse-tcp: wifi detected, skipping TCP/Zeroconf"
+        exit 0
+    fi
     load_pulseaudio_modules
 }
 

@@ -41,7 +41,7 @@ Most service run as **systemd user services** — no root daemons, full per-user
 |-----------|------|
 | [go-odio-api](https://github.com/b0bbywan/go-odio-api) | REST API + embedded UI, bridges systemd / PulseAudio / MPRIS / D-Bus / Bluetooth Speaker | user |
 | [go-mpd-discplayer](https://github.com/b0bbywan/go-mpd-discplayer) | Automatic CD/USB playback with metadata via MPD | user |
-| PulseAudio | Central audio server, routes all sources to the DAC output — other PCs running PulseAudio or PipeWire can stream to it over the network via TCP/Zeroconf | user |
+| PulseAudio | Central audio server, routes all sources to the DAC output — other PCs running PulseAudio or PipeWire can stream to it over the network via TCP/Zeroconf (wired connections only) | user |
 | MPD | Music Player Daemon (network, CD/USB) | user |
 | [mpDris2](https://github.com/b0bbywan/mpDris2) (fork) | MPRIS bridge for MPD with CD cover art support | user |
 | Shairport Sync | AirPlay receiver | user |
@@ -102,7 +102,7 @@ See [installer/README.md](installer/README.md) for full installation options, en
 | **UPnP/DLNA** | ✅ Included | ✅ Included |
 | **Multi-room** | ✅ Included (Snapcast) | 💰 Premium only |
 | **CD playback** | ✅ Included with metadata | 💰 Premium only |
-| **Network audio sink** | ✅ PulseAudio/PipeWire TCP | ❌ Not supported |
+| **Network audio sink** | ✅ PulseAudio/PipeWire TCP (wired) | ❌ Not supported |
 | **Home Assistant** | Native integration | Unofficial community plugin |
 | **Voice assistant / AI** | Via Home Assistant | 💰 CORRD (Premium) |
 | **Embedded UI** | Lightweight HTMX/Tailwind | Node.js/React |
