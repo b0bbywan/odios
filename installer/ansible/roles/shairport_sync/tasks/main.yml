@@ -62,11 +62,11 @@
   become_user: "{{ target_user }}"
   notify: Restart shairport-sync
 
-- name: Configure shairport-sync pulseaudio server
+- name: Remove legacy shairport-sync pulseaudio TCP server setting
   ansible.builtin.lineinfile:
     path: "/home/{{ target_user }}/.config/shairport-sync/shairport-sync.conf"
-    regexp: '^\s*//?\s*server\s*=\s*"host"'
-    line: '	server = "127.0.0.1";'
+    regexp: '^\s*server\s*=\s*"127\.0\.0\.1"'
+    state: absent
   become: true
   become_user: "{{ target_user }}"
   notify: Restart shairport-sync
