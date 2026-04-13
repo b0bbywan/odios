@@ -8,7 +8,7 @@ ODIOS_USER="odio"
 ODIOS_HOME="/home/${ODIOS_USER}"
 
 # Required groups for odios services
-ODIOS_GROUPS="audio,users,input,plugdev,bluetooth,rfkill,cdrom"
+ODIOS_GROUPS="audio,users,input,plugdev,bluetooth,rfkill,cdrom,systemd-journal"
 
 RESTART_BLUETOOTH=false
 
