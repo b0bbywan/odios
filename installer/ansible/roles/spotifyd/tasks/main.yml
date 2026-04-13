@@ -15,6 +15,14 @@
     mode: '0755'
   become: true
 
+- name: Backup spotifyd config before changes
+  ansible.builtin.include_tasks: "../../../tasks/backup_conf_before.yml"
+  vars:
+    conf_path: "/home/{{ target_user }}/.config/spotifyd/spotifyd.conf"
+    conf_owner: "{{ target_user }}"
+    conf_group: "{{ target_user }}"
+    conf_mode: '0644'
+
 - name: Deploy spotifyd config
   ansible.builtin.template:
     src: spotifyd.conf.j2
@@ -24,6 +32,14 @@
     mode: '0644'
   become: true
   notify: Restart spotifyd
+
+- name: Backup spotifyd config after changes
+  ansible.builtin.include_tasks: "../../../tasks/backup_conf_after.yml"
+  vars:
+    conf_path: "/home/{{ target_user }}/.config/spotifyd/spotifyd.conf"
+    conf_owner: "{{ target_user }}"
+    conf_group: "{{ target_user }}"
+    conf_mode: '0644'
 
 - name: Enable user spotifyd service
   ansible.builtin.include_tasks: "../../../tasks/systemd_enable_user.yml"
