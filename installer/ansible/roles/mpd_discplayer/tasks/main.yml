@@ -121,6 +121,14 @@
     mode: '0700'
   become: true
 
+- name: Backup mpd-discplayer config before changes
+  ansible.builtin.include_tasks: "../../../tasks/backup_conf_before.yml"
+  vars:
+    conf_path: "/home/{{ target_user }}/.config/mpd-discplayer/config.yaml"
+    conf_owner: "{{ target_user }}"
+    conf_group: "{{ target_user }}"
+    conf_mode: '0644'
+
 - name: Deploy mpd-discplayer configuration
   ansible.builtin.template:
     src: config.yaml.j2
@@ -130,6 +138,14 @@
     mode: '0644'
   become: true
   notify: Restart mpd-discplayer
+
+- name: Backup mpd-discplayer config after changes
+  ansible.builtin.include_tasks: "../../../tasks/backup_conf_after.yml"
+  vars:
+    conf_path: "/home/{{ target_user }}/.config/mpd-discplayer/config.yaml"
+    conf_owner: "{{ target_user }}"
+    conf_group: "{{ target_user }}"
+    conf_mode: '0644'
 
 - name: Enable mpd-discplayer service
   ansible.builtin.include_tasks: "../../../tasks/systemd_enable_user.yml"

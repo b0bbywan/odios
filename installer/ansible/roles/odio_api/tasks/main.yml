@@ -63,6 +63,14 @@
     odio_api_power_can_poweroff: "{{ '\"yes\"' in odio_api_can_poweroff.stdout }}"
   when: install_mode == "live"
 
+- name: Backup odio-api config before changes
+  ansible.builtin.include_tasks: "../../../tasks/backup_conf_before.yml"
+  vars:
+    conf_path: "/home/{{ target_user }}/.config/odio-api/config.yaml"
+    conf_owner: "{{ target_user }}"
+    conf_group: "{{ target_user }}"
+    conf_mode: '0640'
+
 - name: Deploy odio-api configuration
   ansible.builtin.template:
     src: config.yaml.j2
@@ -72,6 +80,14 @@
     mode: '0640'
   become: true
   notify: Restart odio-api
+
+- name: Backup odio-api config after changes
+  ansible.builtin.include_tasks: "../../../tasks/backup_conf_after.yml"
+  vars:
+    conf_path: "/home/{{ target_user }}/.config/odio-api/config.yaml"
+    conf_owner: "{{ target_user }}"
+    conf_group: "{{ target_user }}"
+    conf_mode: '0640'
 
 - name: Enable odio-api service
   ansible.builtin.include_tasks: "../../../tasks/systemd_enable_user.yml"
