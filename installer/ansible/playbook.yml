@@ -106,6 +106,7 @@
           - "  {{ '✓' if install_shairport_sync else '✗' }} Shairport Sync (AirPlay)"
           - "  {{ '✓' if install_snapclient else '✗' }} Snapcast client"
           - "  {{ '✓' if install_upmpdcli else '✗' }} UPnP/DLNA renderer"
+          - "  {{ '✓' if install_upnpwebradios else '✗' }} UPnP web radios"
           - ""
           - "System should already be running !"
           - "Visit http://localhost:8018/ui"

@@ -87,6 +87,7 @@ ask_config() {
             echo ""
         fi
         read -rp "Install Tidal support? [y/N]: " INSTALL_TIDAL
+        read -rp "Install UPnP web radios? [y/N]: " INSTALL_UPNPWEBRADIOS
     fi
 
     if [[ "${INSTALL_MPD,,}" == "n" && "${INSTALL_MPD_DISCPLAYER,,}" == "y" ]] && command -v mpd &>/dev/null; then
@@ -118,6 +119,7 @@ prompt_for_config() {
     INSTALL_UPMPDCLI="${INSTALL_UPMPDCLI:-Y}"
     INSTALL_TIDAL="${INSTALL_TIDAL:-N}"
     INSTALL_SPOTIFYD="${INSTALL_SPOTIFYD:-N}"
+    INSTALL_UPNPWEBRADIOS="${INSTALL_UPNPWEBRADIOS:-N}"
     QOBUZ_USER="${QOBUZ_USER:-}"
     QOBUZ_PASS="${QOBUZ_PASS:-}"
 }
@@ -309,6 +311,7 @@ run_playbook() {
   "install_snapclient":     $(bool "$INSTALL_SNAPCLIENT"),
   "install_upmpdcli":       $(bool "$INSTALL_UPMPDCLI"),
   "install_tidal":          $(bool "$INSTALL_TIDAL"),
+  "install_upnpwebradios":  $(bool "$INSTALL_UPNPWEBRADIOS"),
   "install_mpd_discplayer": $(bool "$INSTALL_MPD_DISCPLAYER")
 }
 EOF

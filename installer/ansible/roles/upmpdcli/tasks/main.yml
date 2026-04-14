@@ -111,6 +111,10 @@
   ansible.builtin.include_tasks: tidal.yml
   when: install_tidal | bool
 
+- name: Configure UPnP web radios
+  ansible.builtin.include_tasks: webradios.yml
+  when: install_upnpwebradios | bool
+
 - name: Backup upmpdcli config after changes
   ansible.builtin.include_tasks: "../../../tasks/backup_conf_after.yml"
   vars:

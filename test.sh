@@ -151,6 +151,7 @@ case "${ACTION}" in
         $(ansible_extra_flags) \
         -e "install_spotifyd=true" \
         -e "install_tidal=true" \
+        -e "install_upnpwebradios=true" \
         -e "qobuz_user=test@example.com" \
         -e "qobuz_pass=boguspassword" \
         -e "mpd_discplayer_gnu_email=test@example.com" \
@@ -172,6 +173,7 @@ case "${ACTION}" in
         $(ansible_extra_flags) \
         -e "install_spotifyd=true" \
         -e "install_tidal=true" \
+        -e "install_upnpwebradios=true" \
         -e "qobuz_user=test@example.com" \
         -e "qobuz_pass=boguspassword" \
         -e "mpd_discplayer_gnu_email=test@example.com" \
