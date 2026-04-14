@@ -21,3 +21,4 @@ install_snapclient: true
 install_upmpdcli: true
 install_tidal: false
 install_spotifyd: false
+install_upnpwebradios: false

@@ -1,0 +1,45 @@
+---
+- name: Install pip
+  ansible.builtin.apt:
+    name:
+      - python3-pip
+    state: present
+    install_recommends: false
+  become: true
+
+- name: Install bottle python package
+  ansible.builtin.pip:
+    break_system_packages: true
+    name: pyradios
+  become: true
+  become_user: "{{ target_user }}"
+
+- name: Install upmpdcli web radio plugins
+  ansible.builtin.apt:
+    name:
+      - upmpdcli-radios
+      - upmpdcli-radio-browser
+      - upmpdcli-radio-paradise
+      - upmpdcli-mother-earth-radio
+    state: present
+    install_recommends: false
+  become: true
+  notify: Restart upmpdcli
+
+- name: Configure upmpdcli web radio plugins
+  ansible.builtin.lineinfile:
+    path: "/home/{{ target_user }}/.config/upmpdcli/upmpdcli.conf"
+    regexp: "^#?{{ item.key }}\\s*="
+    line: "{{ item.key }} = {{ item.value }}"
+  become: true
+  become_user: "{{ target_user }}"
+  loop:
+    - { key: "upradiosuser", value: "bugsbunny" }
+    - { key: "upradiostitle", value: "Upmpdcli Radio List" }
+    - { key: "radio-browseruser", value: "bugsbunny" }
+    - { key: "radio-browsertitle", value: "Radio Browser" }
+    - { key: "radio-paradiseuser", value: "bugsbunny" }
+    - { key: "radio-paradisetitle", value: "Radio Paradise" }
+    - { key: "mother-earth-radiouser", value: "bugsbunny" }
+    - { key: "mother-earth-radiotitle", value: "Mother Earth Radio" }
+  notify: Restart upmpdcli

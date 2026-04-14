@@ -52,6 +52,7 @@ ANSIBLE_EXTRA_VARS=(
     "install_mode=image"
     "install_spotifyd=true"
     "install_tidal=true"
+    "install_upnpwebradios=true"
     "qobuz_user=changeme"
     "qobuz_pass=changeme"
 )
