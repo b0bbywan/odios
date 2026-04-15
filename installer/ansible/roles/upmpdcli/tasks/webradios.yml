@@ -7,7 +7,7 @@
     install_recommends: false
   become: true
 
-- name: Install bottle python package
+- name: Install pyradios python package
   ansible.builtin.pip:
     break_system_packages: true
     name: pyradios
