@@ -27,6 +27,14 @@ jobs:
       is_release: ${{ steps.meta.outputs.is_release }}
     steps:
       - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Drift check — role versions match touched files (PR only)
+        if: github.event_name == 'pull_request'
+        run: |
+          git fetch --tags origin
+          ./scripts/check-role-drift.sh
 
       - name: Set build metadata
         id: meta
@@ -81,7 +89,13 @@ jobs:
           # Stamp version
           echo "${{ steps.meta.outputs.version }}" > staging/VERSION
 
-          tar czf "${{ steps.meta.outputs.archive_name }}" -C staging ansible vendor licenses VERSION
+          # Build per-release role manifest
+          ./scripts/build-manifest.py \
+            "${{ steps.meta.outputs.version }}" \
+            staging/ansible/roles \
+            staging/manifest.json
+
+          tar czf "${{ steps.meta.outputs.archive_name }}" -C staging ansible vendor licenses VERSION manifest.json
 
           echo "Archive size: $(du -sh ${{ steps.meta.outputs.archive_name }} | cut -f1)"
           echo "Archive contents:"
@@ -91,6 +105,12 @@ jobs:
         with:
           name: playbooks-archive
           path: ${{ steps.meta.outputs.archive_name }}
+          retention-days: 5
+
+      - uses: actions/upload-artifact@v6
+        with:
+          name: manifest
+          path: staging/manifest.json
           retention-days: 5
 
   release:
@@ -107,12 +127,17 @@ jobs:
         with:
           name: playbooks-archive
 
+      - uses: actions/download-artifact@v7
+        with:
+          name: manifest
+
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
           files: |
             ${{ needs.build.outputs.archive_name }}
             installer/install.sh
+            manifest.json
           generate_release_notes: true
 
   pre-release:
@@ -129,6 +154,10 @@ jobs:
         with:
           name: playbooks-archive
 
+      - uses: actions/download-artifact@v7
+        with:
+          name: manifest
+
       - name: Create GitHub Pre-Release
         uses: softprops/action-gh-release@v2
         with:
@@ -139,6 +168,7 @@ jobs:
           files: |
             ${{ needs.build.outputs.archive_name }}
             installer/install.sh
+            manifest.json
           body: |
             Pre-release automatique pour la PR #${{ github.event.pull_request.number }}.
 

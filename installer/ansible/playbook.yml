@@ -84,6 +84,9 @@
         state: absent
       become: true
 
+    - name: Write installation state
+      ansible.builtin.include_tasks: "tasks/write_state.yml"
+
     - name: Display installation summary
       ansible.builtin.debug:
         msg:
