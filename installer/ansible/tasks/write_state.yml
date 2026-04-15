@@ -1,0 +1,44 @@
+---
+- name: Build list of installed roles
+  ansible.builtin.set_fact:
+    _odios_installed_roles: >-
+      {{
+        ['common', 'branding']
+        + (['pulseaudio']      if install_pulseaudio      | bool else [])
+        + (['bluetooth']       if install_bluetooth       | bool else [])
+        + (['mpd']             if install_mpd             | bool else [])
+        + (['mpd_discplayer']  if install_mpd_discplayer  | bool else [])
+        + (['shairport_sync']  if install_shairport_sync  | bool else [])
+        + (['snapclient']      if install_snapclient      | bool else [])
+        + (['upmpdcli']        if install_upmpdcli        | bool else [])
+        + (['spotifyd']        if install_spotifyd        | bool else [])
+        + (['odio_api']        if install_odio_api        | bool else [])
+      }}
+
+- name: Aggregate role versions from vars/main.yml
+  ansible.builtin.set_fact:
+    _odios_role_versions: >-
+      {{
+        _odios_role_versions | default({}) | combine({
+          item: (lookup('ansible.builtin.file', playbook_dir ~ '/roles/' ~ item ~ '/vars/main.yml') | from_yaml)[item ~ '_version']
+        })
+      }}
+  loop: "{{ _odios_installed_roles }}"
+
+- name: Ensure ~/.cache/odio exists
+  ansible.builtin.file:
+    path: "/home/{{ target_user }}/.cache/odio"
+    state: directory
+    owner: "{{ target_user }}"
+    group: "{{ target_user }}"
+    mode: '0755'
+  become: true
+
+- name: Write ~/.cache/odio/state.json
+  ansible.builtin.copy:
+    content: "{{ {'odios': odio_version, 'roles': _odios_role_versions} | to_nice_json }}\n"
+    dest: "/home/{{ target_user }}/.cache/odio/state.json"
+    owner: "{{ target_user }}"
+    group: "{{ target_user }}"
+    mode: '0644'
+  become: true
