@@ -38,7 +38,7 @@
 - name: Configure shairport-sync name
   ansible.builtin.lineinfile:
     path: "/home/{{ target_user }}/.config/shairport-sync/shairport-sync.conf"
-    regexp: '^\s*//?\s*name\s*='
+    regexp: '^\s*//\s*name\s*=\s*"%H"'
     line: '	name = "%h";'
   become: true
   become_user: "{{ target_user }}"
@@ -74,7 +74,7 @@
 - name: Configure shairport-sync application name
   ansible.builtin.lineinfile:
     path: "/home/{{ target_user }}/.config/shairport-sync/shairport-sync.conf"
-    regexp: '^\s*//?\s*application_name\s*='
+    regexp: '^\s*//\s*application_name\s*=.*"Applications" tab'
     line: '	application_name = "Shairport Sync";'
   become: true
   become_user: "{{ target_user }}"
