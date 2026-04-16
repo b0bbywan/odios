@@ -43,7 +43,16 @@ provision_image() {
         extra_vars_flags+=" -e ${var}"
     done
 
-    log_info "Running Ansible playbook inside chroot..."
+    # Read odios version stamped into the archive at build time (matches install.sh)
+    local odios_version
+    odios_version=$(tar xzOf "$rootfs/tmp/odios.tar.gz" VERSION 2>/dev/null | tr -d '[:space:]' || true)
+    if [[ -z "$odios_version" ]]; then
+        log_error "VERSION file missing from archive — cannot stamp odio_version"
+        exit 1
+    fi
+    extra_vars_flags+=" -e odio_version=${odios_version}"
+
+    log_info "Running Ansible playbook inside chroot (odio_version=${odios_version})..."
     chroot "$rootfs" /bin/bash -e <<PROVISION
 set -euo pipefail
 export LC_ALL=C.UTF-8
