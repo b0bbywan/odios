@@ -36,7 +36,7 @@
 
 - name: Write ~/.cache/odio/state.json
   ansible.builtin.copy:
-    content: "{{ {'odios': odio_version, 'roles': _odios_role_versions} | to_nice_json }}\n"
+    content: "{{ {'odios': odio_version, 'install_mode': install_mode, 'roles': _odios_role_versions} | to_nice_json }}\n"
     dest: "/home/{{ target_user }}/.cache/odio/state.json"
     owner: "{{ target_user }}"
     group: "{{ target_user }}"
