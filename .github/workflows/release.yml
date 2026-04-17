@@ -236,20 +236,27 @@ jobs:
 
   test-playbook-arm:
     needs: build-test-image
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.runner }}
     strategy:
       fail-fast: false
       matrix:
         include:
           - platform: linux/arm64
+            runner: ubuntu-24.04-arm
+            qemu: false
           - platform: linux/arm/v7
+            runner: ubuntu-latest
+            qemu: true
           - platform: linux/arm/v6
+            runner: ubuntu-latest
+            qemu: true
             experimental: true
     continue-on-error: ${{ matrix.experimental == true }}
     steps:
       - uses: actions/checkout@v5
 
       - name: Set up QEMU
+        if: matrix.qemu
         uses: docker/setup-qemu-action@v4
 
       - name: Run playbook test (${{ matrix.platform }})
