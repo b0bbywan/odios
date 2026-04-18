@@ -18,7 +18,9 @@ STATE_PATH = os.path.expanduser("~/.cache/odio/state.json")
 OUTPUT_PATH = os.path.expanduser("~/.cache/odio/upgrades.json")
 
 _PRE_PHASES = {"a": 0, "b": 1, "rc": 2}
-_VERSION_RE = re.compile(r"^(\d+)\.(\d+)\.(\d+)(?:(a|b|rc)(\d+))?$")
+_VERSION_RE = re.compile(
+    r"^(\d+)\.(\d+)\.(\d+)(?:(a|b|rc)(\d+))?(?:-(\d+)-g[0-9a-f]+)?$"
+)
 
 
 def parse_version(v: str) -> tuple:
@@ -32,7 +34,8 @@ def parse_version(v: str) -> tuple:
     else:
         phase = 3
         pre_num = 0
-    return (year, month, patch, phase, pre_num)
+    dev_commits = int(m.group(6)) if m.group(6) else 0
+    return (year, month, patch, phase, pre_num, dev_commits)
 
 
 def fetch_manifest(url: str) -> dict:
