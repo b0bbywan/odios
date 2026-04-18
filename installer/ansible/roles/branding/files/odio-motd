@@ -35,6 +35,13 @@ for r in data.get('roles', []):
     [ -n "$upgrade" ] && printf '\n%s\n' "$upgrade"
 fi
 
+OS_NAME="Linux"
+if [ -r /etc/os-release ]; then
+    # shellcheck disable=SC1091
+    . /etc/os-release
+    OS_NAME="${NAME:-Linux}"
+fi
+
 echo
-echo "odio comes with ABSOLUTELY NO WARRANTY, to the extent"
-echo "permitted by applicable law."
+echo "odio - ${OS_NAME} comes with ABSOLUTELY NO WARRANTY, to the"
+echo "extent permitted by applicable law."

@@ -50,6 +50,7 @@ ANSIBLE_EXTRA_VARS=(
     "target_user=${ODIOS_USER}"
     "target_hostname=odio"
     "install_mode=image"
+    "install_motd=true"
     "install_spotifyd=true"
     "install_tidal=true"
     "install_upnpwebradios=true"
