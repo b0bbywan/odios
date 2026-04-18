@@ -46,7 +46,8 @@ jobs:
             echo "is_release=true" >> "$GITHUB_OUTPUT"
           else
             SHA="${{ github.event.pull_request.head.sha }}"
-            echo "version=dev-${SHA::8}" >> "$GITHUB_OUTPUT"
+            VERSION=$(git describe --tags --long --always "${SHA}")
+            echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
             echo "archive_name=${ARCHIVE_PREFIX}-dev.tar.gz" >> "$GITHUB_OUTPUT"
             echo "is_release=false" >> "$GITHUB_OUTPUT"
           fi

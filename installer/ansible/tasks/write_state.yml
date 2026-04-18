@@ -42,3 +42,10 @@
     group: "{{ target_user }}"
     mode: '0644'
   become: true
+
+- name: Refresh ~/.cache/odio/upgrades.json
+  ansible.builtin.command: "/home/{{ target_user }}/.local/bin/odio-check-upgrade"
+  become: true
+  become_user: "{{ target_user }}"
+  changed_when: false
+  failed_when: false
