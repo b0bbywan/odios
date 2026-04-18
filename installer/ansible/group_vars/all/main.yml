@@ -23,3 +23,6 @@ install_upmpdcli: true
 install_tidal: false
 install_spotifyd: false
 install_upnpwebradios: false
+
+# Branding (odio-motd, hushlogin, .profile hook)
+install_motd: false
