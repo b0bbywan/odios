@@ -1,9 +1,44 @@
-# [odio](https://beta.odio.love/)
+  <p align="center">
+    <a href="https://odio.love">
+      <img src="https://odio.love/logo.png" alt="odio" width="160" /> 
+    </a>   
+  </p>
+  <h1 align="center">odios</h1>
+  <p align="center"><em>Turns a Raspberry Pi or any Debian-based Linux into a multi-source audio streamer.</em></p>
+  <p align="center">
+    <a href="https://github.com/b0bbywan/odios/releases"><img src="https://img.shields.io/github/v/release/b0bbywan/odios?include_prereleases" alt="Release" /></a>
+    <a href="https://github.com/b0bbywan/odios/blob/main/LICENSE"><img src="https://img.shields.io/github/license/b0bbywan/odios" alt="License" /></a>   
+    <a href="https://github.com/b0bbywan/odios/actions/workflows/release.yml"><img src="https://github.com/b0bbywan/odios/actions/workflows/release.yml/badge.svg" alt="Build" /></a>
+    <a href="https://github.com/sponsors/b0bbywan"><img src="https://img.shields.io/github/sponsors/b0bbywan?label=Sponsor&logo=GitHub" alt="GitHub Sponsors" /></a>
+  </p>
+  <p align="center">
+    <a href="https://docs.odio.love/guides/bluetooth/"><img src="https://img.shields.io/badge/Bluetooth-0082FC?logo=bluetooth&logoColor=white" alt="Bluetooth" /></a>
+    <a href="https://docs.odio.love/guides/airplay/"><img src="https://img.shields.io/badge/AirPlay-000000?logo=apple&logoColor=white" alt="AirPlay" /></a>
+    <a href="https://docs.odio.love/guides/spotify/"><img src="https://img.shields.io/badge/Spotify%20Connect-1DB954?logo=spotify&logoColor=white" alt="Spotify Connect" /></a>
+    <a href="https://docs.odio.love/guides/dlna/"><img src="https://img.shields.io/badge/UPnP%20%2F%20DLNA-447799" alt="UPnP / DLNA" /></a>
+    <a href="https://docs.odio.love/guides/mpd/"><img src="https://img.shields.io/badge/MPD-F18D00" alt="MPD" /></a>
+    <a href="https://docs.odio.love/guides/snapcast/"><img src="https://img.shields.io/badge/Multi--room-5B21B6" alt="Multi-room" /></a>
+    <a href="https://docs.odio.love/guides/tidal-qobuz/"><img src="https://img.shields.io/badge/Tidal%20%26%20Qobuz-000000" alt="Tidal &amp; Qobuz" /></a>
+    <a href="https://docs.odio.love/guides/network-audio/"><img src="https://img.shields.io/badge/PulseAudio%20TCP-0055AA" alt="PulseAudio TCP" /></a>   
+  </p>
+  <p align="center">
+    Part of the <a href="https://odio.love">odio</a> project — <a href="https://docs.odio.love/">Full documentation</a>.
+  </p>
+  <p align="center">                          
+    <a href="https://www.debian.org/"><img src="https://img.shields.io/badge/Debian-A81D33?logo=debian&logoColor=white" alt="Debian" /></a>  
+    <a href="https://go.dev/"><img src="https://img.shields.io/badge/Go-00ADD8?logo=go&logoColor=white" alt="Go" /></a>
+    <a href="https://htmx.org/"><img src="https://img.shields.io/badge/htmx-3366CC?logo=htmx&logoColor=white" alt="htmx" /></a>
+    <a href="https://tailwindcss.com/"><img src="https://img.shields.io/badge/Tailwind%20CSS-06B6D4?logo=tailwindcss&logoColor=white" alt="Tailwind CSS" /></a>
+    <a href="https://www.python.org/"><img src="https://img.shields.io/badge/Python-3776AB?logo=python&logoColor=white" alt="Python" /></a>
+    <a href="https://www.ansible.com/"><img src="https://img.shields.io/badge/Ansible-EE0000?logo=ansible&logoColor=white" alt="Ansible" /></a>
+    <a href="https://www.gnu.org/software/bash/"><img src="https://img.shields.io/badge/Bash-4EAA25?logo=gnubash&logoColor=white" alt="Bash" /></a>
+    <a href="https://github.com/features/actions"><img src="https://img.shields.io/badge/GitHub%20Actions-2088FF?logo=githubactions&logoColor=white" alt="GitHub Actions" /></a>
+    <a href="https://svelte.dev/"><img src="https://img.shields.io/badge/Svelte-FF3E00?logo=svelte&logoColor=white" alt="Svelte" /></a>
+    <a href="https://astro.build/"><img src="https://img.shields.io/badge/Astro-BC52EE?logo=astro&logoColor=white" alt="Astro" /></a>
+    <a href="https://starlight.astro.build/"><img src="https://img.shields.io/badge/Starlight-7C3AED" alt="Starlight" /></a>
+  </p> 
 
-[![Build](https://github.com/b0bbywan/odios/actions/workflows/release.yml/badge.svg)](https://github.com/b0bbywan/odios/actions/workflows/release.yml)
-[![GitHub Sponsors](https://img.shields.io/github/sponsors/b0bbywan?label=Sponsor&logo=GitHub)](https://github.com/sponsors/b0bbywan)
-
-### Open-source audiophile distribution for Debian/Ubuntu and Raspberry Pi with native Home Assistant integration.
+# Open-source audiophile distribution for Debian/Ubuntu and Raspberry Pi with native Home Assistant integration.
 
 odios turns a €35 Raspberry Pi into what commercial streamers sell for €300–500: Bluetooth A2DP, AirPlay, Snapcast multi-room, UPnP/DLNA, CD playback with metadata — all in one box, controlled from a web app, no account or subscription required. Other PCs running PulseAudio or PipeWire can also stream directly to it over the network, making it a true whole-home audio sink.
 
