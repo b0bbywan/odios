@@ -110,6 +110,18 @@ The installer works on both fresh and existing systems (idempotent, safe to re-r
 
 See [installer/README.md](installer/README.md) for full installation options, environment variables, and testing.
 
+## Upgrading
+
+Each release installs `odio-check-upgrade` (runs daily via a systemd user timer) and `odio-upgrade`. To apply pending upgrades:
+
+```bash
+odio-upgrade                    # upgrade to the latest version reported by odio-check-upgrade
+odio-upgrade --version 2026.5.0 # upgrade to a specific version
+systemctl --user start odio-upgrade   # same thing, via the installed user unit
+```
+
+`odio-upgrade` reads `/var/cache/odio/state.json` (or `~/.cache/odio/state.json` from a pre-rc3 install, or reconstructs from dpkg as a last resort) to preserve the feature selection and role opt-outs across upgrades. Run `odio-upgrade --dry-run --force` to see what would be invoked without running it.
+
 ## Recommended clients
 
 | Client | Protocol | Platform |
@@ -146,7 +158,7 @@ See [installer/README.md](installer/README.md) for full installation options, en
 | **System philosophy** | Linux-native modular stack | Appliance-style distribution |
 | **Debian base** | Trixie (stable) | Bookworm (oldstable) |
 | **Installation** | Image flash (Pi) or `curl \| bash` (any Debian/Ubuntu) | Image flash |
-| **Upgrade** | `apt upgrade` | OTA updates / Reflash between major versions |
+| **Upgrade** | `odio-upgrade` | OTA updates / Reflash between major versions |
 | **Long-term stability** | No reinstall between Buster and Trixie | Reflash between major versions |
 
 ## Related projects
