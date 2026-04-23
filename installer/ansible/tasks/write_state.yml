@@ -3,7 +3,7 @@
   ansible.builtin.set_fact:
     _odios_installed_roles: >-
       {{
-        ['common',
+        ['common', 'upgrade']
         + (['branding']        if install_branding        | bool else [])
         + (['pulseaudio']      if install_pulseaudio      | bool else [])
         + (['bluetooth']       if install_bluetooth       | bool else [])
@@ -26,26 +26,72 @@
       }}
   loop: "{{ _odios_installed_roles }}"
 
-- name: Ensure ~/.cache/odio exists
+# Explicit list of roles the user opted out of, so a future upgrade can tell
+# "deliberately excluded" (honor the choice) from "new role the install
+# predates" (fall back to install.sh's default for that flag).
+- name: Build list of excluded roles
+  ansible.builtin.set_fact:
+    _odios_excluded_roles: >-
+      {{
+        ['branding', 'pulseaudio', 'bluetooth', 'mpd', 'mpd_discplayer', 'shairport_sync',
+         'snapclient', 'upmpdcli', 'spotifyd', 'odio_api']
+        | difference(_odios_installed_roles)
+      }}
+
+# Same split for sub-flags: features holds opt-ins, features_excluded holds
+# opt-outs. odio-upgrade reads both lists with pure opt-out semantics — only
+# entries in features_excluded map to N, everything else (listed in features
+# or absent from both) gets Y on upgrade.
+- name: Build list of enabled features
+  ansible.builtin.set_fact:
+    _odios_enabled_features: >-
+      {{
+        (['tidal']         if install_tidal         | bool else [])
+        + (['qobuz']         if install_qobuz         | bool else [])
+        + (['upnpwebradios'] if install_upnpwebradios | bool else [])
+      }}
+
+- name: Build list of excluded features
+  ansible.builtin.set_fact:
+    _odios_excluded_features: >-
+      {{
+        ['tidal', 'qobuz', 'upnpwebradios']
+        | difference(_odios_enabled_features)
+      }}
+
+# setgid (2775) so files created by odio-check-upgrade as target_user inherit
+# group `users` — needed for the timer to overwrite upgrades.json without sudo.
+- name: Ensure /var/cache/odio exists
   ansible.builtin.file:
-    path: "/home/{{ target_user }}/.cache/odio"
+    path: /var/cache/odio
     state: directory
-    owner: "{{ target_user }}"
-    group: "{{ target_user }}"
-    mode: '0755'
+    owner: root
+    group: users
+    mode: '2775'
   become: true
 
-- name: Write ~/.cache/odio/state.json
+- name: Assemble state.json payload
+  ansible.builtin.set_fact:
+    _odios_state:
+      odios: "{{ odio_version }}"
+      install_mode: "{{ install_mode }}"
+      target_user: "{{ target_user }}"
+      roles: "{{ _odios_role_versions }}"
+      roles_excluded: "{{ _odios_excluded_roles }}"
+      features: "{{ _odios_enabled_features }}"
+      features_excluded: "{{ _odios_excluded_features }}"
+
+- name: Write /var/cache/odio/state.json
   ansible.builtin.copy:
-    content: "{{ {'odios': odio_version, 'install_mode': install_mode, 'roles': _odios_role_versions} | to_nice_json }}\n"
-    dest: "/home/{{ target_user }}/.cache/odio/state.json"
-    owner: "{{ target_user }}"
-    group: "{{ target_user }}"
-    mode: '0644'
+    content: "{{ _odios_state | to_nice_json }}\n"
+    dest: /var/cache/odio/state.json
+    owner: root
+    group: users
+    mode: '0664'
   become: true
 
-- name: Refresh ~/.cache/odio/upgrades.json
-  ansible.builtin.command: "/home/{{ target_user }}/.local/bin/odio-check-upgrade"
+- name: Refresh /var/cache/odio/upgrades.json
+  ansible.builtin.command: /usr/local/bin/odio-check-upgrade
   become: true
   become_user: "{{ target_user }}"
   changed_when: false

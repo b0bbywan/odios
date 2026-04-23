@@ -14,6 +14,7 @@ set -euo pipefail
 GITHUB_REPO="b0bbywan/odios"
 ODIOS_VERSION="${ODIOS_VERSION:-latest}"
 INSTALL_MODE="${INSTALL_MODE:-live}"
+CURRENT_USER="${USER:-$(id -un)}"   # resilient to unset USER (docker exec, cron, …)
 
 export LANG="${LANG:-C.UTF-8}"
 export LC_ALL="${LC_ALL:-C.UTF-8}"
@@ -48,15 +49,15 @@ ask_config() {
     dpkg -l pipewire 2>/dev/null | grep -q '^ii' && pipewire_installed=true
 
     if $pipewire_installed; then
-        echo -e "${YELLOW}⚠ PipeWire is installed — it will conflict with PulseAudio for the current user '$USER'.${NC}"
-        echo -e "${YELLOW}  Tip: use a dedicated user (e.g. 'odios') to avoid this.${NC}"
+        echo -e "${YELLOW}⚠ PipeWire is installed — it will conflict with PulseAudio for the current user '${CURRENT_USER}'.${NC}"
+        echo -e "${YELLOW}  Tip: use a dedicated user (e.g. 'odio') to avoid this.${NC}"
         echo ""
     fi
 
-    read -rp "Target user [$USER]: " TARGET_USER
-    TARGET_USER="${TARGET_USER:-$USER}"
+    read -rp "Target user [${CURRENT_USER}]: " TARGET_USER
+    TARGET_USER="${TARGET_USER:-${CURRENT_USER}}"
 
-    if $pipewire_installed && [[ "$TARGET_USER" == "$USER" ]]; then
+    if $pipewire_installed && [[ "$TARGET_USER" == "${CURRENT_USER}" ]]; then
         read -rp "  ⚠ PipeWire conflict with '$TARGET_USER' — continue anyway? [y/N]: " _pw_confirm
         [[ $(bool "${_pw_confirm:-N}") == "true" ]] || { echo -e "${RED}Aborting.${NC}"; exit 1; }
     fi
@@ -101,9 +102,9 @@ ask_config() {
 }
 
 prompt_for_config() {
-    [[ "$INSTALL_MODE" == "live" ]] && ask_config
+    [[ "$INSTALL_MODE" == "live" && -z "${TARGET_USER:-}" ]] && ask_config
 
-    TARGET_USER="${TARGET_USER:-$USER}"
+    TARGET_USER="${TARGET_USER:-${CURRENT_USER}}"
     MPD_MUSIC_DIRECTORY="${MPD_MUSIC_DIRECTORY:-}"
     MPD_CONF_PATH="${MPD_CONF_PATH:-}"
     INSTALL_PULSEAUDIO="${INSTALL_PULSEAUDIO:-Y}"
