@@ -3,8 +3,13 @@
 # Sets fact: is_headless (bool) — true when no DE manages the session.
 # Variables: none
 
+# Resolve default.target offline (read the symlink) — `systemctl get-default`
+# needs the system bus, which isn't running during image-mode builds.
 - name: Check systemd default target
-  ansible.builtin.command: systemctl get-default
+  ansible.builtin.shell: >-
+    basename "$(readlink /etc/systemd/system/default.target 2>/dev/null ||
+    readlink /usr/lib/systemd/system/default.target 2>/dev/null ||
+    echo multi-user.target)"
   register: _systemd_default_target
   changed_when: false
 
