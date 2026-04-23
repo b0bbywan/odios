@@ -42,13 +42,13 @@ RUN rm -f /lib/systemd/system/multi-user.target.wants/* \
            /lib/systemd/system/multi-user.target.wants/dbus.service
 
 # Create non-root user with passwordless sudo
-RUN useradd -m -s /bin/bash odios && \
-    echo 'odios ALL=(ALL) NOPASSWD:ALL' > /etc/sudoers.d/odios
+RUN useradd -m -s /bin/bash odio && \
+    echo 'odio ALL=(ALL) NOPASSWD:ALL' > /etc/sudoers.d/odio
 
 FROM system AS final
 
 COPY installer/ansible /opt/odios/ansible
-RUN chown -R odios:odios /opt/odios
+RUN chown -R odio:odio /opt/odios
 
 WORKDIR /opt/odios/ansible
 

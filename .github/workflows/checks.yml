@@ -1,0 +1,50 @@
+name: Checks
+
+on:
+  workflow_call:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  ansible-lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: ansible/ansible-lint@v26
+        with:
+          working_directory: installer/ansible
+
+  shellcheck:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: ludeeus/action-shellcheck@master
+        with:
+          additional_files: 'installer/install.sh tests/test.sh image-builder/*.sh image-builder/lib/*.sh image-builder/files/*.sh'
+          scandir: '.'
+          severity: 'warning'
+
+  unit-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+      - run: pip install pyyaml
+      - run: python3 -m unittest discover -v tests
+
+  role-drift:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+      - name: Fetch tags
+        run: git fetch --tags origin
+      - name: Drift check — role versions match touched files
+        run: ./scripts/check-role-drift.sh

@@ -5,7 +5,7 @@ on:
     branches:
       - main
     paths:
-      - Dockerfile.test
+      - tests/Dockerfile.test
 
 permissions:
   packages: write
@@ -27,6 +27,6 @@ jobs:
         uses: docker/build-push-action@v7
         with:
           context: .
-          file: Dockerfile.test
+          file: tests/Dockerfile.test
           push: true
           tags: ghcr.io/${{ github.repository }}/test:latest
