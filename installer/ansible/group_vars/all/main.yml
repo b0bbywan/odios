@@ -25,5 +25,5 @@ install_qobuz: false
 install_spotifyd: false
 install_upnpwebradios: false
 
-# Branding (odio-motd, hushlogin, .profile hook)
-install_motd: false
+# Branding (odio-motd login banner, hushlogin, .profile hook)
+install_branding: false

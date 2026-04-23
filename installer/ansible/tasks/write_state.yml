@@ -3,7 +3,8 @@
   ansible.builtin.set_fact:
     _odios_installed_roles: >-
       {{
-        ['common', 'branding']
+        ['common',
+        + (['branding']        if install_branding        | bool else [])
         + (['pulseaudio']      if install_pulseaudio      | bool else [])
         + (['bluetooth']       if install_bluetooth       | bool else [])
         + (['mpd']             if install_mpd             | bool else [])

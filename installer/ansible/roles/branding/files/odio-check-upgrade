@@ -14,8 +14,8 @@ import urllib.request
 from datetime import datetime, timezone
 
 MANIFEST_URL = "https://odio.love/manifest.json"
-STATE_PATH = os.path.expanduser("~/.cache/odio/state.json")
-OUTPUT_PATH = os.path.expanduser("~/.cache/odio/upgrades.json")
+STATE_PATH = "/var/cache/odio/state.json"
+OUTPUT_PATH = "/var/cache/odio/upgrades.json"
 
 _PRE_PHASES = {"a": 0, "b": 1, "rc": 2}
 _VERSION_RE = re.compile(
@@ -92,6 +92,13 @@ def main() -> int:
     with open(args.output, "w") as f:
         json.dump(result, f, indent=2)
         f.write("\n")
+    # Default umask gives 0644; explicit chmod so other `users` group members
+    # (target_user when the timer runs as them, ansible become_user, etc.)
+    # can rewrite this file without needing root.
+    try:
+        os.chmod(args.output, 0o664)
+    except OSError:
+        pass
 
     if upgrade_available:
         print(f"Upgrades available: {current} → {latest}")
