@@ -21,6 +21,7 @@ install_shairport_sync: true
 install_snapclient: true
 install_upmpdcli: true
 install_tidal: false
+install_qobuz: false
 install_spotifyd: false
 install_upnpwebradios: false
 
