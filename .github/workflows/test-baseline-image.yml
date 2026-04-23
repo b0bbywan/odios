@@ -1,0 +1,35 @@
+name: Build test-baseline image
+
+# Manually-triggered workflow that converts a published odios SD-card image
+# into a pushable Docker image used by the upgrade test (`test-upgrade` in
+# release.yml). Trigger once per baseline_tag listed in release.yml's matrix.
+
+on:
+  workflow_dispatch:
+    inputs:
+      baseline_tag:
+        description: "Baseline odios release tag (e.g. 2026.4.1rc2)"
+        required: true
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  build-baseline:
+    runs-on: ubuntu-24.04-arm
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Install dependencies
+        run: sudo apt-get update && sudo apt-get install -y xz-utils util-linux jq
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push test-baseline image
+        run: ./scripts/img-to-docker.sh "${{ github.event.inputs.baseline_tag }}" arm64

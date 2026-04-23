@@ -19,7 +19,11 @@ env:
   ARCHIVE_PREFIX: odio
 
 jobs:
+  checks:
+    uses: ./.github/workflows/checks.yml
+
   build:
+    needs: checks
     runs-on: ubuntu-latest
     outputs:
       archive_name: ${{ steps.meta.outputs.archive_name }}
@@ -29,12 +33,6 @@ jobs:
       - uses: actions/checkout@v5
         with:
           fetch-depth: 0
-
-      - name: Drift check — role versions match touched files (PR only)
-        if: github.event_name == 'pull_request'
-        run: |
-          git fetch --tags origin
-          ./scripts/check-role-drift.sh
 
       - name: Set build metadata
         id: meta
@@ -46,7 +44,7 @@ jobs:
             echo "is_release=true" >> "$GITHUB_OUTPUT"
           else
             SHA="${{ github.event.pull_request.head.sha }}"
-            VERSION=$(git describe --tags --long --always "${SHA}")
+            VERSION=$(git describe --tags --long --always --match='[0-9][0-9][0-9][0-9].*' "${SHA}")
             echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
             echo "archive_name=${ARCHIVE_PREFIX}-dev.tar.gz" >> "$GITHUB_OUTPUT"
             echo "is_release=false" >> "$GITHUB_OUTPUT"
@@ -216,7 +214,7 @@ jobs:
         uses: docker/build-push-action@v7
         with:
           context: .
-          file: Dockerfile.test
+          file: tests/Dockerfile.test
           push: true
           platforms: linux/amd64,linux/arm64,linux/arm/v7,linux/arm/v6
           tags: ${{ steps.meta.outputs.image }}
@@ -230,16 +228,16 @@ jobs:
       - uses: actions/checkout@v5
 
       - name: Run playbook test
-        run: ./test.sh
+        run: ./tests/test.sh
         env:
           REMOTE_IMAGE: ${{ needs.build-test-image.outputs.image }}
 
       - name: Re-run playbook (idempotence)
-        run: ./test.sh rerun
+        run: ./tests/test.sh rerun
 
       - name: Clean
         if: always()
-        run: ./test.sh clean
+        run: ./tests/test.sh clean
 
   test-playbook-arm:
     needs: build-test-image
@@ -267,19 +265,14 @@ jobs:
         uses: docker/setup-qemu-action@v4
 
       - name: Run playbook test (${{ matrix.platform }})
-        run: ./test.sh
+        run: ./tests/test.sh
         env:
           REMOTE_IMAGE: ${{ needs.build-test-image.outputs.image }}
           PLATFORM: ${{ matrix.platform }}
 
-      - name: Re-run playbook (idempotence)
-        run: ./test.sh rerun
-        env:
-          PLATFORM: ${{ matrix.platform }}
-
       - name: Clean
         if: always()
-        run: ./test.sh clean
+        run: ./tests/test.sh clean
 
   test-install:
     needs: [build, build-test-image, pre-release, release]
@@ -305,13 +298,73 @@ jobs:
           fi
 
       - name: Test curl|bash (${{ matrix.mode }})
-        run: ./test.sh ${{ matrix.mode }} ${{ steps.tag.outputs.value }}
+        run: ./tests/test.sh ${{ matrix.mode }} ${{ steps.tag.outputs.value }}
         env:
           REMOTE_IMAGE: ${{ needs.build-test-image.outputs.image }}
 
       - name: Clean
         if: always()
-        run: ./test.sh clean
+        run: ./tests/test.sh clean
+
+  test-upgrade:
+    needs: [build, pre-release, release]
+    if: |
+      !cancelled() &&
+      needs.build.result == 'success' &&
+      (needs.pre-release.result == 'success' || needs.release.result == 'success')
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # Exercise each stage of the upgrade-mechanism rollout:
+          #   - 2026.4.0rc3 : pre-state.json era → odio-upgrade falls back to
+          #                   reconstructing roles from odio-api's config.yaml
+          #   - 2026.4.1rc1 : state.json present, no `features` block yet
+          #   - 2026.4.1rc2 : state.json with `features` block (motd / tidal /
+          #                   upnpwebradios tracked)
+          - platform: linux/arm64
+            runner: ubuntu-24.04-arm
+            arch: arm64
+            baseline_tag: "2026.4.0rc3"
+          - platform: linux/arm64
+            runner: ubuntu-24.04-arm
+            arch: arm64
+            baseline_tag: "2026.4.1rc1"
+          - platform: linux/arm64
+            runner: ubuntu-24.04-arm
+            arch: arm64
+            baseline_tag: "2026.4.1rc2"
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Resolve target tag
+        id: tag
+        run: |
+          if [[ "${{ needs.build.outputs.is_release }}" == "true" ]]; then
+            echo "value=${{ needs.build.outputs.version }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "value=pr-${{ github.event.pull_request.number }}" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: "Run upgrade test (${{ matrix.platform }}: ${{ matrix.baseline_tag }} -> ${{ steps.tag.outputs.value }})"
+        run: ./tests/test.sh upgrade-from-image "${{ steps.tag.outputs.value }}"
+        env:
+          REMOTE_IMAGE: ghcr.io/${{ github.repository }}/test-baseline:${{ matrix.baseline_tag }}-${{ matrix.arch }}
+          PLATFORM: ${{ matrix.platform }}
+
+      - name: Clean
+        if: always()
+        run: ./tests/test.sh clean
+        env:
+          PLATFORM: ${{ matrix.platform }}
 
   build-image:
     needs: [build, pre-release, release]
