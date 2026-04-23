@@ -1,0 +1,78 @@
+---
+# Post-install health-check: every service that a role's handlers start/restart
+# must end up active. In image_build mode the session has no running services,
+# so skip the whole check.
+
+- name: Skip service health-check in image-build mode
+  ansible.builtin.debug:
+    msg: "install_mode={{ install_mode }} — skipping service health-check"
+  when: install_mode != "live"
+
+- name: Detect container environment (relax system-service checks)
+  ansible.builtin.set_fact:
+    _odios_in_container: "{{ ansible_facts.virtualization_type | default('') == 'docker' }}"
+  when: install_mode == "live"
+
+- name: Compute expected system services
+  ansible.builtin.set_fact:
+    _odios_expected_system_services: >-
+      {{ (['bluetooth.service'] if install_bluetooth | bool else []) }}
+  when: install_mode == "live"
+
+# pulse-tcp needs a live pulseaudio daemon to exist — in docker, pulseaudio
+# starts and dies right back without real audio hardware, so the check is
+# dropped there. Real-system coverage comes from test-install / test-upgrade.
+- name: Compute expected user services
+  ansible.builtin.set_fact:
+    _odios_expected_user_services: >-
+      {{
+        (['pulseaudio.service'] if install_pulseaudio | bool else [])
+        + (['pulse-tcp.service'] if install_pulseaudio | bool and not _odios_in_container else [])
+        + (['mpd.service', 'mpDris2.service'] if install_mpd    | bool else [])
+        + (['mpd-discplayer.service'] if install_mpd_discplayer | bool else [])
+        + (['shairport-sync.service'] if install_shairport_sync | bool else [])
+        + (['snapclient.service']     if install_snapclient     | bool else [])
+        + (['upmpdcli.service']       if install_upmpdcli       | bool else [])
+        + (['spotifyd.service']       if install_spotifyd       | bool else [])
+        + (['odio-api.service']       if install_odio_api       | bool else [])
+      }}
+  when: install_mode == "live"
+
+- name: Verify system services are active  # noqa command-instead-of-module
+  ansible.builtin.command: "systemctl is-active {{ item }}"
+  register: _sys_svc_check
+  changed_when: false
+  failed_when: _sys_svc_check.rc != 0
+  loop: "{{ _odios_expected_system_services }}"
+  become: true
+  when:
+    - install_mode == "live"
+    - not _odios_in_container
+
+- name: Verify system services are enabled (container fallback)  # noqa command-instead-of-module
+  ansible.builtin.command: "systemctl is-enabled {{ item }}"
+  register: _sys_svc_enabled
+  changed_when: false
+  failed_when: _sys_svc_enabled.rc != 0
+  loop: "{{ _odios_expected_system_services }}"
+  become: true
+  when:
+    - install_mode == "live"
+    - _odios_in_container
+
+- name: Verify user services are active  # noqa command-instead-of-module
+  ansible.builtin.command: "systemctl --user is-active {{ item }}"
+  register: _user_svc_check
+  changed_when: false
+  failed_when: _user_svc_check.rc != 0
+  loop: "{{ _odios_expected_user_services }}"
+  environment:
+    XDG_RUNTIME_DIR: "/run/user/{{ target_user_uid }}"
+  become: true
+  become_user: "{{ target_user }}"
+  when: install_mode == "live"
+
+- name: Health-check summary
+  ansible.builtin.debug:
+    msg: "Health-check passed: {{ _odios_expected_system_services | length }} system + {{ _odios_expected_user_services | length }} user services active"
+  when: install_mode == "live"
