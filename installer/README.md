@@ -13,7 +13,7 @@ Ansible-based "curl | bash" installer to set up a complete audio/multimedia syst
 ### Optional (disabled by default)
 - **Shairport Sync** - AirPlay receiver
 - **Snapcast** - Multi-room audio client
-- **UPnP/DLNA** - Renderer for UPnP application control, with optional Qobuz streaming (prompted at install time) and Tidal support (package only — tokens require manual configuration post-install in `~/.config/upmpdcli/upmpdcli.conf`).
+- **UPnP/DLNA** - Renderer for UPnP application control, with optional Qobuz and Tidal support (packages only — credentials are configured manually post-install in `~/.config/upmpdcli/upmpdcli.conf`).
 - **MPD DiscPlayer** - CD/USB support for MPD
 
 ## Fresh install vs existing system
@@ -25,8 +25,8 @@ The installer is fully idempotent — it can be run on a fresh system or an exis
 If you are installing on a system that already has a configured user, it is strongly recommended to target a **dedicated user** for odios. The playbook creates it automatically if it doesn't exist — the installer will confirm this at startup:
 
 ```
-Target user [pi]: odios
-✓ User 'odios' will be created.
+Target user [pi]: odio
+✓ User 'odio' will be created.
 ```
 
 If you install for an existing user, the installer warns you upfront:
@@ -101,6 +101,10 @@ curl -fsSL https://github.com/b0bbywan/odios/releases/latest/download/install.sh
 | `INSTALL_UPMPDCLI`       | `N`           | UPnP/DLNA renderer                   |
 | `INSTALL_MPD_DISCPLAYER` | `N`           | CD/DVD support                       |
 | `INSTALL_SPOTIFYD`       | `N`           | Spotify Connect                      |
+| `INSTALL_QOBUZ`          | `N`           | upmpdcli Qobuz plugin (credentials: manual, see `upmpdcli.conf`) |
+| `INSTALL_TIDAL`          | `N`           | upmpdcli Tidal plugin (credentials: manual, see `upmpdcli.conf`) |
+| `INSTALL_UPNPWEBRADIOS`  | `N`           | upmpdcli web radio plugins (Radio Browser, Radio Paradise, …) |
+| `INSTALL_BRANDING`       | `N`           | odio login banner (`odio-motd`, `.hushlogin`) |
 | `ODIOS_VERSION`          | `latest`      | Version to install (`pr-2`, `2026.3.0`, …) |
 
 ### Specific version or pre-release
@@ -117,6 +121,74 @@ ODIOS_VERSION=2026.3.0b1 curl -fsSL https://github.com/b0bbywan/odios/releases/d
 # PR pre-release
 ODIOS_VERSION=pr-5 curl -fsSL https://github.com/b0bbywan/odios/releases/download/pr-5/install.sh | bash
 ```
+
+## Upgrading
+
+Each install ships two helpers in `/usr/local/bin`:
+
+- **`odio-check-upgrade`** — compares the local state against the published manifest and refreshes `/var/cache/odio/upgrades.json`. Wired to a systemd user timer (daily, random delay) so the login banner / PWA can surface the result.
+- **`odio-upgrade`** — re-invokes `install.sh` for the target version with the `INSTALL_*` flags derived from the saved state. No argument = upgrade to whatever `upgrades.json` reports as latest.
+
+```bash
+odio-upgrade                      # upgrade to the latest published version
+odio-upgrade --version 2026.5.0   # target a specific release
+odio-upgrade --dry-run --force    # print what would be invoked, do nothing
+systemctl --user start odio-upgrade   # same, via the installed user unit (log in journalctl)
+```
+
+### Bootstrapping from a release asset
+
+`odio-upgrade` is also published as a standalone asset on every release, so installs that predate it (≤ rc2, no helper in `/usr/local/bin`) can run it directly:
+
+```bash
+curl -fsSL https://github.com/b0bbywan/odios/releases/latest/download/odio-upgrade -o /tmp/odio-upgrade
+chmod +x /tmp/odio-upgrade
+/tmp/odio-upgrade                 # reconstructs state from disk, then upgrades to latest
+```
+
+The subsequent upgrade installs the helper, so this bootstrap is needed only once.
+
+### How state is preserved
+
+Upgrades honor the previous feature selection by reading `~/.cache/odio/state.json`:
+
+| Field               | Meaning                                                             |
+|---------------------|---------------------------------------------------------------------|
+| `roles`             | Role → version of every role that was installed                     |
+| `roles_excluded`    | Roles the user opted out of (kept off on upgrade)                   |
+| `features`          | Opt-in sub-flags (e.g. `tidal`, `qobuz`, `upnpwebradios`)           |
+| `features_excluded` | Sub-flags the user opted out of (kept off on upgrade)               |
+
+Only entries in `roles_excluded` / `features_excluded` map to `INSTALL_*=N`. Everything else — whether listed in `roles`/`features` or absent from both (new release, schema gap, malformed state.json) — maps to `INSTALL_*=Y`. Upgrades are pure opt-out: `install.sh`'s built-in defaults don't apply, only the explicit exclusions do.
+
+`odio-upgrade` transparently backfills the newer fields for installs that predate them (rc1/rc2 state, or pre-rc3 installs with no state at all), using filesystem / dpkg introspection. Run with `--dry-run` to inspect.
+
+### Opting out before upgrade
+
+To keep a role or sub-flag off on the next upgrade, open `~/.cache/odio/state.json` in your editor and add its name to the matching `_excluded` list. Example — skipping the `branding` role and `upnpwebradios` feature:
+
+```diff
+ {
+   ...
+   "roles_excluded": [
+-
++    "branding"
+   ],
+   "features_excluded": [
+-
++    "upnpwebradios"
+   ]
+ }
+```
+
+Then:
+
+```bash
+odio-upgrade --dry-run --force   # verify the derived INSTALL_* flags
+odio-upgrade                      # apply
+```
+
+Removing an entry from the list opts back in — the next upgrade sees it as unlisted and re-installs it.
 
 ## Architecture
 
@@ -192,11 +264,11 @@ This mode has not been extensively tested across MPD configurations. Feedback we
 ### Run the playbook directly
 
 ```bash
-./test.sh               # pull image from GHCR + run playbook (ansible installed via pip)
-./test.sh rerun         # re-run playbook without restarting the container
-./test.sh shell         # shell into the container
-./test.sh clean         # remove the container
-./test.sh --build       # force local image build instead of pulling from GHCR
+./tests/test.sh               # pull image from GHCR + run playbook (ansible installed via pip)
+./tests/test.sh rerun         # re-run playbook without restarting the container
+./tests/test.sh shell         # shell into the container
+./tests/test.sh clean         # remove the container
+./tests/test.sh --build       # force local image build instead of pulling from GHCR
 ```
 
 ### Full curl|bash installer test
@@ -204,20 +276,20 @@ This mode has not been extensively tested across MPD configurations. Feedback we
 Tests `install.sh` from a GitHub release inside a systemd container:
 
 ```bash
-# As user odios (sudo) — standard user case
-./test.sh install pr-5
+# As user odio (sudo) — standard user case
+./tests/test.sh install pr-5
 
-# As root with TARGET_USER=odios — system installation case
-./test.sh install-root pr-5
+# As root with TARGET_USER=odio — system installation case
+./tests/test.sh install-root pr-5
 
 # Against the latest stable release
-./test.sh install latest
+./tests/test.sh install latest
 ```
 
 The `--build` flag works with all actions:
 
 ```bash
-./test.sh --build install pr-5
+./tests/test.sh --build install pr-5
 ```
 
 ### Service verification
@@ -229,6 +301,27 @@ pactl list modules | grep -E "tcp|zeroconf"
 
 mpc status
 ```
+
+### Upgrade testing (CI)
+
+The `test-upgrade` job in `release.yml` validates that an existing odios install can be upgraded to the PR's version via `curl | bash`. To match the real-world semantic (an odios system is already running on a Pi when the user upgrades), the test uses a **pre-provisioned baseline Docker image** built from a published SD-card `.img.xz` — not a fresh install of the baseline.
+
+The baseline is tracked by the repo variable `UPGRADE_BASELINE_TAG` (Settings → Variables), default `2026.4.0rc3`. When it is bumped, the corresponding Docker image must be (re)built once and pushed to GHCR.
+
+**Auto path (preferred, once the workflow lives on `main`):**
+
+Actions → "Build test-baseline image" → **Run workflow**. Matrix currently builds `arm64` on a native arm64 runner. Output: `ghcr.io/b0bbywan/odios/test-baseline:<TAG>-<arch>`.
+
+**Manual path (local build, required for the first time the feature lands on `main` and the workflow is not yet registered by GitHub):**
+
+```bash
+# Requires: docker, sudo, xz-utils, util-linux, jq
+docker login ghcr.io -u <your-github-user>     # needs a PAT with write:packages
+
+./scripts/img-to-docker.sh 2026.4.0rc3 arm64
+```
+
+The script downloads the SD image directly from the matching release, mounts its rootfs partition, tars it, and `docker import`s it with a systemd entrypoint matching `Dockerfile.test` — tagged as `ghcr.io/<repo>/test-baseline:<TAG>-<ARCH>`. Approach inspired by [vascoguita/raspios-docker](https://github.com/vascoguita/raspios-docker).
 
 ## Troubleshooting
 
