@@ -8,15 +8,6 @@
     mode: '0755'
   become: true
 
-- name: Install odio-check-upgrade script
-  ansible.builtin.copy:
-    src: odio-check-upgrade
-    dest: "/home/{{ target_user }}/.local/bin/odio-check-upgrade"
-    owner: "{{ target_user }}"
-    group: "{{ target_user }}"
-    mode: '0755'
-  become: true
-
 - name: Install odio-motd script
   ansible.builtin.copy:
     src: odio-motd
@@ -50,22 +41,3 @@
     modification_time: preserve
     access_time: preserve
   become: true
-  when: install_motd | bool
-
-- name: Deploy odio-check-upgrade systemd units
-  ansible.builtin.template:
-    src: "{{ item }}.j2"
-    dest: "/home/{{ target_user }}/.config/systemd/user/{{ item }}"
-    owner: "{{ target_user }}"
-    group: "{{ target_user }}"
-    mode: '0644'
-  become: true
-  loop:
-    - odio-check-upgrade.service
-    - odio-check-upgrade.timer
-
-- name: Enable odio-check-upgrade timer
-  ansible.builtin.include_tasks: "../../../tasks/systemd_enable_user.yml"
-  vars:
-    service_name: odio-check-upgrade.timer
-    service_unit_path: "/home/{{ target_user }}/.config/systemd/user/odio-check-upgrade.timer"

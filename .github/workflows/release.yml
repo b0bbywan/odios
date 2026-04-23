@@ -121,7 +121,9 @@ jobs:
     steps:
       - uses: actions/checkout@v5
         with:
-          sparse-checkout: installer/install.sh
+          sparse-checkout: |
+            installer/install.sh
+            installer/ansible/roles/upgrade/files/odio-upgrade
           sparse-checkout-cone-mode: false
 
       - uses: actions/download-artifact@v7
@@ -138,6 +140,7 @@ jobs:
           files: |
             ${{ needs.build.outputs.archive_name }}
             installer/install.sh
+            installer/ansible/roles/upgrade/files/odio-upgrade
             manifest.json
           generate_release_notes: true
 
@@ -148,7 +151,9 @@ jobs:
     steps:
       - uses: actions/checkout@v5
         with:
-          sparse-checkout: installer/install.sh
+          sparse-checkout: |
+            installer/install.sh
+            installer/ansible/roles/upgrade/files/odio-upgrade
           sparse-checkout-cone-mode: false
 
       - uses: actions/download-artifact@v7
@@ -169,6 +174,7 @@ jobs:
           files: |
             ${{ needs.build.outputs.archive_name }}
             installer/install.sh
+            installer/ansible/roles/upgrade/files/odio-upgrade
             manifest.json
           body: |
             Pre-release automatique pour la PR #${{ github.event.pull_request.number }}.
