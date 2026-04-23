@@ -81,13 +81,9 @@ ask_config() {
 
     if [[ "${INSTALL_UPMPDCLI:-Y}" != "n" && "${INSTALL_UPMPDCLI:-Y}" != "N" ]]; then
         echo ""
-        echo -e "${BLUE}Streaming services (upmpdcli) — leave blank to skip${NC}"
-        read -rp "Qobuz username: "  QOBUZ_USER
-        if [[ -n "$QOBUZ_USER" ]]; then
-            read -rsp "Qobuz password: " QOBUZ_PASS
-            echo ""
-        fi
-        read -rp "Install Tidal support? [y/N]: " INSTALL_TIDAL
+        echo -e "${BLUE}Streaming plugins (upmpdcli) — Qobuz/Tidal need credentials added to ~/.config/upmpdcli/upmpdcli.conf after install${NC}"
+        read -rp "Install Qobuz support? [y/N]: "  INSTALL_QOBUZ
+        read -rp "Install Tidal support? [y/N]: "  INSTALL_TIDAL
         read -rp "Install UPnP web radios? [y/N]: " INSTALL_UPNPWEBRADIOS
     fi
 
@@ -119,11 +115,10 @@ prompt_for_config() {
     INSTALL_SNAPCLIENT="${INSTALL_SNAPCLIENT:-Y}"
     INSTALL_UPMPDCLI="${INSTALL_UPMPDCLI:-Y}"
     INSTALL_TIDAL="${INSTALL_TIDAL:-N}"
+    INSTALL_QOBUZ="${INSTALL_QOBUZ:-N}"
     INSTALL_SPOTIFYD="${INSTALL_SPOTIFYD:-N}"
     INSTALL_UPNPWEBRADIOS="${INSTALL_UPNPWEBRADIOS:-N}"
     INSTALL_MOTD="${INSTALL_MOTD:-N}"
-    QOBUZ_USER="${QOBUZ_USER:-}"
-    QOBUZ_PASS="${QOBUZ_PASS:-}"
 }
 
 # ─── Pre-flight checks ────────────────────────────────────────────────────────
@@ -296,7 +291,6 @@ run_playbook() {
     [[ -n "${TARGET_HOSTNAME:-}" ]]   && optional_vars+="\"target_hostname\": \"${TARGET_HOSTNAME}\","
     [[ -n "${MPD_MUSIC_DIRECTORY}" ]] && optional_vars+="\"mpd_music_directory\": \"${MPD_MUSIC_DIRECTORY}\","
     [[ -n "${MPD_CONF_PATH}" ]]       && optional_vars+="\"mpd_conf_path\": \"${MPD_CONF_PATH}\","
-    [[ -n "${QOBUZ_USER}" ]]          && optional_vars+="\"qobuz_user\": \"${QOBUZ_USER}\", \"qobuz_pass\": \"${QOBUZ_PASS}\","
 
     local extra_vars
     extra_vars=$(cat <<EOF
@@ -314,6 +308,7 @@ run_playbook() {
   "install_snapclient":     $(bool "$INSTALL_SNAPCLIENT"),
   "install_upmpdcli":       $(bool "$INSTALL_UPMPDCLI"),
   "install_tidal":          $(bool "$INSTALL_TIDAL"),
+  "install_qobuz":          $(bool "$INSTALL_QOBUZ"),
   "install_upnpwebradios":  $(bool "$INSTALL_UPNPWEBRADIOS"),
   "install_mpd_discplayer": $(bool "$INSTALL_MPD_DISCPLAYER"),
   "install_motd":           $(bool "$INSTALL_MOTD")

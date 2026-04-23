@@ -101,7 +101,7 @@
 
 - name: Configure Qobuz streaming
   ansible.builtin.include_tasks: qobuz.yml
-  when: qobuz_user is defined and qobuz_user | length > 0
+  when: install_qobuz | bool
 
 - name: Configure Deezer streaming
   ansible.builtin.include_tasks: deezer.yml
