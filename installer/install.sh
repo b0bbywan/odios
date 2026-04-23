@@ -77,7 +77,7 @@ ask_config() {
     read -rp "Install Snapcast client? [Y/n]: "            INSTALL_SNAPCLIENT
     read -rp "Install UPnP/DLNA renderer? [Y/n]: "         INSTALL_UPMPDCLI
     read -rp "Install Spotifyd (Spotify Connect)? [y/N]: " INSTALL_SPOTIFYD
-    read -rp "Install odio-motd branding (login banner, hushlogin)? [y/N]: " INSTALL_MOTD
+    read -rp "Install branding (odio-motd login banner, hushlogin)? [y/N]: " INSTALL_BRANDING
 
     if [[ "${INSTALL_UPMPDCLI:-Y}" != "n" && "${INSTALL_UPMPDCLI:-Y}" != "N" ]]; then
         echo ""
@@ -118,7 +118,7 @@ prompt_for_config() {
     INSTALL_QOBUZ="${INSTALL_QOBUZ:-N}"
     INSTALL_SPOTIFYD="${INSTALL_SPOTIFYD:-N}"
     INSTALL_UPNPWEBRADIOS="${INSTALL_UPNPWEBRADIOS:-N}"
-    INSTALL_MOTD="${INSTALL_MOTD:-N}"
+    INSTALL_BRANDING="${INSTALL_BRANDING:-N}"
 }
 
 # ─── Pre-flight checks ────────────────────────────────────────────────────────
@@ -311,7 +311,7 @@ run_playbook() {
   "install_qobuz":          $(bool "$INSTALL_QOBUZ"),
   "install_upnpwebradios":  $(bool "$INSTALL_UPNPWEBRADIOS"),
   "install_mpd_discplayer": $(bool "$INSTALL_MPD_DISCPLAYER"),
-  "install_motd":           $(bool "$INSTALL_MOTD")
+  "install_branding":       $(bool "$INSTALL_BRANDING")
 }
 EOF
 )

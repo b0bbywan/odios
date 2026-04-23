@@ -14,13 +14,13 @@ BANNER
 
 uname -snrvm
 
-STATE="$HOME/.cache/odio/state.json"
+STATE="/var/cache/odio/state.json"
 if [ -f "$STATE" ]; then
     version=$(python3 -c "import json; print(json.load(open('$STATE')).get('odios', ''))" 2>/dev/null)
     [ -n "$version" ] && printf 'odio v%s\n' "$version"
 fi
 
-UPGRADES="$HOME/.cache/odio/upgrades.json"
+UPGRADES="/var/cache/odio/upgrades.json"
 if [ -f "$UPGRADES" ]; then
     upgrade=$(python3 -c "
 import json, sys

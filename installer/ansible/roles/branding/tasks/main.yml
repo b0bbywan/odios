@@ -25,7 +25,6 @@
     group: "{{ target_user }}"
     mode: '0755'
   become: true
-  when: install_motd | bool
 
 - name: Hook odio-motd into ~/.profile
   ansible.builtin.blockinfile:
@@ -40,7 +39,6 @@
           *i*) [ -x "$HOME/.local/bin/odio-motd" ] && "$HOME/.local/bin/odio-motd" ;;
       esac
   become: true
-  when: install_motd | bool
 
 - name: Suppress system motd for odio user
   ansible.builtin.file:
