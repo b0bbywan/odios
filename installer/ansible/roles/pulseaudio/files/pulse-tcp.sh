@@ -33,6 +33,9 @@ is_private_ip() {
 
 get_acl() {
     local acl="127.0.0.1"
+    # Dedupe by network address so a host with wired + wifi on the same /24
+    # doesn't produce `...;192.168.1.0/24;192.168.1.0/24` in auth-ip-acl.
+    local -A seen=()
     while IFS= read -r cidr; do
         [[ -z "$cidr" ]] && continue
         local ip_address="${cidr%/*}"
@@ -42,7 +45,10 @@ get_acl() {
         subnet_mask=$(convert_cidr_to_mask "$cidr_prefix")
         local network_address
         network_address=$(calculate_network_address "$ip_address" "$subnet_mask")
-        acl="${acl};${network_address}/${cidr_prefix}"
+        local entry="${network_address}/${cidr_prefix}"
+        [[ -n "${seen[$entry]:-}" ]] && continue
+        seen[$entry]=1
+        acl="${acl};${entry}"
     done < <(get_ip_addresses)
     if [[ "$acl" == "127.0.0.1" ]]; then
         logger "pulse-tcp: no private IP found, aborting"
@@ -80,10 +86,16 @@ load_module() {
 }
 
 check_pulseaudio_status() {
-    if ! systemctl --user --quiet is-active pulseaudio.service; then
-        logger "PulseAudio not running, exiting"
-        exit 1
-    fi
+    # Poll pactl instead of `systemctl is-active`: pulseaudio is socket-activated,
+    # so the service can be "activating" or even "inactive" per systemd right
+    # after a restart even though the daemon is coming up — exactly the window
+    # an ansible pulseaudio-then-pulse-tcp restart hits.
+    for _ in {1..20}; do
+        pactl info >/dev/null 2>&1 && return 0
+        sleep 0.5
+    done
+    logger "pulse-tcp: pulseaudio not reachable, exiting"
+    exit 1
 }
 
 load_pulseaudio_modules() {
