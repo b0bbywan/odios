@@ -84,6 +84,9 @@
     - name: Write installation state
       ansible.builtin.include_tasks: "tasks/write_state.yml"
 
+    - name: Restart odio-api
+      ansible.builtin.include_tasks: "tasks/restart_odio_api.yml"
+
     - name: Verify services are running
       ansible.builtin.include_tasks: "tasks/verify_services.yml"
 

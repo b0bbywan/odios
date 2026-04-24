@@ -1,0 +1,17 @@
+---
+# Force a restart so odio-api sees the post-handler state of its dependencies
+# (mpd, pulseaudio, upmpdcli, …). Role handlers only restart odio-api when its
+# own config/package changed; this covers the case where only upstream services
+# moved and odio-api would otherwise hold stale connections until the next reboot.
+- name: Restart odio-api to pick up freshly-restarted dependencies
+  ansible.builtin.systemd:
+    name: odio-api.service
+    state: restarted
+    scope: user
+  environment:
+    XDG_RUNTIME_DIR: "/run/user/{{ target_user_uid }}"
+  become: true
+  become_user: "{{ target_user }}"
+  when:
+    - install_mode == "live"
+    - install_odio_api | bool
