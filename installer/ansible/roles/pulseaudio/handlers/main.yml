@@ -9,3 +9,23 @@
   become: true
   become_user: "{{ target_user }}"
   when: install_mode == "live"
+
+# pulse-tcp requires pulseaudio, so a pulseaudio restart stops it but doesn't
+# bring it back. And a changed pulse-tcp.service file is ignored until the
+# user-scope systemd reloads. Explicit restart + daemon_reload covers both.
+# Skipped in docker: pulseaudio can start but dies quickly without real audio
+# hardware, so pactl would time out. The real-system code path is already
+# exercised by test-install / test-upgrade / test-playbook-arm (image mode).
+- name: Restart pulse-tcp
+  ansible.builtin.systemd:
+    name: pulse-tcp.service
+    state: restarted
+    scope: user
+    daemon_reload: true
+  environment:
+    XDG_RUNTIME_DIR: "/run/user/{{ target_user_uid }}"
+  become: true
+  become_user: "{{ target_user }}"
+  when:
+    - install_mode == "live"
+    - ansible_facts.virtualization_type | default('') != 'docker'

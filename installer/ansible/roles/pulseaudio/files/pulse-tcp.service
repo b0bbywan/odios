@@ -2,15 +2,18 @@
 Description=PulseAudio TCP and Zeroconf modules
 After=pulseaudio.service network-online.target
 Requires=pulseaudio.service
+# Propagate pulseaudio restart/stop to pulse-tcp so a pulseaudio config bump
+# upstream doesn't leave this unit stuck in its previous state.
+PartOf=pulseaudio.service
 Wants=network-online.target
+StartLimitIntervalSec=60
+StartLimitBurst=15
 
 [Service]
 Type=oneshot
 RemainAfterExit=yes
 Restart=on-failure
 RestartSec=2
-StartLimitIntervalSec=60
-StartLimitBurst=15
 ExecStart=/usr/local/bin/pulse-tcp.sh start
 ExecStop=/usr/local/bin/pulse-tcp.sh stop
 

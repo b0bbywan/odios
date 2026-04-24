@@ -17,7 +17,7 @@
     owner: root
     group: root
   become: true
-  notify: Restart pulseaudio
+  notify: Restart pulse-tcp
 
 - name: Deploy pulse-tcp service
   ansible.builtin.copy:
@@ -27,7 +27,7 @@
     group: "{{ target_user }}"
     mode: '0644'
   become: true
-  notify: Restart pulseaudio
+  notify: Restart pulse-tcp
 
 - name: Check if pipewire is installed
   ansible.builtin.command: dpkg-query -W -f='${Status}' pipewire
