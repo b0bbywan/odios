@@ -1,4 +1,44 @@
 ---
+- name: Check odio gpg file
+  ansible.builtin.stat:
+    path: "{{ gpg_file }}"
+  register: common_gpg_stat
+
+- name: Add apt.odio.love gpg key
+  ansible.builtin.get_url:
+    url: "{{ odio_gpg }}"
+    dest: /tmp/odio.gpg
+    mode: '0644'
+  when: not common_gpg_stat.stat.exists
+
+- name: Dearmor GPG key
+  ansible.builtin.command:
+    cmd: "gpg --dearmor -o {{ gpg_file }} /tmp/odio.gpg"
+    creates: "{{ gpg_file }}"
+  become: true
+
+- name: Copy odio apt source
+  ansible.builtin.template:
+    src: odio.sources.j2
+    dest: /etc/apt/sources.list.d/odio.sources
+    mode: '0644'
+    owner: root
+    group: root
+  become: true
+
+# acl is required by ansible-core's `become_user` when the invoking user, root,
+# and target_user are three different identities — ansible drops tmp files via
+# setfacl, and falls back to the BSD `chmod +a` syntax (invalid on Linux) when
+# the package is absent. update_cache here covers both the system repos and the
+# odio source added just above, so no later `update_cache: true` is needed
+# (except in upmpdcli, which adds its own ppa mid-playbook).
+- name: Install acl (needed by become_user)
+  ansible.builtin.apt:
+    name: acl
+    state: present
+    update_cache: true
+  become: true
+
 - name: Ensure required groups exist
   ansible.builtin.group:
     name: "{{ item }}"
@@ -70,33 +110,6 @@
   when:
     - not common_linger_stat.stat.exists
     - install_mode == "image"
-
-- name: Check odio gpg file
-  ansible.builtin.stat:
-    path: "{{ gpg_file }}"
-  register: common_gpg_stat
-
-- name: Add apt.odio.love gpg key
-  ansible.builtin.get_url:
-    url: "{{ odio_gpg }}"
-    dest: /tmp/odio.gpg
-    mode: '0644'
-  when: not common_gpg_stat.stat.exists
-
-- name: Dearmor GPG key
-  ansible.builtin.command:
-    cmd: "gpg --dearmor -o {{ gpg_file }} /tmp/odio.gpg"
-    creates: "{{ gpg_file }}"
-  become: true
-
-- name: Copy odio apt source
-  ansible.builtin.template:
-    src: odio.sources.j2
-    dest: /etc/apt/sources.list.d/odio.sources
-    mode: '0644'
-    owner: root
-    group: root
-  become: true
 
 - name: Setup polkit
   ansible.builtin.include_tasks: polkit.yml
