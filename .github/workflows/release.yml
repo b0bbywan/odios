@@ -412,6 +412,20 @@ jobs:
           tag_name: ${{ steps.tag.outputs.value }}
           files: output/odio-*.img.xz
 
+      - name: Build per-arch RPi-Imager manifest (pre-release only)
+        if: needs.build.outputs.is_release != 'true'
+        run: |
+          ./scripts/build-rpi-manifests.py \
+            "odio.${{ matrix.arch }}.rpi-imager-manifest" \
+            output/odio-*.json
+
+      - name: Upload per-arch manifest to release (pre-release only)
+        if: needs.build.outputs.is_release != 'true'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.tag.outputs.value }}
+          files: odio.${{ matrix.arch }}.rpi-imager-manifest
+
       - name: Upload manifest entry
         uses: actions/upload-artifact@v6
         with:
@@ -432,6 +446,13 @@ jobs:
       needs.build-image.result == 'success'
     runs-on: ubuntu-latest
     steps:
+      # Checkout MUST run before download-artifact: actions/checkout wipes the
+      # working directory, which would nuke `entries/` if the order were reversed.
+      - uses: actions/checkout@v5
+        with:
+          sparse-checkout: scripts/build-rpi-manifests.py
+          sparse-checkout-cone-mode: false
+
       - name: Download manifest entries
         uses: actions/download-artifact@v7
         with:
@@ -447,26 +468,10 @@ jobs:
             echo "value=pr-${{ github.event.pull_request.number }}" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Merge manifest
-        run: |
-          # Collect all JSON entries into a single os_list
-          echo '{"os_list": [' > manifest.json
-          first=true
-          for f in entries/manifest-*/*.json; do
-            if [ "$first" = true ]; then
-              first=false
-            else
-              echo ',' >> manifest.json
-            fi
-            cat "$f" >> manifest.json
-          done
-          echo ']}' >> manifest.json
+      - name: Build combined manifest
+        run: ./scripts/build-rpi-manifests.py odio.rpi-imager-manifest entries/manifest-*/*.json
 
-          # Pretty-print
-          python3 -m json.tool manifest.json > odio.rpi-imager-manifest
-          cat odio.rpi-imager-manifest
-
-      - name: Upload manifest to release
+      - name: Upload combined manifest to release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ steps.tag.outputs.value }}
