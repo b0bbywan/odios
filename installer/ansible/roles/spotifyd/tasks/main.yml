@@ -4,7 +4,16 @@
     name: spotifyd
     state: present
   become: true
+  register: spotifyd_install
   notify: Restart spotifyd
+
+- name: Upgrade spotifyd
+  ansible.builtin.apt:
+    name: spotifyd
+    only_upgrade: true
+  become: true
+  notify: Restart spotifyd
+  when: not spotifyd_install.changed
 
 - name: Create spotifyd config directory
   ansible.builtin.file:

@@ -101,7 +101,16 @@
     state: present
     install_recommends: false
   become: true
+  register: mpd_discplayer_install
   notify: Restart mpd-discplayer
+
+- name: Upgrade mpd-discplayer
+  ansible.builtin.apt:
+    name: mpd-discplayer
+    only_upgrade: true
+  become: true
+  notify: Restart mpd-discplayer
+  when: not mpd_discplayer_install.changed
 
 - name: Copy .mpdignore to music directory
   ansible.builtin.copy:
