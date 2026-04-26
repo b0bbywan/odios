@@ -12,7 +12,6 @@
         + (['shairport_sync']  if install_shairport_sync  | bool else [])
         + (['snapclient']      if install_snapclient      | bool else [])
         + (['upmpdcli']        if install_upmpdcli        | bool else [])
-        + (['mympd']           if install_mympd           | bool else [])
         + (['spotifyd']        if install_spotifyd        | bool else [])
         + (['odio_api']        if install_odio_api        | bool else [])
       }}
@@ -35,7 +34,7 @@
     _odios_excluded_roles: >-
       {{
         ['branding', 'pulseaudio', 'bluetooth', 'mpd', 'mpd_discplayer', 'shairport_sync',
-         'snapclient', 'upmpdcli', 'mympd', 'spotifyd', 'odio_api']
+         'snapclient', 'upmpdcli', 'spotifyd', 'odio_api']
         | difference(_odios_installed_roles)
       }}
 
@@ -50,13 +49,14 @@
         (['tidal']         if install_tidal         | bool else [])
         + (['qobuz']         if install_qobuz         | bool else [])
         + (['upnpwebradios'] if install_upnpwebradios | bool else [])
+        + (['mympd']         if install_mympd         | bool else [])
       }}
 
 - name: Build list of excluded features
   ansible.builtin.set_fact:
     _odios_excluded_features: >-
       {{
-        ['tidal', 'qobuz', 'upnpwebradios']
+        ['tidal', 'qobuz', 'upnpwebradios', 'mympd']
         | difference(_odios_enabled_features)
       }}
 

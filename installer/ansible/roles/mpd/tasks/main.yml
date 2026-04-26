@@ -11,6 +11,10 @@
 - name: Install mpDris2 fork
   ansible.builtin.include_tasks: mpdris2.yml
 
+- name: Install myMPD web UI
+  ansible.builtin.include_tasks: mympd.yml
+  when: install_mympd | bool
+
 - name: Disable system MPD service
   ansible.builtin.include_tasks: "../../../tasks/systemd_disable_system.yml"
   vars:
@@ -152,12 +156,6 @@
     owner: "{{ target_user }}"
     group: audio
     mode: '0775'
-  become: true
-
-- name: Remove legacy mpDris2 systemd override directory
-  ansible.builtin.file:
-    path: "/usr/lib/systemd/user/mpDris2.service.d"
-    state: absent
   become: true
 
 - name: Enable user MPD service
