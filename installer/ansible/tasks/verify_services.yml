@@ -30,6 +30,7 @@
         + (['pulse-tcp.service'] if install_pulseaudio | bool and not _odios_in_container else [])
         + (['mpd.service', 'mpDris2.service'] if install_mpd    | bool else [])
         + (['mpd-discplayer.service'] if install_mpd_discplayer | bool else [])
+        + (['mympd.service']          if install_mympd          | bool else [])
         + (['shairport-sync.service'] if install_shairport_sync | bool else [])
         + (['snapclient.service']     if install_snapclient     | bool else [])
         + (['upmpdcli.service']       if install_upmpdcli       | bool else [])

@@ -75,6 +75,8 @@
       when: install_snapclient | bool
     - role: upmpdcli
       when: install_upmpdcli | bool
+    - role: mympd
+      when: install_mympd | bool
     - role: spotifyd
       when: install_spotifyd | bool
     - role: odio_api
@@ -122,6 +124,7 @@
           - "  {{ '✓' if install_snapclient else '✗' }} Snapcast client"
           - "  {{ '✓' if install_upmpdcli else '✗' }} UPnP/DLNA renderer"
           - "  {{ '✓' if install_upnpwebradios else '✗' }} UPnP web radios"
+          - "  {{ '✓' if install_mympd else '✗' }} myMPD (web UI)"
           - ""
           - "System should already be running !"
           - "Visit http://localhost:8018/ui"
