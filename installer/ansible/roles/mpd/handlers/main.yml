@@ -10,13 +10,6 @@
   become_user: "{{ target_user }}"
   when: install_mode == "live"
 
-- name: Reload dbus
-  ansible.builtin.systemd:
-    name: dbus.service
-    state: reloaded
-  become: true
-  when: ansible_facts.services['dbus.service'] is defined
-
 - name: Restart mpDris2
   ansible.builtin.systemd:
     name: mpDris2.service
