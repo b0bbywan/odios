@@ -117,6 +117,7 @@ run_install() {
         INSTALL_UPMPDCLI=Y \
         INSTALL_MYMPD=Y \
         INSTALL_TIDAL=Y \
+        INSTALL_UPNPWEBRADIOS=Y \
         INSTALL_MPD_DISCPLAYER=Y \
         ODIOS_VERSION="${tag}" \
       bash -c "curl -fsSL '${url}' | bash"
