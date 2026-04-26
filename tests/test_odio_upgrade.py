@@ -85,18 +85,46 @@ class BackfillStateTests(unittest.TestCase):
         # promote dpkg-detected features into `features`, and detect the
         # branding role via the odio-motd file. Undetected features are left
         # out of both lists — pure opt-out makes them Y at derive time.
-        # Roles introduced after the rc1/rc2 schema era (mympd) must NOT land
-        # in roles_excluded — a legacy install couldn't have opted them out.
         state = {"roles": {"pulseaudio": "x", "bluetooth": "x", "odio_api": "x"}}
         result = self._call(state, branding=True, tidal=True)
 
         self.assertIn("branding", result["roles"])
         expected_excluded = sorted(
-            set(ou._ROLE_PACKAGES) - {"pulseaudio", "bluetooth", "odio_api", "mympd"}
+            set(ou._ROLE_PACKAGES) - {"pulseaudio", "bluetooth", "odio_api"}
         )
         self.assertEqual(result["roles_excluded"], expected_excluded)
-        self.assertNotIn("mympd", result["roles_excluded"])
         self.assertEqual(result["features"], ["tidal"])
+        self.assertEqual(result["features_excluded"], [])
+
+    def test_real_world_rc2_user_minimal_install(self):
+        # Verbatim state.json from a real rc2 user (PR #52 feedback): kept
+        # core (pulseaudio, bluetooth, odio_api, branding) plus shairport_sync,
+        # opted out of mpd / mpd_discplayer / snapclient / spotifyd / upmpdcli.
+        # mympd didn't exist in 2026.4.1rc2 — added in 2026.4.2b2 as a sub-
+        # feature of mpd. After the refactor, mympd lives in features, not
+        # roles, so it must not appear in roles_excluded and (since the user
+        # opted out of mpd) must not get installed regardless of INSTALL_MYMPD.
+        state = {
+            "install_mode": "live",
+            "odios": "2026.4.1rc2",
+            "roles": {
+                "bluetooth": "2026.4.0rc5",
+                "branding": "2026.4.1rc2",
+                "common": "2026.4.0rc6",
+                "odio_api": "2026.4.0rc7",
+                "pulseaudio": "2026.4.0rc7",
+                "shairport_sync": "2026.4.1rc1",
+            },
+        }
+        result = self._call(state)
+
+        self.assertEqual(
+            sorted(result["roles_excluded"]),
+            ["mpd", "mpd_discplayer", "snapclient", "spotifyd", "upmpdcli"],
+        )
+        self.assertNotIn("mympd", result["roles_excluded"])
+        self.assertNotIn("mympd", result.get("roles") or {})
+        self.assertEqual(result["features"], [])
         self.assertEqual(result["features_excluded"], [])
 
     def test_legacy_dict_features_migrate_to_list_and_excluded(self):

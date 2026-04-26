@@ -12,7 +12,7 @@ import json
 import re
 import sys
 
-KNOWN_FEATURES = {"tidal", "qobuz", "upnpwebradios"}
+KNOWN_FEATURES = {"tidal", "qobuz", "upnpwebradios", "mympd"}
 
 
 def main() -> int:

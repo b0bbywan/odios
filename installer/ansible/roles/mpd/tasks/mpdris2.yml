@@ -1,66 +1,34 @@
 ---
-- name: Remove mpdris2 distro package if present
-  ansible.builtin.apt:
-    name: mpdris2
+- name: Remove legacy mpDris2 binary from /usr/local/bin
+  ansible.builtin.file:
+    path: /usr/local/bin/mpDris2
     state: absent
   become: true
 
-- name: Install mpDris2 dependencies
+- name: Remove legacy mpDris2 systemd override directory
+  ansible.builtin.file:
+    path: "/usr/lib/systemd/user/mpDris2.service.d"
+    state: absent
+  become: true
+
+- name: Install mpdris2
   ansible.builtin.apt:
     name:
-      - python3-gi
-      - python3-mpd
-      - python3-dbus
+      - mpdris2
       - python3-mutagen
     state: present
     install_recommends: false
   become: true
-
-- name: Create mpDris2 download directory
-  ansible.builtin.file:
-    path: "/tmp/mpDris2-{{ mpd_mpdris2_version }}"
-    state: directory
-    mode: '0755'
-
-- name: Download mpDris2 fork release
-  ansible.builtin.unarchive:
-    src: "https://github.com/b0bbywan/mpDris2/releases/download/v{{ mpd_mpdris2_version }}/mpDris2-{{ mpd_mpdris2_version }}.tar.gz"
-    dest: "/tmp/mpDris2-{{ mpd_mpdris2_version }}"
-    remote_src: true
-    creates: "/tmp/mpDris2-{{ mpd_mpdris2_version }}/mpDris2"
-
-- name: Install mpDris2 binary
-  ansible.builtin.copy:
-    src: "/tmp/mpDris2-{{ mpd_mpdris2_version }}/mpDris2"
-    dest: /usr/local/bin/mpDris2
-    remote_src: true
-    owner: root
-    group: root
-    mode: '0755'
-  become: true
   notify: Restart mpDris2
+  register: mpd_mpdris2_install
 
-- name: Install mpDris2 systemd user service
-  ansible.builtin.copy:
-    src: "/tmp/mpDris2-{{ mpd_mpdris2_version }}/mpDris2.service"
-    dest: /usr/lib/systemd/user/mpDris2.service
-    remote_src: true
-    owner: root
-    group: root
-    mode: '0644'
+- name: Upgrade mpdris2
+  ansible.builtin.apt:
+    name: mpdris2
+    only_upgrade: true
   become: true
-  notify: Restart mpDris2
-
-- name: Install mpDris2 D-Bus service
-  ansible.builtin.copy:
-    src: "/tmp/mpDris2-{{ mpd_mpdris2_version }}/org.mpris.MediaPlayer2.mpd.service"
-    dest: /usr/share/dbus-1/services/org.mpris.MediaPlayer2.mpd.service
-    remote_src: true
-    owner: root
-    group: root
-    mode: '0644'
-  become: true
-  notify: Reload dbus
+  notify: Restart mpdris2
+  when: not mpd_mpdris2_install.changed
 
 - name: Create mpDris2 config directory
   ansible.builtin.file:

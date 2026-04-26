@@ -61,13 +61,13 @@ _ROLE_PACKAGES = {
     "snapclient":     "snapclient",
     "spotifyd":       "spotifyd",
     "upmpdcli":       "upmpdcli",
-    "mympd":          "mympd",
     "odio_api":       "odio-api",
 }
 _FEATURE_PACKAGES = {
     "tidal":         "upmpdcli-tidal",
     "qobuz":         "upmpdcli-qobuz",
     "upnpwebradios": "upmpdcli-radios",
+    "mympd":         "mympd",
 }
 
 
@@ -111,9 +111,9 @@ def backfill_state(state: dict, target_user: str) -> dict:
         # Roles introduced after the rc1/rc2 schema era can't have been
         # explicitly excluded by a legacy install — keep them out of the
         # synthesized opt-outs so they fall through to install.sh's Y defaults
-        # on upgrade. Add to this set whenever a new role lands in a release
-        # later than the oldest baseline still listed in test-upgrade matrix.
-        _post_legacy_roles = {"branding", "mympd"}
+        # on upgrade. Extend whenever a new role lands later than the oldest
+        # baseline still listed in test-upgrade matrix.
+        _post_legacy_roles = {"branding"}
         state["roles_excluded"] = sorted(
             set(_ROLE_PACKAGES.keys()) - set(roles.keys()) - _post_legacy_roles
         )

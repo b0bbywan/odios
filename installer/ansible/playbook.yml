@@ -75,8 +75,6 @@
       when: install_snapclient | bool
     - role: upmpdcli
       when: install_upmpdcli | bool
-    - role: mympd
-      when: install_mympd | bool
     - role: spotifyd
       when: install_spotifyd | bool
     - role: odio_api
