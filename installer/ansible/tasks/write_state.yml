@@ -12,6 +12,7 @@
         + (['shairport_sync']  if install_shairport_sync  | bool else [])
         + (['snapclient']      if install_snapclient      | bool else [])
         + (['upmpdcli']        if install_upmpdcli        | bool else [])
+        + (['mympd']           if install_mympd           | bool else [])
         + (['spotifyd']        if install_spotifyd        | bool else [])
         + (['odio_api']        if install_odio_api        | bool else [])
       }}

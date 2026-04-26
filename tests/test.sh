@@ -115,6 +115,7 @@ run_install() {
         INSTALL_SHAIRPORT_SYNC=Y \
         INSTALL_SNAPCLIENT=Y \
         INSTALL_UPMPDCLI=Y \
+        INSTALL_MYMPD=Y \
         INSTALL_TIDAL=Y \
         INSTALL_MPD_DISCPLAYER=Y \
         ODIOS_VERSION="${tag}" \
@@ -191,6 +192,7 @@ case "${ACTION}" in
         -e "install_spotifyd=true" \
         -e "install_tidal=true" \
         -e "install_upnpwebradios=true" \
+        -e "install_mympd=true" \
         -e "qobuz_user=test@example.com" \
         -e "qobuz_pass=boguspassword" \
         -e "mpd_discplayer_gnu_email=test@example.com" \
@@ -213,6 +215,7 @@ case "${ACTION}" in
         -e "install_spotifyd=true" \
         -e "install_tidal=true" \
         -e "install_upnpwebradios=true" \
+        -e "install_mympd=true" \
         -e "qobuz_user=test@example.com" \
         -e "qobuz_pass=boguspassword" \
         -e "mpd_discplayer_gnu_email=test@example.com" \

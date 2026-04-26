@@ -1,0 +1,83 @@
+/* odio palette — see https://odio.love (src/styles/global.css) */
+:root,
+[data-bs-theme="dark"],
+[data-bs-theme="light"] {
+  --bs-body-bg: #0a100a;
+  --bs-body-color: #e8e4dc;
+  --bs-emphasis-color: #e8e4dc;
+
+  --bs-secondary-bg: #111a0e;
+  --bs-tertiary-bg: #111a0e;
+  --bs-secondary-color: #486040;
+  --bs-tertiary-color: #72797a;
+
+  --bs-border-color: #1e3a18;
+  --bs-border-color-translucent: rgba(30, 58, 24, 0.5);
+
+  --bs-primary: #5ab81e;
+  --bs-primary-rgb: 90, 184, 30;
+  --bs-primary-bg-subtle: #1e3a18;
+  --bs-primary-text-emphasis: #5ab81e;
+  --bs-primary-border-subtle: #3a7020;
+
+  --bs-secondary: #3a7020;
+  --bs-secondary-rgb: 58, 112, 32;
+
+  --bs-warning: #c8943a;
+  --bs-warning-rgb: 200, 148, 58;
+  --bs-warning-text-emphasis: #c8943a;
+
+  --bs-link-color: #5ab81e;
+  --bs-link-color-rgb: 90, 184, 30;
+  --bs-link-hover-color: #c8943a;
+  --bs-link-hover-color-rgb: 200, 148, 58;
+
+  --mympd-coverbg-color: #0a100a;
+  --mympd-highlightcolor: #5ab81e;
+  --mympd-highlightcolor-contrast: #0a100a;
+}
+
+.btn-primary,
+.btn-success {
+  --bs-btn-bg: #5ab81e;
+  --bs-btn-border-color: #5ab81e;
+  --bs-btn-hover-bg: #3a7020;
+  --bs-btn-hover-border-color: #3a7020;
+  --bs-btn-active-bg: #3a7020;
+  --bs-btn-active-border-color: #3a7020;
+  --bs-btn-color: #0a100a;
+  --bs-btn-hover-color: #e8e4dc;
+  --bs-btn-active-color: #e8e4dc;
+}
+
+.btn-warning {
+  --bs-btn-bg: #c8943a;
+  --bs-btn-border-color: #c8943a;
+  --bs-btn-hover-bg: #a87a28;
+  --bs-btn-hover-border-color: #a87a28;
+  --bs-btn-color: #0a100a;
+}
+
+.card,
+.modal-content,
+.dropdown-menu,
+.list-group {
+  --bs-card-bg: #111a0e;
+  --bs-card-border-color: #1e3a18;
+  background-color: #111a0e;
+  border-color: #1e3a18;
+}
+
+.navbar,
+.offcanvas {
+  background-color: #111a0e !important;
+  border-color: #1e3a18;
+}
+
+.progress {
+  background-color: #1e3a18;
+}
+
+.progress-bar {
+  background-color: #5ab81e;
+}

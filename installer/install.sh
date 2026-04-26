@@ -77,6 +77,7 @@ ask_config() {
     read -rp "Install Shairport Sync (AirPlay)? [Y/n]: "   INSTALL_SHAIRPORT_SYNC
     read -rp "Install Snapcast client? [Y/n]: "            INSTALL_SNAPCLIENT
     read -rp "Install UPnP/DLNA renderer? [Y/n]: "         INSTALL_UPMPDCLI
+    read -rp "Install myMPD (web UI)? [y/N]: "             INSTALL_MYMPD
     read -rp "Install Spotifyd (Spotify Connect)? [y/N]: " INSTALL_SPOTIFYD
     read -rp "Install branding (odio-motd login banner, hushlogin)? [y/N]: " INSTALL_BRANDING
 
@@ -115,6 +116,7 @@ prompt_for_config() {
     INSTALL_SHAIRPORT_SYNC="${INSTALL_SHAIRPORT_SYNC:-Y}"
     INSTALL_SNAPCLIENT="${INSTALL_SNAPCLIENT:-Y}"
     INSTALL_UPMPDCLI="${INSTALL_UPMPDCLI:-Y}"
+    INSTALL_MYMPD="${INSTALL_MYMPD:-N}"
     INSTALL_TIDAL="${INSTALL_TIDAL:-N}"
     INSTALL_QOBUZ="${INSTALL_QOBUZ:-N}"
     INSTALL_SPOTIFYD="${INSTALL_SPOTIFYD:-N}"
@@ -308,6 +310,7 @@ run_playbook() {
   "install_shairport_sync": $(bool "$INSTALL_SHAIRPORT_SYNC"),
   "install_snapclient":     $(bool "$INSTALL_SNAPCLIENT"),
   "install_upmpdcli":       $(bool "$INSTALL_UPMPDCLI"),
+  "install_mympd":          $(bool "$INSTALL_MYMPD"),
   "install_tidal":          $(bool "$INSTALL_TIDAL"),
   "install_qobuz":          $(bool "$INSTALL_QOBUZ"),
   "install_upnpwebradios":  $(bool "$INSTALL_UPNPWEBRADIOS"),

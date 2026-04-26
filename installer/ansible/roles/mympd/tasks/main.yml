@@ -1,0 +1,43 @@
+---
+- name: Install mympd
+  ansible.builtin.apt:
+    name: mympd
+    state: present
+    update_cache: true
+    install_recommends: false
+  become: true
+  notify: Restart mympd
+
+- name: Create mympd config directory
+  ansible.builtin.file:
+    path: "/home/{{ target_user }}/.config/mympd/config"
+    state: directory
+    owner: "{{ target_user }}"
+    group: "{{ target_user }}"
+    mode: '0700'
+  become: true
+
+- name: Deploy odio custom_css
+  ansible.builtin.copy:
+    src: custom_css
+    dest: "/home/{{ target_user }}/.config/mympd/config/custom_css"
+    owner: "{{ target_user }}"
+    group: "{{ target_user }}"
+    mode: '0600'
+  become: true
+  notify: Restart mympd
+
+- name: Disable mympd ssl
+  ansible.builtin.copy:
+    content: "false"
+    dest: "/home/{{ target_user }}/.config/mympd/config/ssl"
+    owner: "{{ target_user }}"
+    group: "{{ target_user }}"
+    mode: '0600'
+  become: true
+  notify: Restart mympd
+
+- name: Enable user mympd service
+  ansible.builtin.include_tasks: "../../../tasks/systemd_enable_user.yml"
+  vars:
+    service_name: mympd.service

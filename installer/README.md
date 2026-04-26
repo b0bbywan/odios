@@ -14,6 +14,7 @@ Ansible-based "curl | bash" installer to set up a complete audio/multimedia syst
 - **Shairport Sync** - AirPlay receiver
 - **Snapcast** - Multi-room audio client
 - **UPnP/DLNA** - Renderer for UPnP application control, with optional Qobuz and Tidal support (packages only — credentials are configured manually post-install in `~/.config/upmpdcli/upmpdcli.conf`).
+- **myMPD** - Web UI for MPD (default port 8080)
 - **MPD DiscPlayer** - CD/USB support for MPD
 
 ## Fresh install vs existing system
@@ -99,6 +100,7 @@ curl -fsSL https://github.com/b0bbywan/odios/releases/latest/download/install.sh
 | `INSTALL_SHAIRPORT_SYNC` | `N`           | AirPlay receiver                     |
 | `INSTALL_SNAPCLIENT`     | `N`           | Snapcast client                      |
 | `INSTALL_UPMPDCLI`       | `N`           | UPnP/DLNA renderer                   |
+| `INSTALL_MYMPD`          | `N`           | myMPD web UI                         |
 | `INSTALL_MPD_DISCPLAYER` | `N`           | CD/DVD support                       |
 | `INSTALL_SPOTIFYD`       | `N`           | Spotify Connect                      |
 | `INSTALL_QOBUZ`          | `N`           | upmpdcli Qobuz plugin (credentials: manual, see `upmpdcli.conf`) |
@@ -239,6 +241,7 @@ installer/
         ├── shairport_sync/      # AirPlay (optional)
         ├── snapclient/          # Snapcast (optional)
         ├── upmpdcli/            # UPnP/DLNA (optional)
+        ├── mympd/               # myMPD web UI (optional)
         ├── mpd_discplayer/      # CD/DVD player (optional)
         │   └── tasks/
         │       └── validate_external_mpd.yml  # Fail-fast validation for external MPD

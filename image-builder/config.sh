@@ -55,4 +55,5 @@ ANSIBLE_EXTRA_VARS=(
     "install_tidal=true"
     "install_qobuz=true"
     "install_upnpwebradios=true"
+    "install_mympd=true"
 )
