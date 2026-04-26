@@ -30,6 +30,9 @@ systemd:
 {% if install_mpd_discplayer %}
     - mpd-discplayer.service
 {% endif %}
+{% if install_mympd %}
+    - mympd.service
+{% endif %}
 {% if install_shairport_sync %}
     - shairport-sync.service
 {% endif %}

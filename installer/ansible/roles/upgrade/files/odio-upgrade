@@ -108,10 +108,14 @@ def backfill_state(state: dict, target_user: str) -> dict:
         roles["branding"] = "legacy"
     state["roles"] = roles
     if "roles_excluded" not in state:
-        # branding is a post-rc3 opt-in role; a legacy install could never have
-        # excluded it explicitly, so don't synthesize an opt-out from its absence.
+        # Roles introduced after the rc1/rc2 schema era can't have been
+        # explicitly excluded by a legacy install — keep them out of the
+        # synthesized opt-outs so they fall through to install.sh's Y defaults
+        # on upgrade. Add to this set whenever a new role lands in a release
+        # later than the oldest baseline still listed in test-upgrade matrix.
+        _post_legacy_roles = {"branding", "mympd"}
         state["roles_excluded"] = sorted(
-            set(_ROLE_PACKAGES.keys()) - set(roles.keys()) - {"branding"}
+            set(_ROLE_PACKAGES.keys()) - set(roles.keys()) - _post_legacy_roles
         )
 
     # Canonical shape: `features: [name]` holds opt-ins, `features_excluded:

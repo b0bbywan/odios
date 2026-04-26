@@ -85,14 +85,17 @@ class BackfillStateTests(unittest.TestCase):
         # promote dpkg-detected features into `features`, and detect the
         # branding role via the odio-motd file. Undetected features are left
         # out of both lists — pure opt-out makes them Y at derive time.
+        # Roles introduced after the rc1/rc2 schema era (mympd) must NOT land
+        # in roles_excluded — a legacy install couldn't have opted them out.
         state = {"roles": {"pulseaudio": "x", "bluetooth": "x", "odio_api": "x"}}
         result = self._call(state, branding=True, tidal=True)
 
         self.assertIn("branding", result["roles"])
         expected_excluded = sorted(
-            set(ou._ROLE_PACKAGES) - {"pulseaudio", "bluetooth", "odio_api"}
+            set(ou._ROLE_PACKAGES) - {"pulseaudio", "bluetooth", "odio_api", "mympd"}
         )
         self.assertEqual(result["roles_excluded"], expected_excluded)
+        self.assertNotIn("mympd", result["roles_excluded"])
         self.assertEqual(result["features"], ["tidal"])
         self.assertEqual(result["features_excluded"], [])
 

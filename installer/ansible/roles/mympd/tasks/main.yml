@@ -1,0 +1,83 @@
+---
+- name: Install mympd
+  ansible.builtin.apt:
+    name: mympd
+    state: present
+    install_recommends: false
+  become: true
+  register: mpd_mympd_install
+  notify: Restart mympd
+
+- name: Upgrade mympd
+  ansible.builtin.apt:
+    name: mympd
+    only_upgrade: true
+  become: true
+  notify: Restart mympd
+  when: not mpd_mympd_install.changed
+
+- name: Create mympd config directory
+  ansible.builtin.file:
+    path: "/home/{{ target_user }}/.config/mympd/config"
+    state: directory
+    owner: "{{ target_user }}"
+    group: "{{ target_user }}"
+    mode: '0700'
+  become: true
+
+- name: Deploy odio custom_css
+  ansible.builtin.copy:
+    src: custom_css
+    dest: "/home/{{ target_user }}/.config/mympd/config/custom_css"
+    owner: "{{ target_user }}"
+    group: "{{ target_user }}"
+    mode: '0600'
+  become: true
+  notify: Restart mympd
+
+- name: Disable mympd ssl
+  ansible.builtin.copy:
+    content: "false"
+    dest: "/home/{{ target_user }}/.config/mympd/config/ssl"
+    owner: "{{ target_user }}"
+    group: "{{ target_user }}"
+    mode: '0600'
+  become: true
+  notify: Restart mympd
+
+# Pin myMPD to MPD's user socket. Writing state/mpd_host short-circuits
+# myMPD's autoconf, which would otherwise probe `${XDG_RUNTIME_DIR}/mpd/socket`
+# (different filename) and fall back to localhost:6600.
+- name: Create mympd state directory
+  ansible.builtin.file:
+    path: "/home/{{ target_user }}/.config/mympd/state"
+    state: directory
+    owner: "{{ target_user }}"
+    group: "{{ target_user }}"
+    mode: '0700'
+  become: true
+
+- name: Configure mympd MPD host (user socket)
+  ansible.builtin.copy:
+    content: "/run/user/{{ target_user_uid }}/mpd.socket"
+    dest: "/home/{{ target_user }}/.config/mympd/state/mpd_host"
+    owner: "{{ target_user }}"
+    group: "{{ target_user }}"
+    mode: '0600'
+  become: true
+  notify: Restart mympd
+
+- name: Configure mympd MPD port (0 = socket)
+  ansible.builtin.copy:
+    content: "0"
+    dest: "/home/{{ target_user }}/.config/mympd/state/mpd_port"
+    owner: "{{ target_user }}"
+    group: "{{ target_user }}"
+    mode: '0600'
+  become: true
+  notify: Restart mympd
+
+- name: Enable user mympd service
+  ansible.builtin.include_tasks: "../../../tasks/systemd_enable_user.yml"
+  vars:
+    service_name: mympd.service

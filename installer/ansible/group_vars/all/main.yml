@@ -20,6 +20,7 @@ install_mpd_discplayer: true
 install_shairport_sync: true
 install_snapclient: true
 install_upmpdcli: true
+install_mympd: true
 install_tidal: true
 install_qobuz: true
 install_spotifyd: true
