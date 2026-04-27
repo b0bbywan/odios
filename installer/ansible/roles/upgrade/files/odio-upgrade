@@ -50,37 +50,6 @@ def find_state() -> tuple[str | None, dict | None, str | None]:
     return None, None, None
 
 
-# Used to compute roles_excluded in the legacy fallback. Keep in sync with
-# write_state.yml's excluded-roles list.
-_KNOWN_ROLES = {
-    "branding", "pulseaudio", "bluetooth", "mpd", "mpd_discplayer",
-    "shairport_sync", "snapclient", "upmpdcli", "spotifyd", "odio_api",
-}
-
-# Categorize every known feature into features (opted in) or
-# features_excluded (opted out), so a *new* feature added in a later release
-# stays uncategorized on older installs and picks up install.sh's default.
-_KNOWN_FEATURES = {"tidal", "qobuz", "upnpwebradios"}
-
-# Map INSTALL_* env var → role name (for main roles) or feature key.
-_ROLE_VARS = {
-    "INSTALL_BRANDING":       "branding",
-    "INSTALL_PULSEAUDIO":     "pulseaudio",
-    "INSTALL_BLUETOOTH":      "bluetooth",
-    "INSTALL_MPD":            "mpd",
-    "INSTALL_MPD_DISCPLAYER": "mpd_discplayer",
-    "INSTALL_ODIO_API":       "odio_api",
-    "INSTALL_SHAIRPORT_SYNC": "shairport_sync",
-    "INSTALL_SNAPCLIENT":     "snapclient",
-    "INSTALL_UPMPDCLI":       "upmpdcli",
-    "INSTALL_SPOTIFYD":       "spotifyd",
-}
-_FEATURE_VARS = {
-    "INSTALL_TIDAL":         "tidal",
-    "INSTALL_QOBUZ":         "qobuz",
-    "INSTALL_UPNPWEBRADIOS": "upnpwebradios",
-}
-
 # dpkg signals used to reconstruct a state.json when none exists on disk.
 # branding has no package — handled separately via the per-user motd script.
 _ROLE_PACKAGES = {
@@ -92,6 +61,7 @@ _ROLE_PACKAGES = {
     "snapclient":     "snapclient",
     "spotifyd":       "spotifyd",
     "upmpdcli":       "upmpdcli",
+    "mympd":          "mympd",
     "odio_api":       "odio-api",
 }
 _FEATURE_PACKAGES = {
@@ -141,7 +111,7 @@ def backfill_state(state: dict, target_user: str) -> dict:
         # branding is a post-rc3 opt-in role; a legacy install could never have
         # excluded it explicitly, so don't synthesize an opt-out from its absence.
         state["roles_excluded"] = sorted(
-            _KNOWN_ROLES - set(roles.keys()) - {"branding"}
+            set(_ROLE_PACKAGES.keys()) - set(roles.keys()) - {"branding"}
         )
 
     # Canonical shape: `features: [name]` holds opt-ins, `features_excluded:
@@ -199,22 +169,22 @@ def _print_state_summary(state: dict) -> None:
 
 
 def derive_install_env(state: dict) -> dict:
-    """Return INSTALL_* flags derived from state.json using pure opt-out.
+    """Return INSTALL_* flags derived from state.json.
 
-    Only roles/features explicitly in the *_excluded lists map to N; anything
-    else (installed, or absent from both lists due to schema gap / new release /
-    malformed state.json) maps to Y. install.sh's built-in defaults never kick
-    in: on upgrade, the user's recorded opt-outs are the only signal we trust,
-    and everything else gets the safe-by-default "install it".
+    Emits N for everything in the *_excluded lists and Y for everything in
+    `roles`/`features`. Anything in neither list is left unset so install.sh's
+    own defaults (Y for every optional in upgrade-era releases) take over —
+    that's what lets a role added after this script was written self-install.
     """
-    excluded = set(state.get("roles_excluded") or [])
-    excluded_features = set(state.get("features_excluded") or [])
-
     env = {}
-    for var, role in _ROLE_VARS.items():
-        env[var] = "N" if role in excluded else "Y"
-    for var, feature in _FEATURE_VARS.items():
-        env[var] = "N" if feature in excluded_features else "Y"
+    for role in state.get("roles_excluded") or []:
+        env[f"INSTALL_{role.upper()}"] = "N"
+    for feature in state.get("features_excluded") or []:
+        env[f"INSTALL_{feature.upper()}"] = "N"
+    for role in (state.get("roles") or {}):
+        env[f"INSTALL_{role.upper()}"] = "Y"
+    for feature in state.get("features") or []:
+        env[f"INSTALL_{feature.upper()}"] = "Y"
     return env
 
 

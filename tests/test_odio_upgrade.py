@@ -32,19 +32,20 @@ class DeriveInstallEnvTests(unittest.TestCase):
         env = ou.derive_install_env({"roles": {}, "roles_excluded": ["spotifyd"]})
         self.assertEqual(env["INSTALL_SPOTIFYD"], "N")
 
-    def test_role_absent_from_both_defaults_to_Y(self):
-        # Opt-out semantic: nothing in excluded → install it. Covers schema
-        # gaps (new release adds a role) and malformed state.json (excluded
-        # list wrongly empty).
+    def test_role_absent_from_both_is_not_emitted(self):
+        # Opt-out semantic: anything not in roles/roles_excluded is left unset
+        # so install.sh's own defaults (Y for optionals in upgrade-era releases)
+        # take over. That's how a role added after this script was written
+        # self-installs on upgrade.
         env = ou.derive_install_env({"roles": {}, "roles_excluded": []})
-        self.assertEqual(env["INSTALL_BRANDING"], "Y")
-        self.assertEqual(env["INSTALL_MPD"], "Y")
+        self.assertNotIn("INSTALL_BRANDING", env)
+        self.assertNotIn("INSTALL_MPD", env)
 
-    def test_feature_absent_from_both_defaults_to_Y(self):
+    def test_feature_absent_from_both_is_not_emitted(self):
         env = ou.derive_install_env(
             {"roles": {}, "features": {}, "features_excluded": []}
         )
-        self.assertEqual(env["INSTALL_TIDAL"], "Y")
+        self.assertNotIn("INSTALL_TIDAL", env)
 
     def test_excluded_feature_maps_to_N(self):
         env = ou.derive_install_env(
@@ -60,13 +61,11 @@ class DeriveInstallEnvTests(unittest.TestCase):
         env = ou.derive_install_env({"roles": {"branding": "x"}})
         self.assertEqual(env["INSTALL_BRANDING"], "Y")
 
-    def test_all_install_vars_emitted(self):
-        # Completeness guard: every entry in _ROLE_VARS / _FEATURE_VARS must
-        # produce an INSTALL_* key. Catches a new mapping added without the
-        # matching handling logic.
-        env = ou.derive_install_env({})
-        for var in list(ou._ROLE_VARS) + list(ou._FEATURE_VARS):
-            self.assertIn(var, env, f"{var} missing from derive_install_env output")
+    def test_empty_state_emits_nothing(self):
+        # No information in state.json → no INSTALL_* keys; install.sh's own
+        # defaults govern every flag. This is the contract that lets the local
+        # script stay agnostic to roles added by future releases.
+        self.assertEqual(ou.derive_install_env({}), {})
 
 
 class BackfillStateTests(unittest.TestCase):
@@ -91,7 +90,7 @@ class BackfillStateTests(unittest.TestCase):
 
         self.assertIn("branding", result["roles"])
         expected_excluded = sorted(
-            ou._KNOWN_ROLES - {"pulseaudio", "bluetooth", "odio_api", "branding"}
+            set(ou._ROLE_PACKAGES) - {"pulseaudio", "bluetooth", "odio_api"}
         )
         self.assertEqual(result["roles_excluded"], expected_excluded)
         self.assertEqual(result["features"], ["tidal"])
@@ -202,13 +201,15 @@ class StateFromDpkgTests(unittest.TestCase):
 class BackfillDeriveIntegrationTests(unittest.TestCase):
     """End-to-end: what install.sh would actually receive for a given state.json."""
 
-    def test_pr49_regression_unlisted_feature_installs_on_upgrade(self):
+    def test_pr49_regression_unlisted_feature_left_to_install_sh_default(self):
         # Reproduces the PR #49 user report: state.json has qobuz + tidal
-        # opted in, features_excluded is empty, and upnpwebradios is absent
-        # everywhere. Derive must pass INSTALL_UPNPWEBRADIOS=Y — the feature
-        # was never excluded, so pure opt-out means install it.
+        # opted in, features_excluded is empty, and upnpwebradios + branding
+        # are absent everywhere. Under the new contract derive_install_env
+        # leaves them unset so install.sh's own (Y) defaults install them —
+        # which is how a flag the local script doesn't know about still
+        # self-installs on upgrade.
         state = {
-            "roles": {r: "x" for r in ou._KNOWN_ROLES - {"branding"}},
+            "roles": {r: "x" for r in ou._ROLE_PACKAGES},
             "roles_excluded": [],
             "features": {"qobuz": True, "tidal": True},
             "features_excluded": [],
@@ -221,8 +222,8 @@ class BackfillDeriveIntegrationTests(unittest.TestCase):
         env = ou.derive_install_env(state)
         self.assertEqual(env["INSTALL_QOBUZ"], "Y")
         self.assertEqual(env["INSTALL_TIDAL"], "Y")
-        self.assertEqual(env["INSTALL_UPNPWEBRADIOS"], "Y")
-        self.assertEqual(env["INSTALL_BRANDING"], "Y")  # not in roles → Y
+        self.assertNotIn("INSTALL_UPNPWEBRADIOS", env)  # install.sh default Y
+        self.assertNotIn("INSTALL_BRANDING", env)        # install.sh default Y
 
 
 class ResolveTargetUserTests(unittest.TestCase):

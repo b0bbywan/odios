@@ -111,12 +111,6 @@ run_install() {
       env \
         INSTALL_MODE="${install_mode}" \
         TARGET_USER=odio \
-        INSTALL_SPOTIFYD=Y \
-        INSTALL_SHAIRPORT_SYNC=Y \
-        INSTALL_SNAPCLIENT=Y \
-        INSTALL_UPMPDCLI=Y \
-        INSTALL_TIDAL=Y \
-        INSTALL_MPD_DISCPLAYER=Y \
         ODIOS_VERSION="${tag}" \
       bash -c "curl -fsSL '${url}' | bash"
 }
@@ -188,11 +182,6 @@ case "${ACTION}" in
       ansible-playbook -v -i inventory/localhost.yml \
         /opt/odios/ansible/playbook.yml \
         $(ansible_extra_flags) \
-        -e "install_spotifyd=true" \
-        -e "install_tidal=true" \
-        -e "install_upnpwebradios=true" \
-        -e "qobuz_user=test@example.com" \
-        -e "qobuz_pass=boguspassword" \
         -e "mpd_discplayer_gnu_email=test@example.com" \
         "$@"
 
@@ -210,11 +199,6 @@ case "${ACTION}" in
     docker exec $(ansible_exec_user) "${CONTAINER_NAME}" \
       ansible-playbook -i inventory/localhost.yml /opt/odios/ansible/playbook.yml \
         $(ansible_extra_flags) \
-        -e "install_spotifyd=true" \
-        -e "install_tidal=true" \
-        -e "install_upnpwebradios=true" \
-        -e "qobuz_user=test@example.com" \
-        -e "qobuz_pass=boguspassword" \
         -e "mpd_discplayer_gnu_email=test@example.com" \
         "$@"
     ;;

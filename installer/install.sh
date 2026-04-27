@@ -77,15 +77,15 @@ ask_config() {
     read -rp "Install Shairport Sync (AirPlay)? [Y/n]: "   INSTALL_SHAIRPORT_SYNC
     read -rp "Install Snapcast client? [Y/n]: "            INSTALL_SNAPCLIENT
     read -rp "Install UPnP/DLNA renderer? [Y/n]: "         INSTALL_UPMPDCLI
-    read -rp "Install Spotifyd (Spotify Connect)? [y/N]: " INSTALL_SPOTIFYD
-    read -rp "Install branding (odio-motd login banner, hushlogin)? [y/N]: " INSTALL_BRANDING
+    read -rp "Install Spotifyd (Spotify Connect)? [Y/n]: " INSTALL_SPOTIFYD
+    read -rp "Install branding (odio-motd login banner, hushlogin)? [Y/n]: " INSTALL_BRANDING
 
     if [[ "${INSTALL_UPMPDCLI:-Y}" != "n" && "${INSTALL_UPMPDCLI:-Y}" != "N" ]]; then
         echo ""
         echo -e "${BLUE}Streaming plugins (upmpdcli) — Qobuz/Tidal need credentials added to ~/.config/upmpdcli/upmpdcli.conf after install${NC}"
-        read -rp "Install Qobuz support? [y/N]: "  INSTALL_QOBUZ
-        read -rp "Install Tidal support? [y/N]: "  INSTALL_TIDAL
-        read -rp "Install UPnP web radios? [y/N]: " INSTALL_UPNPWEBRADIOS
+        read -rp "Install Qobuz support? [Y/n]: "  INSTALL_QOBUZ
+        read -rp "Install Tidal support? [Y/n]: "  INSTALL_TIDAL
+        read -rp "Install UPnP web radios? [Y/n]: " INSTALL_UPNPWEBRADIOS
     fi
 
     if [[ "${INSTALL_MPD,,}" == "n" && "${INSTALL_MPD_DISCPLAYER,,}" == "y" ]] && command -v mpd &>/dev/null; then
@@ -115,11 +115,11 @@ prompt_for_config() {
     INSTALL_SHAIRPORT_SYNC="${INSTALL_SHAIRPORT_SYNC:-Y}"
     INSTALL_SNAPCLIENT="${INSTALL_SNAPCLIENT:-Y}"
     INSTALL_UPMPDCLI="${INSTALL_UPMPDCLI:-Y}"
-    INSTALL_TIDAL="${INSTALL_TIDAL:-N}"
-    INSTALL_QOBUZ="${INSTALL_QOBUZ:-N}"
-    INSTALL_SPOTIFYD="${INSTALL_SPOTIFYD:-N}"
-    INSTALL_UPNPWEBRADIOS="${INSTALL_UPNPWEBRADIOS:-N}"
-    INSTALL_BRANDING="${INSTALL_BRANDING:-N}"
+    INSTALL_TIDAL="${INSTALL_TIDAL:-Y}"
+    INSTALL_QOBUZ="${INSTALL_QOBUZ:-Y}"
+    INSTALL_SPOTIFYD="${INSTALL_SPOTIFYD:-Y}"
+    INSTALL_UPNPWEBRADIOS="${INSTALL_UPNPWEBRADIOS:-Y}"
+    INSTALL_BRANDING="${INSTALL_BRANDING:-Y}"
 }
 
 # ─── Pre-flight checks ────────────────────────────────────────────────────────
