@@ -15,15 +15,15 @@ install_bluetooth: true
 install_mpd: true
 install_odio_api: true
 
-# Optional components
+# Optional components (default: enabled — install.sh prompts default to Y)
 install_mpd_discplayer: true
 install_shairport_sync: true
 install_snapclient: true
 install_upmpdcli: true
-install_tidal: false
-install_qobuz: false
-install_spotifyd: false
-install_upnpwebradios: false
+install_tidal: true
+install_qobuz: true
+install_spotifyd: true
+install_upnpwebradios: true
 
 # Branding (odio-motd login banner, hushlogin, .profile hook)
-install_branding: false
+install_branding: true
