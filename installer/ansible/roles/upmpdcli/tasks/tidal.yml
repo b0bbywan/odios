@@ -1,4 +1,11 @@
 ---
+- name: Install tidalapi python package
+  ansible.builtin.pip:
+    break_system_packages: true
+    name: tidalapi
+  become: true
+  become_user: "{{ target_user }}"
+
 - name: Install upmpdcli-tidal
   ansible.builtin.apt:
     name: upmpdcli-tidal
