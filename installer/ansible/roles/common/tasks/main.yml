@@ -26,17 +26,22 @@
     group: root
   become: true
 
+# Single apt update for the whole playbook — covers system repos + the odio
+# source added just above. Later roles must NOT set `update_cache: true`
+# (exception: upmpdcli, which adds its own ppa mid-playbook).
+- name: Update apt cache
+  ansible.builtin.apt:
+    update_cache: true
+  become: true
+
 # acl is required by ansible-core's `become_user` when the invoking user, root,
 # and target_user are three different identities — ansible drops tmp files via
 # setfacl, and falls back to the BSD `chmod +a` syntax (invalid on Linux) when
-# the package is absent. update_cache here covers both the system repos and the
-# odio source added just above, so no later `update_cache: true` is needed
-# (except in upmpdcli, which adds its own ppa mid-playbook).
+# the package is absent.
 - name: Install acl (needed by become_user)
   ansible.builtin.apt:
     name: acl
     state: present
-    update_cache: true
   become: true
 
 - name: Ensure required groups exist
