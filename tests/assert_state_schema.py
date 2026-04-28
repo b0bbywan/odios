@@ -44,8 +44,16 @@ def main() -> int:
     overlap = set(feats) & set(excl)
     assert not overlap, f"features and features_excluded overlap: {sorted(overlap)}"
 
+    history = s.get("release_history")
+    assert isinstance(history, list) and history, \
+        f"release_history must be a non-empty list, got {history!r}"
+    assert all(isinstance(x, str) for x in history), \
+        f"release_history must contain only strings, got {history!r}"
+    assert history[-1] == ver, \
+        f"release_history[-1]={history[-1]!r} must equal state.odios={ver!r}"
+
     print(f"state.json OK: {ver} roles={list(s['roles'])} "
-          f"features={feats} excluded={excl}")
+          f"features={feats} excluded={excl} history={history}")
     return 0
 
 
