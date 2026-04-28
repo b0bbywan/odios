@@ -99,6 +99,15 @@
   become_user: "{{ target_user }}"
   notify: Restart upmpdcli
 
+- name: Install pip
+  ansible.builtin.apt:
+    name:
+      - python3-pip
+    state: present
+    install_recommends: false
+  become: true
+  when: install_tidal | bool or install_upnpwebradios | bool
+
 - name: Configure Qobuz streaming
   ansible.builtin.include_tasks: qobuz.yml
   when: install_qobuz | bool
