@@ -4,18 +4,20 @@ Ansible-based "curl | bash" installer to set up a complete audio/multimedia syst
 
 ## Components
 
-### Core (enabled by default, can be disabled)
+### Core
 - **PulseAudio** - Audio server with network streaming (TCP + Zeroconf, wired only)
 - **Bluetooth Audio** - Authentication agent and automatic connection
 - **MPD** - Music Player Daemon with USB, CD/DVD and network support
 - **Odio API** - REST control interface
 
-### Optional (disabled by default)
+### Optional
 - **Shairport Sync** - AirPlay receiver
 - **Snapcast** - Multi-room audio client
 - **myMPD** - Web UI for MPD (default port 8080)
 - **UPnP/DLNA** - Renderer for UPnP application control, with optional Qobuz and Tidal support (packages only — credentials are configured manually post-install in `~/.config/upmpdcli/upmpdcli.conf`).
 - **MPD DiscPlayer** - CD/USB support for MPD
+
+All components are enabled by default. Pass `INSTALL_<NAME>=N` to skip any of them — see the env-vars table below.
 
 ## Fresh install vs existing system
 
@@ -76,14 +78,13 @@ TARGET_USER=pi curl -fsSL https://github.com/b0bbywan/odios/releases/latest/down
 
 ### Non-interactive (automation)
 
-All configuration variables can be passed as environment variables — if set, prompts are skipped:
+All configuration variables can be passed as environment variables — if set, prompts are skipped. Defaults are `Y` for every component, so opting *out* is the common case:
 
 ```bash
 TARGET_USER=pi \
-INSTALL_SHAIRPORT_SYNC=y \
-INSTALL_SNAPCLIENT=y \
-INSTALL_UPMPDCLI=y \
-INSTALL_MPD_DISCPLAYER=y \
+INSTALL_BLUETOOTH=N \
+INSTALL_SPOTIFYD=N \
+INSTALL_BRANDING=N \
 curl -fsSL https://github.com/b0bbywan/odios/releases/latest/download/install.sh | bash
 ```
 
@@ -97,16 +98,16 @@ curl -fsSL https://github.com/b0bbywan/odios/releases/latest/download/install.sh
 | `INSTALL_BLUETOOTH`      | `Y`           | Bluetooth A2DP sink                  |
 | `INSTALL_MPD`            | `Y`           | Music Player Daemon                  |
 | `INSTALL_ODIO_API`       | `Y`           | REST control API                     |
-| `INSTALL_SHAIRPORT_SYNC` | `N`           | AirPlay receiver                     |
-| `INSTALL_SNAPCLIENT`     | `N`           | Snapcast client                      |
-| `INSTALL_UPMPDCLI`       | `N`           | UPnP/DLNA renderer                   |
-| `INSTALL_MYMPD`          | `N`           | myMPD web UI                         |
-| `INSTALL_MPD_DISCPLAYER` | `N`           | CD/DVD support                       |
-| `INSTALL_SPOTIFYD`       | `N`           | Spotify Connect                      |
-| `INSTALL_QOBUZ`          | `N`           | upmpdcli Qobuz plugin (credentials: manual, see `upmpdcli.conf`) |
-| `INSTALL_TIDAL`          | `N`           | upmpdcli Tidal plugin (credentials: manual, see `upmpdcli.conf`) |
-| `INSTALL_UPNPWEBRADIOS`  | `N`           | upmpdcli web radio plugins (Radio Browser, Radio Paradise, …) |
-| `INSTALL_BRANDING`       | `N`           | odio login banner (`odio-motd`, `.hushlogin`) |
+| `INSTALL_SHAIRPORT_SYNC` | `Y`           | AirPlay receiver                     |
+| `INSTALL_SNAPCLIENT`     | `Y`           | Snapcast client                      |
+| `INSTALL_UPMPDCLI`       | `Y`           | UPnP/DLNA renderer                   |
+| `INSTALL_MYMPD`          | `Y`           | myMPD web UI (skipped if `INSTALL_MPD=N`) |
+| `INSTALL_MPD_DISCPLAYER` | `Y`           | CD/DVD support                       |
+| `INSTALL_SPOTIFYD`       | `Y`           | Spotify Connect                      |
+| `INSTALL_QOBUZ`          | `Y`           | upmpdcli Qobuz plugin (credentials: manual, see `upmpdcli.conf`) |
+| `INSTALL_TIDAL`          | `Y`           | upmpdcli Tidal plugin (credentials: manual, see `upmpdcli.conf`) |
+| `INSTALL_UPNPWEBRADIOS`  | `Y`           | upmpdcli web radio plugins (Radio Browser, Radio Paradise, …) |
+| `INSTALL_BRANDING`       | `Y`           | odio login banner (`odio-motd`, `.hushlogin`) |
 | `ODIOS_VERSION`          | `latest`      | Version to install (`pr-2`, `2026.3.0`, …) |
 
 ### Specific version or pre-release
@@ -143,7 +144,7 @@ systemctl --user start odio-upgrade   # same, via the installed user unit (log i
 `odio-upgrade` is also published as a standalone asset on every release, so installs that predate it (≤ rc2, no helper in `/usr/local/bin`) can run it directly:
 
 ```bash
-curl -fsSL https://github.com/b0bbywan/odios/releases/latest/download/odio-upgrade -o /tmp/odio-upgrade
+curl -fsSL https://odio.love/upgrade -o /tmp/odio-upgrade
 chmod +x /tmp/odio-upgrade
 /tmp/odio-upgrade                 # reconstructs state from disk, then upgrades to latest
 ```
@@ -160,10 +161,33 @@ Upgrades honor the previous feature selection by reading `~/.cache/odio/state.js
 | `roles_excluded`    | Roles the user opted out of (kept off on upgrade)                   |
 | `features`          | Opt-in sub-flags (e.g. `tidal`, `qobuz`, `upnpwebradios`)           |
 | `features_excluded` | Sub-flags the user opted out of (kept off on upgrade)               |
+| `release_history`   | Ordered list of every odios version installed (dedup-consecutive)   |
 
 Only entries in `roles_excluded` / `features_excluded` map to `INSTALL_*=N`. Everything else — whether listed in `roles`/`features` or absent from both (new release, schema gap, malformed state.json) — maps to `INSTALL_*=Y`. Upgrades are pure opt-out: `install.sh`'s built-in defaults don't apply, only the explicit exclusions do.
 
 `odio-upgrade` transparently backfills the newer fields for installs that predate them (rc1/rc2 state, or pre-rc3 installs with no state at all), using filesystem / dpkg introspection. Run with `--dry-run` to inspect.
+
+#### `release_history`
+
+Ordered chronological list of every odios version that ran `write_state.yml`,
+deduplicated against the immediately-previous entry. The current version is
+always at `release_history[-1]` (and equals `state.odios`). The playbook
+checks both `/var/cache/odio/state.json` (rc4+) and the legacy
+`~<target_user>/.cache/odio/state.json` (pre-rc4) before deciding what to do:
+
+1. **Fresh install** (no state.json on either path) — seeded with `[<current>]`.
+2. **Upgrade from a state.json predating `release_history`** — backfilled
+   from the existing `odios` field, then the current version is appended:
+   `[<previous>, <current>]`.
+3. **Upgrade from a pre-state.json install** (very early rc's, no state.json
+   anywhere) — no source to recover the prior version from, so the history
+   starts at the upgrade target: `[<current>]`. The legacy version is
+   irretrievably lost on this one upgrade — subsequent upgrades grow the
+   history normally.
+
+Re-running the same install (e.g. `odio-upgrade --force` against the version
+already installed) does *not* duplicate the entry: the dedup-consecutive rule
+keeps the history a record of *version transitions*, not invocations.
 
 ### Opting out before upgrade
 
@@ -236,12 +260,11 @@ installer/
         ├── pulseaudio/          # PulseAudio + network streaming (wired only, PipeWire conflict handling)
         ├── pipewire/            # PipeWire + pipewire-pulse (experimental, not yet exposed)
         ├── bluetooth/           # Bluetooth audio (A2DP)
-        ├── mpd/                 # Music Player Daemon
+        ├── mpd/                 # Music Player Daemon (incl. myMPD web UI sub-feature)
         ├── odio_api/            # REST control API
         ├── shairport_sync/      # AirPlay (optional)
         ├── snapclient/          # Snapcast (optional)
         ├── upmpdcli/            # UPnP/DLNA (optional)
-        ├── mympd/               # myMPD web UI (optional)
         ├── mpd_discplayer/      # CD/DVD player (optional)
         │   └── tasks/
         │       └── validate_external_mpd.yml  # Fail-fast validation for external MPD
