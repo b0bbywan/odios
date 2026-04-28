@@ -87,6 +87,35 @@ run_odio_upgrade() {
     "
 }
 
+run_odio_upgrade_embedded() {
+    local tag="$1"
+    local install_mode="${2:-image}"
+
+    echo "=== embedded /usr/local/bin/odio-upgrade → run as odio (target=${tag}, mode=${install_mode}) ==="
+    docker exec -u odio -e INSTALL_MODE="${install_mode}" "${CONTAINER_NAME}" \
+        /usr/local/bin/odio-upgrade --version "${tag}" --force
+}
+
+# Real-release path: odio.love/manifest.json drives the target via odio-check-upgrade,
+# then `systemctl --user start odio-upgrade.service` runs the unit (no --version arg).
+# Only valid when the published manifest already points at TAG (post-release tag pushes).
+run_odio_upgrade_systemctl() {
+    local tag="$1"
+    local install_mode="${2:-image}"
+
+    echo "=== odio-check-upgrade + systemctl --user start odio-upgrade.service (target=${tag}, mode=${install_mode}) ==="
+    docker exec -u odio -e INSTALL_MODE="${install_mode}" "${CONTAINER_NAME}" bash -c '
+        set -e
+        /usr/local/bin/odio-check-upgrade || true
+        latest=$(python3 -c "import json; print(json.load(open(\"/var/cache/odio/upgrades.json\"))[\"latest\"])")
+        if [[ "$latest" != "'"${tag}"'" ]]; then
+            echo "ERROR: odio.love manifest reports latest=$latest, expected '"${tag}"'" >&2
+            exit 1
+        fi
+        systemctl --user start --wait odio-upgrade.service
+    '
+}
+
 assert_state_schema() {
     local target="$1"
     # Pipe the script via stdin so we don't rely on a writable/persistent path
@@ -136,7 +165,10 @@ while [[ "${1:-}" == --* ]]; do
         echo "  install-root [TAG] - Test install.sh as root, TARGET_USER=odio"
         echo "                       TAG examples: latest, pr-2, 2026.3.0"
         echo "  upgrade B T        - Upgrade from baseline tag B to target tag T (INSTALL_MODE=live)"
-        echo "  upgrade-from-image T - Upgrade to target T on REMOTE_IMAGE (pre-provisioned baseline)"
+        echo "  upgrade-from-image T - Upgrade to target T on REMOTE_IMAGE (pre-provisioned baseline) via curl"
+        echo "  upgrade-from-image-embedded T - Same, but uses the baseline's /usr/local/bin/odio-upgrade"
+        echo "  upgrade-from-image-systemctl T - Same, but via systemctl --user start odio-upgrade.service"
+        echo "                       (T must already be reported as latest by odio.love/manifest.json)"
         exit 0
         ;;
     esac
@@ -144,7 +176,7 @@ while [[ "${1:-}" == --* ]]; do
 done
 
 case "${1:-}" in
-  shell|rerun|clean|install|install-root|upgrade|upgrade-from-image)
+  shell|rerun|clean|install|install-root|upgrade|upgrade-from-image|upgrade-from-image-embedded|upgrade-from-image-systemctl)
     ACTION="$1"
     shift
     ;;
@@ -237,13 +269,13 @@ case "${ACTION}" in
     echo "=== Done ==="
     ;;
 
-  upgrade-from-image)
+  upgrade-from-image|upgrade-from-image-embedded|upgrade-from-image-systemctl)
     TARGET="${1:?target tag required (e.g. pr-42 or 2026.4.1rc2)}"
 
-    # The whole point of upgrade-from-image is to test the upgrade code path on
+    # The whole point of upgrade-from-image* is to test the upgrade code path on
     # a pre-provisioned baseline. Falling back to a fresh Dockerfile.test build
     # would silently test an install, not an upgrade — refuse up front.
-    echo "=== [upgrade-from-image] Verifying baseline image ${REMOTE_IMAGE} ==="
+    echo "=== [${ACTION}] Verifying baseline image ${REMOTE_IMAGE} ==="
     # shellcheck disable=SC2046
     if ! docker pull $(platform_flags) "${REMOTE_IMAGE}"; then
         cat >&2 <<EOF
@@ -265,10 +297,14 @@ EOF
 
     start_container
 
-    echo "=== [upgrade-from-image] Upgrading to ${TARGET} via odio-upgrade (image mode) ==="
-    run_odio_upgrade "${TARGET}"
+    echo "=== [${ACTION}] Upgrading to ${TARGET} (image mode) ==="
+    case "${ACTION}" in
+      upgrade-from-image)           run_odio_upgrade           "${TARGET}" ;;
+      upgrade-from-image-embedded)  run_odio_upgrade_embedded  "${TARGET}" ;;
+      upgrade-from-image-systemctl) run_odio_upgrade_systemctl "${TARGET}" ;;
+    esac
 
-    echo "=== [upgrade-from-image] Asserting state.json reflects ${TARGET} ==="
+    echo "=== [${ACTION}] Asserting state.json reflects ${TARGET} ==="
     assert_state_schema "${TARGET}"
     echo "=== Done ==="
     ;;
