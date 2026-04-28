@@ -71,6 +71,62 @@
     mode: '2775'
   become: true
 
+# Release history: ordered chronological list of every odios version that ran
+# write_state.yml. First install seeds it with [odio_version]; subsequent
+# upgrades append (dedup-consecutive). Old state.json files without the field
+# are backfilled from `odios` so we don't lose the pre-history version.
+# Pre-rc4 wrote state.json into the target_user's home; rc4+ uses /var/cache.
+- name: Read existing state.json (system path)
+  ansible.builtin.slurp:
+    src: /var/cache/odio/state.json
+  register: _odios_existing_state_system
+  become: true
+  failed_when: false
+
+- name: Read existing state.json (legacy per-user path)
+  ansible.builtin.slurp:
+    src: "/home/{{ target_user }}/.cache/odio/state.json"
+  register: _odios_existing_state_legacy
+  become: true
+  failed_when: false
+  when: _odios_existing_state_system.content is not defined
+
+- name: Parse existing state
+  ansible.builtin.set_fact:
+    _odios_existing_state: >-
+      {{
+        (_odios_existing_state_system.content | b64decode | from_json)
+        if _odios_existing_state_system.content is defined
+        else (
+          (_odios_existing_state_legacy.content | b64decode | from_json)
+          if (_odios_existing_state_legacy.content | default('')) | length > 0
+          else {}
+        )
+      }}
+
+- name: Seed prior release history
+  ansible.builtin.set_fact:
+    _odios_prior_history: >-
+      {{
+        _odios_existing_state.release_history
+        if _odios_existing_state.release_history is defined
+        else (
+          [_odios_existing_state.odios]
+          if _odios_existing_state.odios is defined
+          else []
+        )
+      }}
+
+- name: Append current version to release history (dedup consecutive)
+  ansible.builtin.set_fact:
+    _odios_release_history: >-
+      {{
+        _odios_prior_history
+        if (_odios_prior_history | length > 0
+            and _odios_prior_history[-1] == odio_version)
+        else _odios_prior_history + [odio_version]
+      }}
+
 - name: Assemble state.json payload
   ansible.builtin.set_fact:
     _odios_state:
@@ -81,6 +137,7 @@
       roles_excluded: "{{ _odios_excluded_roles }}"
       features: "{{ _odios_enabled_features }}"
       features_excluded: "{{ _odios_excluded_features }}"
+      release_history: "{{ _odios_release_history }}"
 
 - name: Write /var/cache/odio/state.json
   ansible.builtin.copy:
