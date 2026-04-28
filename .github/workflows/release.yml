@@ -323,18 +323,29 @@ jobs:
           #   - 2026.4.1rc1 : state.json present, no `features` block yet
           #   - 2026.4.1rc2 : state.json with `features` block (motd / tidal /
           #                   upnpwebradios tracked)
+          #   - 2026.4.2b1  : embedded /usr/local/bin/odio-upgrade (PR) or
+          #                   systemctl --user start odio-upgrade.service (tag)
           - platform: linux/arm64
             runner: ubuntu-24.04-arm
             arch: arm64
             baseline_tag: "2026.4.0rc3"
+            test_action: upgrade-from-image
           - platform: linux/arm64
             runner: ubuntu-24.04-arm
             arch: arm64
             baseline_tag: "2026.4.1rc1"
+            test_action: upgrade-from-image
           - platform: linux/arm64
             runner: ubuntu-24.04-arm
             arch: arm64
             baseline_tag: "2026.4.1rc2"
+            test_action: upgrade-from-image
+          - platform: linux/arm64
+            runner: ubuntu-24.04-arm
+            arch: arm64
+            baseline_tag: "2026.4.2b1"
+            # Resolved at run time: embedded on PR, systemctl on real-release tag.
+            test_action: ""
     steps:
       - uses: actions/checkout@v5
 
@@ -354,8 +365,19 @@ jobs:
             echo "value=pr-${{ github.event.pull_request.number }}" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: "Run upgrade test (${{ matrix.platform }}: ${{ matrix.baseline_tag }} -> ${{ steps.tag.outputs.value }})"
-        run: ./tests/test.sh upgrade-from-image "${{ steps.tag.outputs.value }}"
+      - name: Resolve test action
+        id: action
+        run: |
+          if [[ -n "${{ matrix.test_action }}" ]]; then
+            echo "value=${{ matrix.test_action }}" >> "$GITHUB_OUTPUT"
+          elif [[ "${{ needs.build.outputs.is_release }}" == "true" ]]; then
+            echo "value=upgrade-from-image-systemctl" >> "$GITHUB_OUTPUT"
+          else
+            echo "value=upgrade-from-image-embedded" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: "Run upgrade test (${{ matrix.platform }}: ${{ matrix.baseline_tag }} -> ${{ steps.tag.outputs.value }} via ${{ steps.action.outputs.value }})"
+        run: ./tests/test.sh "${{ steps.action.outputs.value }}" "${{ steps.tag.outputs.value }}"
         env:
           REMOTE_IMAGE: ghcr.io/${{ github.repository }}/test-baseline:${{ matrix.baseline_tag }}-${{ matrix.arch }}
           PLATFORM: ${{ matrix.platform }}
@@ -406,12 +428,6 @@ jobs:
             --version ${{ steps.tag.outputs.value }} \
             --output ./output
 
-      - name: Upload image to release
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: ${{ steps.tag.outputs.value }}
-          files: output/odio-*.img.xz
-
       - name: Build per-arch RPi-Imager manifest (pre-release only)
         if: needs.build.outputs.is_release != 'true'
         run: |
@@ -419,18 +435,18 @@ jobs:
             "odio.${{ matrix.arch }}.rpi-imager-manifest" \
             output/odio-*.json
 
-      - name: Upload per-arch manifest to release (pre-release only)
-        if: needs.build.outputs.is_release != 'true'
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: ${{ steps.tag.outputs.value }}
-          files: odio.${{ matrix.arch }}.rpi-imager-manifest
-
-      - name: Upload manifest entry
+      - name: Upload per-arch manifest entry
         uses: actions/upload-artifact@v6
         with:
           name: manifest-${{ matrix.arch }}
           path: output/odio-*.json
+
+      - name: Upload per-arch RPi-Imager manifest (pre-release only)
+        if: needs.build.outputs.is_release != 'true'
+        uses: actions/upload-artifact@v6
+        with:
+          name: rpi-imager-manifest-${{ matrix.arch }}
+          path: odio.${{ matrix.arch }}.rpi-imager-manifest
 
       - name: Upload image as artifact
         if: always()
@@ -439,11 +455,53 @@ jobs:
           name: odio-${{ matrix.arch }}-${{ steps.tag.outputs.value }}
           path: output/odio-*.img.xz
 
-  publish-manifest:
-    needs: [build, build-image]
+  publish-image:
+    needs: [build, build-image, test-upgrade]
     if: |
       !cancelled() &&
-      needs.build-image.result == 'success'
+      needs.build.result == 'success' &&
+      needs.build-image.result == 'success' &&
+      needs.test-upgrade.result == 'success'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Resolve version tag
+        id: tag
+        run: |
+          if [[ "${{ needs.build.outputs.is_release }}" == "true" ]]; then
+            echo "value=${{ needs.build.outputs.version }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "value=pr-${{ github.event.pull_request.number }}" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Download image artifacts
+        uses: actions/download-artifact@v7
+        with:
+          pattern: odio-*-${{ steps.tag.outputs.value }}
+          path: images
+          merge-multiple: true
+
+      - name: Download per-arch RPi-Imager manifests (pre-release only)
+        if: needs.build.outputs.is_release != 'true'
+        uses: actions/download-artifact@v7
+        with:
+          pattern: rpi-imager-manifest-*
+          path: rpi-manifests
+          merge-multiple: true
+
+      - name: Upload images and per-arch manifests to release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.tag.outputs.value }}
+          files: |
+            images/odio-*.img.xz
+            rpi-manifests/odio.*.rpi-imager-manifest
+
+  publish-manifest:
+    needs: [build, build-image, test-upgrade]
+    if: |
+      !cancelled() &&
+      needs.build-image.result == 'success' &&
+      needs.test-upgrade.result == 'success'
     runs-on: ubuntu-latest
     steps:
       # Checkout MUST run before download-artifact: actions/checkout wipes the
