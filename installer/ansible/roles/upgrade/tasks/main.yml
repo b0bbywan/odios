@@ -57,3 +57,11 @@
   vars:
     service_name: odio-check-upgrade.timer
     service_unit_path: /etc/systemd/user/odio-check-upgrade.timer
+
+- name: Install unattended-upgrades (image mode)
+  ansible.builtin.apt:
+    name: unattended-upgrades
+    state: present
+    install_recommends: false
+  become: true
+  when: install_mode == "image"
