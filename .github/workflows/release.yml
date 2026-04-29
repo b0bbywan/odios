@@ -370,9 +370,9 @@ jobs:
         run: |
           if [[ -n "${{ matrix.test_action }}" ]]; then
             echo "value=${{ matrix.test_action }}" >> "$GITHUB_OUTPUT"
-          elif [[ "${{ needs.build.outputs.is_release }}" == "true" ]]; then
-            echo "value=upgrade-from-image-systemctl" >> "$GITHUB_OUTPUT"
           else
+            # TODO: re-enable upgrade-from-image-systemctl on real releases
+            # once the DBus user-session setup works in the test container.
             echo "value=upgrade-from-image-embedded" >> "$GITHUB_OUTPUT"
           fi
 
