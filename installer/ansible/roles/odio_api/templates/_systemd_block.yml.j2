@@ -1,0 +1,31 @@
+systemd:
+  enabled: true
+  system:
+{% if install_bluetooth %}
+    - name: bluetooth.service
+{% endif %}
+  user:
+{% if install_pulseaudio %}
+    - name: pulseaudio.service
+{% endif %}
+{% if install_mpd or install_mpd_discplayer %}
+    - name: mpd.service
+{% if install_mympd %}
+      url: ":{{ mpd_mympd_http_port }}"
+{% endif %}
+{% endif %}
+{% if install_mpd_discplayer %}
+    - name: mpd-discplayer.service
+{% endif %}
+{% if install_shairport_sync %}
+    - name: shairport-sync.service
+{% endif %}
+{% if install_snapclient %}
+    - name: snapclient.service
+{% endif %}
+{% if install_spotifyd %}
+    - name: spotifyd.service
+{% endif %}
+{% if install_upmpdcli %}
+    - name: upmpdcli.service
+{% endif %}
