@@ -1,20 +1,11 @@
 ---
-- name: Install go-odio-api
+- name: Install go-odio-api v{{ odio_api_apt_version }}
   ansible.builtin.apt:
-    name: odio-api
+    name: "odio-api={{ odio_api_apt_version }}"
     state: present
     install_recommends: false
   become: true
-  register: odio_api_install
   notify: Restart odio-api
-
-- name: Upgrade go-odio-api
-  ansible.builtin.apt:
-    name: odio-api
-    only_upgrade: true
-  become: true
-  notify: Restart odio-api
-  when: not odio_api_install.changed
 
 - name: Create odio-api config directory
   ansible.builtin.file:
