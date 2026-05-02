@@ -8,6 +8,7 @@ gpg_file: "/usr/share/keyrings/odio.gpg"
 
 odio_version: "unknown"
 mpd_music_directory: "/media/USB"
+mpd_mympd_http_port: "8080"
 
 # Core components (default: enabled)
 install_pulseaudio: true
