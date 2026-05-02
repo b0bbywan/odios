@@ -77,6 +77,16 @@
   become: true
   notify: Restart mympd
 
+- name: Configure mympd http port
+  ansible.builtin.copy:
+    content: "{{ mpd_mympd_http_port }}"
+    dest: "/home/{{ target_user }}/.config/mympd/config/http_port"
+    owner: "{{ target_user }}"
+    group: "{{ target_user }}"
+    mode: '0600'
+  become: true
+  notify: Restart mympd
+
 - name: Enable user mympd service
   ansible.builtin.include_tasks: "../../../tasks/systemd_enable_user.yml"
   vars:
