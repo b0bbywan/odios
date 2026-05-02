@@ -325,27 +325,48 @@ jobs:
           #                   upnpwebradios tracked)
           #   - 2026.4.2b1  : embedded /usr/local/bin/odio-upgrade (PR) or
           #                   systemctl --user start odio-upgrade.service (tag)
+          #   - 2026.4.2b2  : same — closest baseline, exercises the embedded
+          #                   path one more release down
+          # The two `upgrade-from-image-fetch` entries on b1/b2 curl the PR's
+          # odio-upgrade so smart-upgrade (#54) actually runs against a
+          # baseline whose `/usr/local/bin/odio-upgrade` predates it.
           - platform: linux/arm64
             runner: ubuntu-24.04-arm
             arch: arm64
             baseline_tag: "2026.4.0rc3"
-            test_action: upgrade-from-image
+            test_action: upgrade-from-image-fetch
           - platform: linux/arm64
             runner: ubuntu-24.04-arm
             arch: arm64
             baseline_tag: "2026.4.1rc1"
-            test_action: upgrade-from-image
+            test_action: upgrade-from-image-fetch
           - platform: linux/arm64
             runner: ubuntu-24.04-arm
             arch: arm64
             baseline_tag: "2026.4.1rc2"
-            test_action: upgrade-from-image
+            test_action: upgrade-from-image-fetch
+          - platform: linux/arm64
+            runner: ubuntu-24.04-arm
+            arch: arm64
+            baseline_tag: "2026.4.2b1"
+            test_action: upgrade-from-image-fetch
+          - platform: linux/arm64
+            runner: ubuntu-24.04-arm
+            arch: arm64
+            baseline_tag: "2026.4.2b2"
+            test_action: upgrade-from-image-fetch
           - platform: linux/arm64
             runner: ubuntu-24.04-arm
             arch: arm64
             baseline_tag: "2026.4.2b1"
             # Resolved at run time: embedded on PR, systemctl on real-release tag.
-            test_action: ""
+            test_action: upgrade-from-image-auto
+          - platform: linux/arm64
+            runner: ubuntu-24.04-arm
+            arch: arm64
+            baseline_tag: "2026.4.2b2"
+            # Resolved at run time: embedded on PR, systemctl on real-release tag.
+            test_action: upgrade-from-image-auto
     steps:
       - uses: actions/checkout@v5
 
@@ -368,12 +389,12 @@ jobs:
       - name: Resolve test action
         id: action
         run: |
-          if [[ -n "${{ matrix.test_action }}" ]]; then
-            echo "value=${{ matrix.test_action }}" >> "$GITHUB_OUTPUT"
-          else
+          if [[ "${{ matrix.test_action }}" == "upgrade-from-image-auto" ]]; then
             # TODO: re-enable upgrade-from-image-systemctl on real releases
             # once the DBus user-session setup works in the test container.
             echo "value=upgrade-from-image-embedded" >> "$GITHUB_OUTPUT"
+          else
+            echo "value=${{ matrix.test_action }}" >> "$GITHUB_OUTPUT"
           fi
 
       - name: "Run upgrade test (${{ matrix.platform }}: ${{ matrix.baseline_tag }} -> ${{ steps.tag.outputs.value }} via ${{ steps.action.outputs.value }})"
