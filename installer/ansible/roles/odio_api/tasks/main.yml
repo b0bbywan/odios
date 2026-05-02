@@ -25,9 +25,6 @@
     mode: '0700'
   become: true
 
-- name: Check for graphical session
-  ansible.builtin.include_tasks: "../../../tasks/check_graphical_session.yml"
-
 - name: Deploy polkit shutdown rule
   ansible.builtin.template:
     src: 10-allow-shutdown.rules.j2

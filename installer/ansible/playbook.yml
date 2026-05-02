@@ -56,6 +56,14 @@
         system_arch: "{{ ansible_architecture }}"
         target_user_uid: "{{ common_user_uid_result.stdout }}"
 
+    # Sets `is_headless` once for the whole run — bluetooth, odio_api, and
+    # mpd_discplayer all consume it to decide between graphical and headless
+    # polkit/udev policies. Lifted out of individual roles so smart-upgrade
+    # skipping bluetooth+odio_api doesn't leave the fact unset for
+    # mpd_discplayer (or any future consumer).
+    - name: Detect graphical session
+      ansible.builtin.include_tasks: "tasks/check_graphical_session.yml"
+
   roles:
     - role: common
     - role: upgrade
