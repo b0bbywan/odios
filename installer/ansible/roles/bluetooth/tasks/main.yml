@@ -63,9 +63,6 @@
   vars:
     conf_path: /etc/bluetooth/main.conf
 
-- name: Check for graphical session
-  ansible.builtin.include_tasks: "../../../tasks/check_graphical_session.yml"
-
 - name: Deploy rfkill udev rule
   ansible.builtin.copy:
     dest: /etc/udev/rules.d/60-rfkill.rules
