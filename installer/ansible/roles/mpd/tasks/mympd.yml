@@ -1,20 +1,11 @@
 ---
-- name: Install mympd
+- name: Install mympd v{{ mpd_mympd_apt_version }}
   ansible.builtin.apt:
-    name: mympd
+    name: "mympd={{ mpd_mympd_apt_version }}"
     state: present
     install_recommends: false
   become: true
-  register: mpd_mympd_install
   notify: Restart mympd
-
-- name: Upgrade mympd
-  ansible.builtin.apt:
-    name: mympd
-    only_upgrade: true
-  become: true
-  notify: Restart mympd
-  when: not mpd_mympd_install.changed
 
 - name: Create mympd config directory
   ansible.builtin.file:
