@@ -118,11 +118,12 @@ run_odio_upgrade_systemctl() {
 
 assert_state_schema() {
     local target="$1"
-    # Pipe the script via stdin so we don't rely on a writable/persistent path
-    # in the container (/tmp is tmpfs + systemd-tmpfiles-managed on some baseline
-    # images, which can race with docker cp).
-    docker exec -i -u odio "${CONTAINER_NAME}" python3 - "$target" \
-        < tests/assert_state_schema.py
+    # Pipe the PR's odio_upgrade.py via stdin: when an upgrade fails to
+    # replace /usr/local/bin/odio-upgrade (baseline binary lacks `verify`,
+    # or the upgrade itself errored), running it directly would obscure
+    # the real failure with "unrecognized arguments: verify".
+    docker exec -i -u odio "${CONTAINER_NAME}" python3 - verify --expected-version "$target" \
+        < installer/ansible/roles/upgrade/files/odio_upgrade.py
 }
 
 run_install() {
