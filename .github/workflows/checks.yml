@@ -37,6 +37,19 @@ jobs:
       - run: pip install pyyaml
       - run: python3 -m unittest discover -v tests
 
+  python-lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+      - run: pip install ruff mypy
+      - name: ruff
+        run: ruff check
+      - name: mypy
+        run: mypy
+
   role-drift:
     if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
