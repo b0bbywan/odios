@@ -1,42 +1,35 @@
 ---
+# Single source of truth for the role list: the filesystem. `common` and
+# `upgrade` are infrastructure (always run, no install_X opt-in); every
+# other role with an install_<name> defined in group_vars is "optional"
+# (user can opt in/out, smart-upgrade can skip on stable version). Roles
+# present in roles/ but not yet wired into install_X (e.g. WIP roles) are
+# filtered out.
+- name: List role directories
+  ansible.builtin.find:
+    paths: "{{ playbook_dir }}/roles"
+    file_type: directory
+    recurse: false
+  register: _odios_role_dirs
+
+- name: Build optional role list (excludes common/upgrade and unwired roles)
+  ansible.builtin.set_fact:
+    _odios_optional_roles: "{{ (_odios_optional_roles | default([])) + [item] }}"
+  loop: "{{ _odios_role_dirs.files | map(attribute='path') | map('basename') | difference(['common', 'upgrade']) | sort }}"
+  when: ('install_' ~ item) in vars
+
 - name: Build list of installed roles
   ansible.builtin.set_fact:
-    _odios_installed_roles: >-
-      {{
-        ['common', 'upgrade']
-        + (['branding']        if install_branding        | bool else [])
-        + (['pulseaudio']      if install_pulseaudio      | bool else [])
-        + (['bluetooth']       if install_bluetooth       | bool else [])
-        + (['mpd']             if install_mpd             | bool else [])
-        + (['mpd_discplayer']  if install_mpd_discplayer  | bool else [])
-        + (['shairport_sync']  if install_shairport_sync  | bool else [])
-        + (['snapclient']      if install_snapclient      | bool else [])
-        + (['upmpdcli']        if install_upmpdcli        | bool else [])
-        + (['spotifyd']        if install_spotifyd        | bool else [])
-        + (['odio_api']        if install_odio_api        | bool else [])
-      }}
-
-- name: Aggregate role versions from vars/main.yml
-  ansible.builtin.set_fact:
-    _odios_role_versions: >-
-      {{
-        _odios_role_versions | default({}) | combine({
-          item: (lookup('ansible.builtin.file', playbook_dir ~ '/roles/' ~ item ~ '/vars/main.yml') | from_yaml)[item ~ '_version']
-        })
-      }}
-  loop: "{{ _odios_installed_roles }}"
+    _odios_installed_roles: "{{ (_odios_installed_roles | default(['common', 'upgrade'])) + [item] }}"
+  loop: "{{ _odios_optional_roles }}"
+  when: lookup('vars', 'install_' ~ item) | bool
 
 # Explicit list of roles the user opted out of, so a future upgrade can tell
 # "deliberately excluded" (honor the choice) from "new role the install
 # predates" (fall back to install.sh's default for that flag).
 - name: Build list of excluded roles
   ansible.builtin.set_fact:
-    _odios_excluded_roles: >-
-      {{
-        ['branding', 'pulseaudio', 'bluetooth', 'mpd', 'mpd_discplayer', 'shairport_sync',
-         'snapclient', 'upmpdcli', 'spotifyd', 'odio_api']
-        | difference(_odios_installed_roles)
-      }}
+    _odios_excluded_roles: "{{ _odios_optional_roles | difference(_odios_installed_roles) }}"
 
 # Same split for sub-flags: features holds opt-ins, features_excluded holds
 # opt-outs. odio-upgrade reads both lists with pure opt-out semantics — only
@@ -60,8 +53,9 @@
         | difference(_odios_enabled_features)
       }}
 
-# setgid (2775) so files created by odio-check-upgrade as target_user inherit
-# group `users` — needed for the timer to overwrite upgrades.json without sudo.
+# setgid (2775) so files created by `odio-upgrade check` as target_user
+# inherit group `users` — needed for the timer to overwrite upgrades.json
+# without sudo.
 - name: Ensure /var/cache/odio exists
   ansible.builtin.file:
     path: /var/cache/odio
@@ -127,13 +121,28 @@
         else _odios_prior_history + [odio_version]
       }}
 
+# Refresh every installed role's version from the target's vars/main.yml.
+# Roles skipped by smart-upgrade (RUN_X=N) didn't actually re-run, but
+# their target == prior versions match — so writing target is a no-op
+# in the supported (upgrade-only) flow. A `--force --version=<older>`
+# downgrade would write a target that doesn't reflect on-disk state;
+# that's accepted: downgrades aren't a supported path.
+- name: Read installed role versions from vars/main.yml
+  ansible.builtin.set_fact:
+    _odios_merged_role_versions: >-
+      {{ _odios_merged_role_versions | default({}) | combine({
+           item: (lookup('ansible.builtin.file', playbook_dir ~ '/roles/' ~ item ~ '/vars/main.yml') | from_yaml)[item ~ '_version']
+         })
+      }}
+  loop: "{{ _odios_installed_roles }}"
+
 - name: Assemble state.json payload
   ansible.builtin.set_fact:
     _odios_state:
       odios: "{{ odio_version }}"
       install_mode: "{{ install_mode }}"
       target_user: "{{ target_user }}"
-      roles: "{{ _odios_role_versions }}"
+      roles: "{{ _odios_merged_role_versions }}"
       roles_excluded: "{{ _odios_excluded_roles }}"
       features: "{{ _odios_enabled_features }}"
       features_excluded: "{{ _odios_excluded_features }}"
@@ -149,7 +158,7 @@
   become: true
 
 - name: Refresh /var/cache/odio/upgrades.json
-  ansible.builtin.command: /usr/local/bin/odio-check-upgrade
+  ansible.builtin.command: /usr/local/bin/odio-upgrade check
   become: true
   become_user: "{{ target_user }}"
   changed_when: false

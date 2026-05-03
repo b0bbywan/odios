@@ -124,6 +124,28 @@ prompt_for_config() {
     INSTALL_SPOTIFYD="${INSTALL_SPOTIFYD:-Y}"
     INSTALL_UPNPWEBRADIOS="${INSTALL_UPNPWEBRADIOS:-$INSTALL_UPMPDCLI}"
     INSTALL_BRANDING="${INSTALL_BRANDING:-Y}"
+
+    # Smart-upgrade hint: odio-upgrade exports RUN_<role>=N for roles whose
+    # target version matches the installed version. Internal-only — fresh
+    # installs never set these, so RUN_X collapses to INSTALL_X.
+    RUN_PULSEAUDIO="${RUN_PULSEAUDIO:-$INSTALL_PULSEAUDIO}"
+    RUN_BLUETOOTH="${RUN_BLUETOOTH:-$INSTALL_BLUETOOTH}"
+    RUN_MPD="${RUN_MPD:-$INSTALL_MPD}"
+    RUN_ODIO_API="${RUN_ODIO_API:-$INSTALL_ODIO_API}"
+    RUN_MPD_DISCPLAYER="${RUN_MPD_DISCPLAYER:-$INSTALL_MPD_DISCPLAYER}"
+    RUN_SHAIRPORT_SYNC="${RUN_SHAIRPORT_SYNC:-$INSTALL_SHAIRPORT_SYNC}"
+    RUN_SNAPCLIENT="${RUN_SNAPCLIENT:-$INSTALL_SNAPCLIENT}"
+    RUN_UPMPDCLI="${RUN_UPMPDCLI:-$INSTALL_UPMPDCLI}"
+    RUN_SPOTIFYD="${RUN_SPOTIFYD:-$INSTALL_SPOTIFYD}"
+    RUN_BRANDING="${RUN_BRANDING:-$INSTALL_BRANDING}"
+    # `upgrade` has no INSTALL_X opt-in (always installed); odio-upgrade still
+    # exports RUN_UPGRADE=N when its role version is stable.
+    RUN_UPGRADE="${RUN_UPGRADE:-Y}"
+    # `common` adds the odio apt source and runs the single `apt update` for
+    # the whole playbook (later roles must NOT set update_cache: true). Hard-
+    # set Y — never skipped — otherwise an upgrade that bumps any package-
+    # installing role would hit a stale apt cache.
+    RUN_COMMON=Y
 }
 
 # ─── Pre-flight checks ────────────────────────────────────────────────────────
@@ -317,7 +339,19 @@ run_playbook() {
   "install_qobuz":          $(bool "$INSTALL_QOBUZ"),
   "install_upnpwebradios":  $(bool "$INSTALL_UPNPWEBRADIOS"),
   "install_mpd_discplayer": $(bool "$INSTALL_MPD_DISCPLAYER"),
-  "install_branding":       $(bool "$INSTALL_BRANDING")
+  "install_branding":       $(bool "$INSTALL_BRANDING"),
+  "run_pulseaudio":         $(bool "$RUN_PULSEAUDIO"),
+  "run_bluetooth":          $(bool "$RUN_BLUETOOTH"),
+  "run_mpd":                $(bool "$RUN_MPD"),
+  "run_odio_api":           $(bool "$RUN_ODIO_API"),
+  "run_spotifyd":           $(bool "$RUN_SPOTIFYD"),
+  "run_shairport_sync":     $(bool "$RUN_SHAIRPORT_SYNC"),
+  "run_snapclient":         $(bool "$RUN_SNAPCLIENT"),
+  "run_upmpdcli":           $(bool "$RUN_UPMPDCLI"),
+  "run_mpd_discplayer":     $(bool "$RUN_MPD_DISCPLAYER"),
+  "run_branding":           $(bool "$RUN_BRANDING"),
+  "run_upgrade":            $(bool "$RUN_UPGRADE"),
+  "run_common":             $(bool "$RUN_COMMON")
 }
 EOF
 )
