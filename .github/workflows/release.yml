@@ -359,14 +359,24 @@ jobs:
             runner: ubuntu-24.04-arm
             arch: arm64
             baseline_tag: "2026.4.2b1"
-            # Resolved at run time: embedded on PR, systemctl on real-release tag.
-            test_action: upgrade-from-image-auto
+            test_action: upgrade-from-image-embedded
           - platform: linux/arm64
             runner: ubuntu-24.04-arm
             arch: arm64
             baseline_tag: "2026.4.2b2"
-            # Resolved at run time: embedded on PR, systemctl on real-release tag.
-            test_action: upgrade-from-image-auto
+            test_action: upgrade-from-image-embedded
+          # Native amd64 covers the systemctl --user path. Baseline pushed
+          # manually via scripts/build-baseline-amd64.sh.
+          - platform: linux/amd64
+            runner: ubuntu-24.04
+            arch: amd64
+            baseline_tag: "2026.4.2b1"
+            test_action: upgrade-from-image-systemctl
+          - platform: linux/amd64
+            runner: ubuntu-24.04
+            arch: amd64
+            baseline_tag: "2026.4.2b1"
+            test_action: upgrade-from-image-embedded
     steps:
       - uses: actions/checkout@v5
 
@@ -386,19 +396,8 @@ jobs:
             echo "value=pr-${{ github.event.pull_request.number }}" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Resolve test action
-        id: action
-        run: |
-          if [[ "${{ matrix.test_action }}" == "upgrade-from-image-auto" ]]; then
-            # TODO: re-enable upgrade-from-image-systemctl on real releases
-            # once the DBus user-session setup works in the test container.
-            echo "value=upgrade-from-image-embedded" >> "$GITHUB_OUTPUT"
-          else
-            echo "value=${{ matrix.test_action }}" >> "$GITHUB_OUTPUT"
-          fi
-
-      - name: "Run upgrade test (${{ matrix.platform }}: ${{ matrix.baseline_tag }} -> ${{ steps.tag.outputs.value }} via ${{ steps.action.outputs.value }})"
-        run: ./tests/test.sh "${{ steps.action.outputs.value }}" "${{ steps.tag.outputs.value }}"
+      - name: "Run upgrade test (${{ matrix.platform }}: ${{ matrix.baseline_tag }} -> ${{ steps.tag.outputs.value }} via ${{ matrix.test_action }})"
+        run: ./tests/test.sh "${{ matrix.test_action }}" "${{ steps.tag.outputs.value }}"
         env:
           REMOTE_IMAGE: ghcr.io/${{ github.repository }}/test-baseline:${{ matrix.baseline_tag }}-${{ matrix.arch }}
           PLATFORM: ${{ matrix.platform }}

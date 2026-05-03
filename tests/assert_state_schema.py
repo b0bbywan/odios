@@ -25,11 +25,14 @@ def main() -> int:
     assert s.get("target_user"), "state.target_user is missing"
 
     ver = s.get("odios", "")
-    # PR pre-releases ship an archive whose VERSION is a git-describe output
-    # like <base>-<N>-g<sha>; release tags match VERSION exactly.
+    # fetch/embedded paths land on a git-describe (PR archive's VERSION:
+    # <base>-<N>-g<sha>). The systemctl path runs odio-upgrade.service
+    # which resolves the target via odio.love/manifest.json and lands on
+    # whatever release tag the manifest currently advertises. Release tags
+    # match VERSION exactly.
     if tag.startswith("pr-"):
-        assert re.match(r"^\d+\.\d+\.\d+.*-g[0-9a-f]+$", ver), \
-            f"state.odios={ver!r} is not a git-describe for {tag}"
+        assert re.match(r"^\d+\.\d+\.\d+(?:(?:a|b|rc)\d+)?(?:-\d+-g[0-9a-f]+)?$", ver), \
+            f"state.odios={ver!r} is not a valid version for {tag}"
     else:
         assert ver == tag, f"state.odios={ver!r} expected {tag}"
     assert s.get("roles"), "state.roles is empty"
