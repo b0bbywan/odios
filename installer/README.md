@@ -12,10 +12,12 @@ Ansible-based "curl | bash" installer to set up a complete audio/multimedia syst
 
 ### Optional
 - **Shairport Sync** - AirPlay receiver
+- **Spotifyd** - Spotify Connect receiver
 - **Snapcast** - Multi-room audio client
-- **myMPD** - Web UI for MPD (default port 8080)
-- **UPnP/DLNA** - Renderer for UPnP application control, with optional Qobuz and Tidal support (packages only — credentials are configured manually post-install in `~/.config/upmpdcli/upmpdcli.conf`).
+- **myMPD** - Web UI for MPD (default port 8080, override with `MPD_MYMPD_HTTP_PORT`) — also exposes web radio playback
+- **UPnP/DLNA** - Renderer for UPnP application control, with optional Qobuz, Tidal, and web-radio plugins (packages only — Qobuz/Tidal credentials configured manually post-install in `~/.config/upmpdcli/upmpdcli.conf`).
 - **MPD DiscPlayer** - CD/USB support for MPD
+- **Branding** - odio login banner (`odio-motd`, `.hushlogin`, `.profile` hook)
 
 All components are enabled by default. Pass `INSTALL_<NAME>=N` to skip any of them — see the env-vars table below.
 
@@ -93,6 +95,7 @@ curl -fsSL https://github.com/b0bbywan/odios/releases/latest/download/install.sh
 | `TARGET_USER`            | `$USER`       | System user for the services         |
 | `TARGET_HOSTNAME`        | *(unchanged)* | Hostname (optional)                  |
 | `MPD_MUSIC_DIRECTORY`    | `/media/USB`  | MPD music library path               |
+| `MPD_MYMPD_HTTP_PORT`    | `8080`        | myMPD HTTP listen port               |
 | `MPD_CONF_PATH`          | *(detected)*  | Path to external mpd.conf (when `INSTALL_MPD=n` + `INSTALL_MPD_DISCPLAYER=y`) ⚠ experimental |
 | `INSTALL_PULSEAUDIO`     | `Y`           | PulseAudio + network streaming (wired only) |
 | `INSTALL_BLUETOOTH`      | `Y`           | Bluetooth A2DP sink                  |
@@ -127,24 +130,30 @@ ODIOS_VERSION=pr-5 curl -fsSL https://github.com/b0bbywan/odios/releases/downloa
 
 ## Upgrading
 
-Each install ships two helpers in `/usr/local/bin`:
+Each install ships `/usr/local/bin/odio-upgrade` with the following subcommands:
 
-- **`odio-check-upgrade`** — compares the local state against the published manifest and refreshes `/var/cache/odio/upgrades.json`. Wired to a systemd user timer (daily, random delay) so the login banner / PWA can surface the result.
-- **`odio-upgrade`** — re-invokes `install.sh` for the target version with the `INSTALL_*` flags derived from the saved state. No argument = upgrade to whatever `upgrades.json` reports as latest.
+- **`odio-upgrade check`** — compares the local state against the published manifest and refreshes `/var/cache/odio/upgrades.json`. Wired to a systemd user timer (daily, random delay) so the login banner / PWA can surface the result.
+- **`odio-upgrade apply`** — re-invokes `install.sh` for the target version with the `INSTALL_*` flags derived from the saved state. No argument = upgrade to whatever `upgrades.json` reports as latest.
+- **`odio-upgrade verify`** — reads `state.json` and runs schema sanity checks (used in CI / for inspecting an install; exits 0 valid, 1 invalid, 2 missing).
+- **`odio-upgrade pwa-url`** — prints `https://pwa.odio.love/#/i/<ip>` using the source IP of the default route (falls back to `https://pwa.odio.love` if no IP is detectable; handy for the SSH login banner).
 
 ```bash
-odio-upgrade                      # upgrade to the latest published version
-odio-upgrade --version 2026.5.0   # target a specific release
-odio-upgrade --dry-run --force    # print what would be invoked, do nothing
-systemctl --user start odio-upgrade   # same, via the installed user unit (log in journalctl)
+odio-upgrade                            # alias of `apply` — upgrade to the latest published version
+odio-upgrade apply --version 2026.5.0   # target a specific release
+odio-upgrade apply --dry-run --force    # print what would be invoked, do nothing
+systemctl --user start odio-upgrade     # same, via the installed user unit (log in journalctl)
 ```
+
+`apply` fetches the target release's `manifest.json` and skips roles whose installed version already matches — only the roles that actually bumped re-run. The amount of time saved scales with how few roles changed in the target release.
+
+`apply` refuses to target a release older than `state.odios`. If you really need to roll back, reflash from the SD image — the live install path doesn't carry the assets to step backwards safely.
 
 ### Bootstrapping from a release asset
 
-`odio-upgrade` is also published as a standalone asset on every release, so installs that predate it (≤ rc2, no helper in `/usr/local/bin`) can run it directly:
+`odio_upgrade.py` is also published as a standalone asset on every release, so installs that predate it (≤ rc2, no helper in `/usr/local/bin`) can run it directly:
 
 ```bash
-curl -fsSL https://odio.love/upgrade -o /tmp/odio-upgrade
+curl -fsSL https://github.com/b0bbywan/odios/releases/latest/download/odio_upgrade.py -o /tmp/odio-upgrade
 chmod +x /tmp/odio-upgrade
 /tmp/odio-upgrade                 # reconstructs state from disk, then upgrades to latest
 ```
@@ -172,8 +181,9 @@ Only entries in `roles_excluded` / `features_excluded` map to `INSTALL_*=N`. Eve
 Ordered chronological list of every odios version that ran `write_state.yml`,
 deduplicated against the immediately-previous entry. The current version is
 always at `release_history[-1]` (and equals `state.odios`). The playbook
-checks both `/var/cache/odio/state.json` (rc4+) and the legacy
-`~<target_user>/.cache/odio/state.json` (pre-rc4) before deciding what to do:
+checks `/var/lib/odio/state.json` (canonical), then
+`/var/cache/odio/state.json` (2026.4.2b1+), and the legacy
+`~<target_user>/.cache/odio/state.json` before deciding what to do:
 
 1. **Fresh install** (no state.json on either path) — seeded with `[<current>]`.
 2. **Upgrade from a state.json predating `release_history`** — backfilled
@@ -257,6 +267,8 @@ installer/
     │   └── systemd_enable_system.yml   # Shared: enable + start a system service
     └── roles/
         ├── common/              # System prerequisites + linger
+        ├── upgrade/             # /usr/local/bin/odio-upgrade + systemd user timer (smart upgrade)
+        ├── branding/            # odio-motd login banner (optional)
         ├── pulseaudio/          # PulseAudio + network streaming (wired only, PipeWire conflict handling)
         ├── pipewire/            # PipeWire + pipewire-pulse (experimental, not yet exposed)
         ├── bluetooth/           # Bluetooth audio (A2DP)
@@ -268,7 +280,7 @@ installer/
         ├── mpd_discplayer/      # CD/DVD player (optional)
         │   └── tasks/
         │       └── validate_external_mpd.yml  # Fail-fast validation for external MPD
-        └── spotifyd/            # Spotify Connect (optional, disabled)
+        └── spotifyd/            # Spotify Connect (optional)
 ```
 
 ## Using mpd_discplayer with an existing MPD ⚠ experimental
@@ -286,6 +298,16 @@ In this case the installer will:
 This mode has not been extensively tested across MPD configurations. Feedback welcome.
 
 ## Testing
+
+### Python checks (unit tests + lint)
+
+Fast, no container needed. CI runs the same commands in `.github/workflows/checks.yml`.
+
+```bash
+python3 -m unittest discover tests   # unit tests for odio-upgrade
+ruff check                           # lint (config: pyproject.toml)
+mypy                                 # type-check (config: pyproject.toml)
+```
 
 ### Run the playbook directly
 
@@ -328,26 +350,55 @@ pactl list modules | grep -E "tcp|zeroconf"
 mpc status
 ```
 
+### Upgrade testing (local)
+
+Install one version in a fresh container, then upgrade it to another. First arg = the version to start from (acts as the existing odios install), second arg = the version to upgrade to:
+
+```bash
+# install 2026.4.2b1, then run odio-upgrade to bring it to pr-X
+./tests/test.sh upgrade 2026.4.2b1 pr-X
+```
+
 ### Upgrade testing (CI)
 
-The `test-upgrade` job in `release.yml` validates that an existing odios install can be upgraded to the PR's version via `curl | bash`. To match the real-world semantic (an odios system is already running on a Pi when the user upgrades), the test uses a **pre-provisioned baseline Docker image** built from a published SD-card `.img.xz` — not a fresh install of the baseline.
+The `test-upgrade` job in `release.yml` validates that an existing odios install can be upgraded to the PR's version via `curl | bash`. To match the real-world semantic (an odios system is already running on a Pi when the user upgrades), the test uses **pre-provisioned baseline Docker images** rather than a fresh install of the baseline.
 
-The baseline is tracked by the repo variable `UPGRADE_BASELINE_TAG` (Settings → Variables), default `2026.4.0rc3`. When it is bumped, the corresponding Docker image must be (re)built once and pushed to GHCR.
+The matrix exercises four paths against several baseline tags:
 
-**Auto path (preferred, once the workflow lives on `main`):**
+- **`upgrade-from-image-fetch`** — curls `odio_upgrade.py` from the PR release first, then runs it (smart-upgrade exercised against the baseline's old runtime).
+- **`upgrade-from-image-embedded`** — runs the baseline's own `/usr/local/bin/odio-upgrade` (validates the in-place helper).
+- **`upgrade-from-image-systemctl`** — `systemctl --user start odio-upgrade.service` (real-release path, target driven by `odio.love/manifest.json`).
+- **`upgrade-from-image-fetch-as-other-user`** — same as `fetch`, but invoked by a non-`target_user` sudoer (member of `users` + `odio`). Validates that the group permissions on `/var/lib/odio/state.json` actually let a second admin trigger the upgrade.
 
-Actions → "Build test-baseline image" → **Run workflow**. Matrix currently builds `arm64` on a native arm64 runner. Output: `ghcr.io/b0bbywan/odios/test-baseline:<TAG>-<arch>`.
+Baseline tags + runners are listed inline in `release.yml`'s matrix (no repo variable). Each entry consumes `ghcr.io/b0bbywan/odios/test-baseline:<TAG>-<arch>`.
 
-**Manual path (local build, required for the first time the feature lands on `main` and the workflow is not yet registered by GitHub):**
+**arm64 baselines** (built from the published SD image):
 
 ```bash
 # Requires: docker, sudo, xz-utils, util-linux, jq
 docker login ghcr.io -u <your-github-user>     # needs a PAT with write:packages
 
-./scripts/img-to-docker.sh 2026.4.0rc3 arm64
+./scripts/img-to-docker.sh 2026.4.2b1 arm64
 ```
 
 The script downloads the SD image directly from the matching release, mounts its rootfs partition, tars it, and `docker import`s it with a systemd entrypoint matching `Dockerfile.test` — tagged as `ghcr.io/<repo>/test-baseline:<TAG>-<ARCH>`. Approach inspired by [vascoguita/raspios-docker](https://github.com/vascoguita/raspios-docker).
+
+**amd64 baselines** (no SD image source — layered onto `Dockerfile.test`):
+
+```bash
+docker login ghcr.io -u <your-github-user>
+
+./scripts/build-baseline-amd64.sh 2026.4.2b1
+
+# variant without mpd / mpd-discplayer / upmpdcli — pushed as
+# test-baseline:<TAG>-amd64-no-mpd-stack (used by the matrix to exercise
+# smart-upgrade against a state.roles that legitimately omits those):
+./scripts/build-baseline-amd64.sh --no-mpd-stack 2026.4.2b1
+```
+
+Runs `install.sh` in image mode inside a clean test container, then `docker commit` + push as `test-baseline:<TAG>-amd64[-<variant>]`. Used by the native amd64 entries in the matrix (the only path that needs a real systemd-logind quickly enough — qemu-arm64 emulation is too slow for that handshake).
+
+Both arches are also available in Actions → "Build test-baseline image" → **Run workflow** (pick `arch` and, for amd64, `variant`).
 
 ## Troubleshooting
 
