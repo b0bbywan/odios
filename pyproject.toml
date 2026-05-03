@@ -1,0 +1,24 @@
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+extend-exclude = ["installer/ansible/vendor", "tests/__pycache__"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "B", "I", "UP", "SIM", "RUF"]
+
+[tool.mypy]
+python_version = "3.10"
+check_untyped_defs = true
+no_implicit_optional = true
+warn_unused_ignores = true
+warn_redundant_casts = true
+disallow_any_generics = true
+warn_return_any = true
+mypy_path = "installer/ansible/roles/upgrade/files"
+files = [
+    "installer/ansible/roles/upgrade/files/odio_upgrade.py",
+    "scripts/build-manifest.py",
+    "scripts/build-rpi-manifests.py",
+    "tests/assert_state_schema.py",
+    "tests/test_odio_upgrade.py",
+]

@@ -16,7 +16,28 @@
         + (['odio_api']        if install_odio_api        | bool else [])
       }}
 
-- name: Aggregate role versions from vars/main.yml
+# Smart-upgrade: only roles that ran this turn (run_X=true) get their
+# version refreshed in state.json; the rest preserve their prior version
+# (merged below from _odios_existing_state.roles). common + upgrade always
+# run, so they're included unconditionally.
+- name: Build list of roles that ran this invocation
+  ansible.builtin.set_fact:
+    _odios_ran_roles: >-
+      {{
+        ['common', 'upgrade']
+        + (['branding']        if run_branding        | bool else [])
+        + (['pulseaudio']      if run_pulseaudio      | bool else [])
+        + (['bluetooth']       if run_bluetooth       | bool else [])
+        + (['mpd']             if run_mpd             | bool else [])
+        + (['mpd_discplayer']  if run_mpd_discplayer  | bool else [])
+        + (['shairport_sync']  if run_shairport_sync  | bool else [])
+        + (['snapclient']      if run_snapclient      | bool else [])
+        + (['upmpdcli']        if run_upmpdcli        | bool else [])
+        + (['spotifyd']        if run_spotifyd        | bool else [])
+        + (['odio_api']        if run_odio_api        | bool else [])
+      }}
+
+- name: Aggregate role versions from vars/main.yml (roles that ran)
   ansible.builtin.set_fact:
     _odios_role_versions: >-
       {{
@@ -24,7 +45,7 @@
           item: (lookup('ansible.builtin.file', playbook_dir ~ '/roles/' ~ item ~ '/vars/main.yml') | from_yaml)[item ~ '_version']
         })
       }}
-  loop: "{{ _odios_installed_roles }}"
+  loop: "{{ _odios_ran_roles }}"
 
 # Explicit list of roles the user opted out of, so a future upgrade can tell
 # "deliberately excluded" (honor the choice) from "new role the install
@@ -60,8 +81,9 @@
         | difference(_odios_enabled_features)
       }}
 
-# setgid (2775) so files created by odio-check-upgrade as target_user inherit
-# group `users` — needed for the timer to overwrite upgrades.json without sudo.
+# setgid (2775) so files created by `odio-upgrade check` as target_user
+# inherit group `users` — needed for the timer to overwrite upgrades.json
+# without sudo.
 - name: Ensure /var/cache/odio exists
   ansible.builtin.file:
     path: /var/cache/odio
@@ -127,13 +149,26 @@
         else _odios_prior_history + [odio_version]
       }}
 
+# Merge: prior versions for roles that didn't run this turn, fresh versions
+# for roles that did, then filter to currently-installed roles so the dict
+# matches state.json["roles"] semantics.
+- name: Merge prior + current role versions, scope to installed roles
+  ansible.builtin.set_fact:
+    _odios_merged_role_versions: >-
+      {{
+        ((_odios_existing_state.roles | default({})) | combine(_odios_role_versions))
+        | dict2items
+        | selectattr('key', 'in', _odios_installed_roles)
+        | items2dict
+      }}
+
 - name: Assemble state.json payload
   ansible.builtin.set_fact:
     _odios_state:
       odios: "{{ odio_version }}"
       install_mode: "{{ install_mode }}"
       target_user: "{{ target_user }}"
-      roles: "{{ _odios_role_versions }}"
+      roles: "{{ _odios_merged_role_versions }}"
       roles_excluded: "{{ _odios_excluded_roles }}"
       features: "{{ _odios_enabled_features }}"
       features_excluded: "{{ _odios_excluded_features }}"
@@ -149,7 +184,7 @@
   become: true
 
 - name: Refresh /var/cache/odio/upgrades.json
-  ansible.builtin.command: /usr/local/bin/odio-check-upgrade
+  ansible.builtin.command: /usr/local/bin/odio-upgrade check
   become: true
   become_user: "{{ target_user }}"
   changed_when: false

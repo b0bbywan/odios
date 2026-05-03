@@ -1,32 +1,23 @@
 ---
-- name: Install go-odio-api
+- name: Install go-odio-api v{{ odio_api_apt_version }}
   ansible.builtin.apt:
-    name: odio-api
+    name: "odio-api={{ odio_api_apt_version }}"
     state: present
     install_recommends: false
   become: true
-  register: odio_api_install
   notify: Restart odio-api
-
-- name: Upgrade go-odio-api
-  ansible.builtin.apt:
-    name: odio-api
-    only_upgrade: true
-  become: true
-  notify: Restart odio-api
-  when: not odio_api_install.changed
 
 - name: Create odio-api config directory
   ansible.builtin.file:
-    path: "/home/{{ target_user }}/.config/odio-api"
+    path: "/home/{{ target_user }}/.config/{{ item }}"
     state: directory
     owner: "{{ target_user }}"
     group: "{{ target_user }}"
     mode: '0700'
   become: true
-
-- name: Check for graphical session
-  ansible.builtin.include_tasks: "../../../tasks/check_graphical_session.yml"
+  loop:
+    - "odio-api"
+    - "odio-api/conf.d"
 
 - name: Deploy polkit shutdown rule
   ansible.builtin.template:
@@ -89,6 +80,15 @@
     mode: '0640'
   become: true
   notify: Restart odio-api
+
+- name: Deploy odio-api systemd reference (conf.d/.default)
+  ansible.builtin.template:
+    src: 10-systemd.yml.default.j2
+    dest: "/home/{{ target_user }}/.config/odio-api/conf.d/10-systemd.yml.default"
+    owner: "{{ target_user }}"
+    group: "{{ target_user }}"
+    mode: '0640'
+  become: true
 
 - name: Backup odio-api config after changes
   ansible.builtin.include_tasks: "../../../tasks/backup_conf_after.yml"

@@ -21,22 +21,21 @@
     - odio-check-upgrade.timer
     - odio-upgrade.service
 
-- name: Install odio-check-upgrade script
+- name: Install odio-upgrade script
   ansible.builtin.copy:
-    src: odio-check-upgrade
-    dest: /usr/local/bin/odio-check-upgrade
+    src: odio_upgrade.py
+    dest: /usr/local/bin/odio-upgrade
     owner: root
     group: root
     mode: '0755'
   become: true
 
-- name: Install odio-upgrade script
-  ansible.builtin.copy:
-    src: odio-upgrade
-    dest: /usr/local/bin/odio-upgrade
-    owner: root
-    group: root
-    mode: '0755'
+# Pre-merge installs shipped odio-check-upgrade as its own script;
+# replaced by `odio-upgrade check`. Drop the orphan binary.
+- name: Remove legacy odio-check-upgrade script
+  ansible.builtin.file:
+    path: /usr/local/bin/odio-check-upgrade
+    state: absent
   become: true
 
 - name: Deploy odio-upgrade systemd user units (system-wide)

@@ -121,7 +121,7 @@ jobs:
         with:
           sparse-checkout: |
             installer/install.sh
-            installer/ansible/roles/upgrade/files/odio-upgrade
+            installer/ansible/roles/upgrade/files/odio_upgrade.py
           sparse-checkout-cone-mode: false
 
       - uses: actions/download-artifact@v7
@@ -138,7 +138,7 @@ jobs:
           files: |
             ${{ needs.build.outputs.archive_name }}
             installer/install.sh
-            installer/ansible/roles/upgrade/files/odio-upgrade
+            installer/ansible/roles/upgrade/files/odio_upgrade.py
             manifest.json
           generate_release_notes: true
 
@@ -151,7 +151,7 @@ jobs:
         with:
           sparse-checkout: |
             installer/install.sh
-            installer/ansible/roles/upgrade/files/odio-upgrade
+            installer/ansible/roles/upgrade/files/odio_upgrade.py
           sparse-checkout-cone-mode: false
 
       - uses: actions/download-artifact@v7
@@ -172,7 +172,7 @@ jobs:
           files: |
             ${{ needs.build.outputs.archive_name }}
             installer/install.sh
-            installer/ansible/roles/upgrade/files/odio-upgrade
+            installer/ansible/roles/upgrade/files/odio_upgrade.py
             manifest.json
           body: |
             Pre-release automatique pour la PR #${{ github.event.pull_request.number }}.
@@ -325,27 +325,58 @@ jobs:
           #                   upnpwebradios tracked)
           #   - 2026.4.2b1  : embedded /usr/local/bin/odio-upgrade (PR) or
           #                   systemctl --user start odio-upgrade.service (tag)
+          #   - 2026.4.2b2  : same — closest baseline, exercises the embedded
+          #                   path one more release down
+          # The two `upgrade-from-image-fetch` entries on b1/b2 curl the PR's
+          # odio-upgrade so smart-upgrade (#54) actually runs against a
+          # baseline whose `/usr/local/bin/odio-upgrade` predates it.
           - platform: linux/arm64
             runner: ubuntu-24.04-arm
             arch: arm64
             baseline_tag: "2026.4.0rc3"
-            test_action: upgrade-from-image
+            test_action: upgrade-from-image-fetch
           - platform: linux/arm64
             runner: ubuntu-24.04-arm
             arch: arm64
             baseline_tag: "2026.4.1rc1"
-            test_action: upgrade-from-image
+            test_action: upgrade-from-image-fetch
           - platform: linux/arm64
             runner: ubuntu-24.04-arm
             arch: arm64
             baseline_tag: "2026.4.1rc2"
-            test_action: upgrade-from-image
+            test_action: upgrade-from-image-fetch
           - platform: linux/arm64
             runner: ubuntu-24.04-arm
             arch: arm64
             baseline_tag: "2026.4.2b1"
-            # Resolved at run time: embedded on PR, systemctl on real-release tag.
-            test_action: ""
+            test_action: upgrade-from-image-fetch
+          - platform: linux/arm64
+            runner: ubuntu-24.04-arm
+            arch: arm64
+            baseline_tag: "2026.4.2b2"
+            test_action: upgrade-from-image-fetch
+          - platform: linux/arm64
+            runner: ubuntu-24.04-arm
+            arch: arm64
+            baseline_tag: "2026.4.2b1"
+            test_action: upgrade-from-image-embedded
+          - platform: linux/arm64
+            runner: ubuntu-24.04-arm
+            arch: arm64
+            baseline_tag: "2026.4.2b2"
+            test_action: upgrade-from-image-embedded
+          # Native amd64 covers the systemctl --user path. Baseline pushed
+          # manually via scripts/build-baseline-amd64.sh.
+          - platform: linux/amd64
+            runner: ubuntu-24.04
+            arch: amd64
+            baseline_tag: "2026.4.2b1"
+            test_action: upgrade-from-image-systemctl
+          - platform: linux/amd64
+            runner: ubuntu-24.04
+            arch: amd64
+            baseline_tag: "2026.4.2b1"
+            test_action: upgrade-from-image-embedded
     steps:
       - uses: actions/checkout@v5
 
@@ -365,19 +396,8 @@ jobs:
             echo "value=pr-${{ github.event.pull_request.number }}" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Resolve test action
-        id: action
-        run: |
-          if [[ -n "${{ matrix.test_action }}" ]]; then
-            echo "value=${{ matrix.test_action }}" >> "$GITHUB_OUTPUT"
-          else
-            # TODO: re-enable upgrade-from-image-systemctl on real releases
-            # once the DBus user-session setup works in the test container.
-            echo "value=upgrade-from-image-embedded" >> "$GITHUB_OUTPUT"
-          fi
-
-      - name: "Run upgrade test (${{ matrix.platform }}: ${{ matrix.baseline_tag }} -> ${{ steps.tag.outputs.value }} via ${{ steps.action.outputs.value }})"
-        run: ./tests/test.sh "${{ steps.action.outputs.value }}" "${{ steps.tag.outputs.value }}"
+      - name: "Run upgrade test (${{ matrix.platform }}: ${{ matrix.baseline_tag }} -> ${{ steps.tag.outputs.value }} via ${{ matrix.test_action }})"
+        run: ./tests/test.sh "${{ matrix.test_action }}" "${{ steps.tag.outputs.value }}"
         env:
           REMOTE_IMAGE: ghcr.io/${{ github.repository }}/test-baseline:${{ matrix.baseline_tag }}-${{ matrix.arch }}
           PLATFORM: ${{ matrix.platform }}

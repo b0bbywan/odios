@@ -7,12 +7,26 @@ cd "$(dirname "${BASH_SOURCE[0]}")/.."
 
 CONTAINER_NAME="odios-test"
 GITHUB_REPO="b0bbywan/odios"
+GITHUB_RELEASE_BASE_URL="https://github.com/${GITHUB_REPO}/releases"
+
 _DEFAULT_TAG="$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo latest)"
 REMOTE_IMAGE="${REMOTE_IMAGE:-ghcr.io/${GITHUB_REPO}/test:${_DEFAULT_TAG}}"
 PLATFORM="${PLATFORM:-}"  # e.g. linux/arm64, linux/arm/v7, linux/arm/v6
 BUILD_LOCAL=false
 
 # ─── Helpers ──────────────────────────────────────────────────────────────────
+
+# Bash snippet to prepend to any `docker exec -u <user> bash -c` body that
+# needs to talk to `systemd --user@<user>`. `docker exec` doesn't open a PAM
+# session, so XDG_RUNTIME_DIR/DBUS_SESSION_BUS_ADDRESS aren't set; and linger
+# brings the user manager up async after PID1, so we may also race start_container.
+USER_SYSTEMD_PRELUDE='
+    export XDG_RUNTIME_DIR="/run/user/$(id -u)"
+    for _ in $(seq 1 30); do
+        [[ -S "$XDG_RUNTIME_DIR/systemd/private" ]] && break
+        sleep 0.5
+    done
+'
 
 platform_flags() {
     [[ -n "${PLATFORM}" ]] && echo "--platform ${PLATFORM}" || true
@@ -58,22 +72,22 @@ start_container() {
 install_sh_url() {
     local tag="$1"
     if [[ "$tag" == "latest" ]]; then
-        echo "https://github.com/${GITHUB_REPO}/releases/latest/download/install.sh"
+        echo "${GITHUB_RELEASE_BASE_URL}/latest/download/install.sh"
     else
-        echo "https://github.com/${GITHUB_REPO}/releases/download/${tag}/install.sh"
+        echo "${GITHUB_RELEASE_BASE_URL}/download/${tag}/install.sh"
     fi
 }
 
 odio_upgrade_url() {
     local tag="$1"
     if [[ "$tag" == "latest" ]]; then
-        echo "https://github.com/${GITHUB_REPO}/releases/latest/download/odio-upgrade"
+        echo "${GITHUB_RELEASE_BASE_URL}/latest/download/odio_upgrade.py"
     else
-        echo "https://github.com/${GITHUB_REPO}/releases/download/${tag}/odio-upgrade"
+        echo "${GITHUB_RELEASE_BASE_URL}/download/${tag}/odio_upgrade.py"
     fi
 }
 
-run_odio_upgrade() {
+run_odio_upgrade_fetch() {
     local tag="$1"
     local install_mode="${2:-image}"
     local url
@@ -96,23 +110,16 @@ run_odio_upgrade_embedded() {
         /usr/local/bin/odio-upgrade --version "${tag}" --force
 }
 
-# Real-release path: odio.love/manifest.json drives the target via odio-check-upgrade,
-# then `systemctl --user start odio-upgrade.service` runs the unit (no --version arg).
-# Only valid when the published manifest already points at TAG (post-release tag pushes).
+# Real-release path: odio.love/manifest.json drives the target via
+# `odio-upgrade check`, then `systemctl --user start odio-upgrade.service`
+# runs the unit (no --version arg). Only valid when the published manifest
+# already points at TAG (post-release tag pushes).
 run_odio_upgrade_systemctl() {
-    local tag="$1"
-    local install_mode="${2:-image}"
+    local install_mode="${1:-live}"
 
-    echo "=== odio-check-upgrade + systemctl --user start odio-upgrade.service (target=${tag}, mode=${install_mode}) ==="
-    docker exec -u odio -e INSTALL_MODE="${install_mode}" "${CONTAINER_NAME}" bash -c '
-        set -e
-        /usr/local/bin/odio-check-upgrade || true
-        latest=$(python3 -c "import json; print(json.load(open(\"/var/cache/odio/upgrades.json\"))[\"latest\"])")
-        if [[ "$latest" != "'"${tag}"'" ]]; then
-            echo "ERROR: odio.love manifest reports latest=$latest, expected '"${tag}"'" >&2
-            exit 1
-        fi
-        systemctl --user start --wait odio-upgrade.service
+    echo "=== odio-upgrade check + systemctl --user start odio-upgrade.service (mode=${install_mode}) ==="
+    docker exec -u odio -e INSTALL_MODE="${install_mode}" "${CONTAINER_NAME}" bash -c "${USER_SYSTEMD_PRELUDE}"'
+        systemctl --user start --wait odio-check-upgrade.service || systemctl --user start --wait odio-upgrade.service
     '
 }
 
@@ -165,10 +172,10 @@ while [[ "${1:-}" == --* ]]; do
         echo "  install-root [TAG] - Test install.sh as root, TARGET_USER=odio"
         echo "                       TAG examples: latest, pr-2, 2026.3.0"
         echo "  upgrade B T        - Upgrade from baseline tag B to target tag T (INSTALL_MODE=live)"
-        echo "  upgrade-from-image T - Upgrade to target T on REMOTE_IMAGE (pre-provisioned baseline) via curl"
-        echo "  upgrade-from-image-embedded T - Same, but uses the baseline's /usr/local/bin/odio-upgrade"
-        echo "  upgrade-from-image-systemctl T - Same, but via systemctl --user start odio-upgrade.service"
-        echo "                       (T must already be reported as latest by odio.love/manifest.json)"
+        echo "  upgrade-from-image-fetch T     - Upgrade to T on REMOTE_IMAGE — curls odio-upgrade from the T release first"
+        echo "  upgrade-from-image-embedded T  - Same, but uses the baseline's /usr/local/bin/odio-upgrade"
+        echo "  upgrade-from-image-systemctl   - Same, but via systemctl --user start odio-upgrade.service"
+        echo "                                   (target driven by odio.love/manifest.json — no arg)"
         exit 0
         ;;
     esac
@@ -176,7 +183,7 @@ while [[ "${1:-}" == --* ]]; do
 done
 
 case "${1:-}" in
-  shell|rerun|clean|install|install-root|upgrade|upgrade-from-image|upgrade-from-image-embedded|upgrade-from-image-systemctl)
+  shell|rerun|clean|install|install-root|upgrade|upgrade-from-image-fetch|upgrade-from-image-embedded|upgrade-from-image-systemctl)
     ACTION="$1"
     shift
     ;;
@@ -262,17 +269,17 @@ case "${ACTION}" in
     run_install "${BASELINE}" odio
 
     echo "=== [upgrade] Upgrading to ${TARGET} via odio-upgrade (image mode) ==="
-    run_odio_upgrade "${TARGET}"
+    run_odio_upgrade_fetch "${TARGET}"
 
     echo "=== [upgrade] Asserting state.json reflects ${TARGET} ==="
     assert_state_schema "${TARGET}"
     echo "=== Done ==="
     ;;
 
-  upgrade-from-image|upgrade-from-image-embedded|upgrade-from-image-systemctl)
+  upgrade-from-image-fetch|upgrade-from-image-embedded|upgrade-from-image-systemctl)
     TARGET="${1:?target tag required (e.g. pr-42 or 2026.4.1rc2)}"
 
-    # The whole point of upgrade-from-image* is to test the upgrade code path on
+    # The whole point of upgrade-from-image-* is to test the upgrade code path on
     # a pre-provisioned baseline. Falling back to a fresh Dockerfile.test build
     # would silently test an install, not an upgrade — refuse up front.
     echo "=== [${ACTION}] Verifying baseline image ${REMOTE_IMAGE} ==="
@@ -299,9 +306,9 @@ EOF
 
     echo "=== [${ACTION}] Upgrading to ${TARGET} (image mode) ==="
     case "${ACTION}" in
-      upgrade-from-image)           run_odio_upgrade           "${TARGET}" ;;
+      upgrade-from-image-fetch)     run_odio_upgrade_fetch     "${TARGET}" ;;
       upgrade-from-image-embedded)  run_odio_upgrade_embedded  "${TARGET}" ;;
-      upgrade-from-image-systemctl) run_odio_upgrade_systemctl "${TARGET}" ;;
+      upgrade-from-image-systemctl) run_odio_upgrade_systemctl              ;;
     esac
 
     echo "=== [${ACTION}] Asserting state.json reflects ${TARGET} ==="

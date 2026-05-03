@@ -11,24 +11,15 @@
     state: absent
   become: true
 
-- name: Install mpdris2
+- name: Install mpdris2 v{{ mpd_mpdris2_apt_version }}
   ansible.builtin.apt:
     name:
-      - mpdris2
+      - "mpdris2={{ mpd_mpdris2_apt_version }}"
       - python3-mutagen
     state: present
     install_recommends: false
   become: true
   notify: Restart mpDris2
-  register: mpd_mpdris2_install
-
-- name: Upgrade mpdris2
-  ansible.builtin.apt:
-    name: mpdris2
-    only_upgrade: true
-  become: true
-  notify: Restart mpdris2
-  when: not mpd_mpdris2_install.changed
 
 - name: Create mpDris2 config directory
   ansible.builtin.file:

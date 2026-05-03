@@ -1,0 +1,16 @@
+# odio-api systemd reference — services exposed for this install.
+#
+# This file ships as `.default` and is ignored by odio-api. To override:
+#
+#   cp 10-systemd.yml.default 50-my-systemd.yml
+#   $EDITOR 50-my-systemd.yml
+#   systemctl --user restart odio-api
+#
+# odio-api merges every `conf.d/*.yml` on top of `config.yaml`, but the
+# `system:` / `user:` arrays are replaced wholesale — your override must
+# include every unit you want exposed, not just additions.
+#
+# Regenerated on each install.sh / odio-upgrade run; diff against your
+# override to spot new defaults after an upgrade.
+
+{% include "_systemd_block.yml.j2" %}

@@ -8,6 +8,7 @@ gpg_file: "/usr/share/keyrings/odio.gpg"
 
 odio_version: "unknown"
 mpd_music_directory: "/media/USB"
+mpd_mympd_http_port: "8080"
 
 # Core components (default: enabled)
 install_pulseaudio: true
@@ -28,3 +29,18 @@ install_upnpwebradios: true
 
 # Branding (odio-motd login banner, hushlogin, .profile hook)
 install_branding: true
+
+# Smart-upgrade gate: defaults to install_X so fresh installs and
+# direct ansible-playbook / image-builder paths run every selected role.
+# odio-upgrade overrides individual run_X to false when the target manifest
+# matches the installed role version (skipping unchanged roles).
+run_pulseaudio: "{{ install_pulseaudio }}"
+run_bluetooth: "{{ install_bluetooth }}"
+run_mpd: "{{ install_mpd }}"
+run_odio_api: "{{ install_odio_api }}"
+run_mpd_discplayer: "{{ install_mpd_discplayer }}"
+run_shairport_sync: "{{ install_shairport_sync }}"
+run_snapclient: "{{ install_snapclient }}"
+run_upmpdcli: "{{ install_upmpdcli }}"
+run_spotifyd: "{{ install_spotifyd }}"
+run_branding: "{{ install_branding }}"

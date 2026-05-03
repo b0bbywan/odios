@@ -1,20 +1,11 @@
 ---
-- name: Install mympd
+- name: Install mympd v{{ mpd_mympd_apt_version }}
   ansible.builtin.apt:
-    name: mympd
+    name: "mympd={{ mpd_mympd_apt_version }}"
     state: present
     install_recommends: false
   become: true
-  register: mpd_mympd_install
   notify: Restart mympd
-
-- name: Upgrade mympd
-  ansible.builtin.apt:
-    name: mympd
-    only_upgrade: true
-  become: true
-  notify: Restart mympd
-  when: not mpd_mympd_install.changed
 
 - name: Create mympd config directory
   ansible.builtin.file:
@@ -71,6 +62,16 @@
   ansible.builtin.copy:
     content: "0"
     dest: "/home/{{ target_user }}/.config/mympd/state/mpd_port"
+    owner: "{{ target_user }}"
+    group: "{{ target_user }}"
+    mode: '0600'
+  become: true
+  notify: Restart mympd
+
+- name: Configure mympd http port
+  ansible.builtin.copy:
+    content: "{{ mpd_mympd_http_port }}"
+    dest: "/home/{{ target_user }}/.config/mympd/config/http_port"
     owner: "{{ target_user }}"
     group: "{{ target_user }}"
     mode: '0600'

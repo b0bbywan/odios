@@ -81,6 +81,7 @@ Most service run as **systemd user services** — no root daemons, full per-user
 | [mpDris2](https://github.com/b0bbywan/mpDris2) (fork) | MPRIS bridge for MPD with CD cover art support | user |
 | [myMPD](https://github.com/jcorporation/myMPD) | Web UI for MPD (default port 8080) | user |
 | Shairport Sync | AirPlay receiver | user |
+| [Spotifyd](https://github.com/Spotifyd/spotifyd) | Spotify Connect receiver | user |
 | Snapcast | Multi-room audio client | user |
 | upmpdcli | UPnP/DLNA renderer | system |
 | Bluetooth | A2DP sink with automatic pairing | system |
@@ -113,11 +114,11 @@ See [installer/README.md](installer/README.md) for full installation options, en
 
 ## Upgrading
 
-Each release installs `odio-check-upgrade` (runs daily via a systemd user timer) and `odio-upgrade`. To apply pending upgrades:
+Each release installs `/usr/local/bin/odio-upgrade` with two subcommands: `check` runs daily via a systemd user timer and refreshes `/var/cache/odio/upgrades.json`; `apply` performs the upgrade.
 
 ```bash
-odio-upgrade                    # upgrade to the latest version reported by odio-check-upgrade
-odio-upgrade --version 2026.5.0 # upgrade to a specific version
+odio-upgrade                    # alias of `apply` — upgrade to the latest reported version
+odio-upgrade apply --version 2026.5.0 # target a specific version
 systemctl --user start odio-upgrade   # same thing, via the installed user unit
 ```
 
@@ -140,14 +141,15 @@ systemctl --user start odio-upgrade   # same thing, via the installed user unit
 | **Price** | Free | Freemium — Premium at €60/year |
 | **Account required** | No | Yes |
 | **Cloud dependency** | None | Yes (account, Premium, plugins) |
-| **Minimum hardware** | **Raspberry Pi B+** (armv6l, 2014) | Raspberry Pi 3 |
-| **Music library management** | ❌ Streamer only: use your favorite app | ✅ Built-in library browser |
+| **Minimum hardware** | **Raspberry Pi B** (armv6l, 2012) | Raspberry Pi 3 |
+| **Music library management** | ✅ Via myMPD (web UI) | ✅ Built-in library browser |
 | **Bluetooth A2DP** | ✅ Included | 💰 Premium only |
 | **AirPlay** | ✅ Included | ✅ Free plugin |
 | **Spotify Connect** | ✅ Included | ✅ Free plugin |
 | **Qobuz** | ✅ Included (via upmpdcli) | 💰 Premium only |
 | **Tidal / Tidal Connect** | ✅ Included (via upmpdcli) | 💰 Premium only |
 | **UPnP/DLNA** | ✅ Included | ✅ Included |
+| **Web radios** | ✅ Included (upmpdcli + myMPD) | ✅ Included |
 | **Multi-room** | ✅ Included (Snapcast) | 💰 Premium only |
 | **CD playback** | ✅ Included with metadata | 💰 Premium only |
 | **Network audio sink** | ✅ PulseAudio/PipeWire TCP (wired) | ❌ Not supported |
@@ -159,8 +161,7 @@ systemctl --user start odio-upgrade   # same thing, via the installed user unit
 | **System philosophy** | Linux-native modular stack | Appliance-style distribution |
 | **Debian base** | Trixie (stable) | Bookworm (oldstable) |
 | **Installation** | Image flash (Pi) or `curl \| bash` (any Debian/Ubuntu) | Image flash |
-| **Upgrade** | `odio-upgrade` | OTA updates / Reflash between major versions |
-| **Long-term stability** | No reinstall between Buster and Trixie | Reflash between major versions |
+| **Upgrade** | `odio-upgrade` or reflash | OTA updates / Reflash between major versions |
 
 ## Related projects
 

@@ -14,37 +14,7 @@ power:
     poweroff: {{ odio_api_power_can_poweroff | lower }}
     reboot: {{ odio_api_power_can_reboot | lower }}
 
-systemd:
-  enabled: true
-  system:
-{% if install_bluetooth %}
-    - bluetooth.service
-{% endif %}
-  user:
-{% if install_pulseaudio %}
-    - pulseaudio.service
-{% endif %}
-{% if install_mpd or install_mpd_discplayer %}
-    - mpd.service
-{% endif %}
-{% if install_mpd_discplayer %}
-    - mpd-discplayer.service
-{% endif %}
-{% if install_mympd %}
-    - mympd.service
-{% endif %}
-{% if install_shairport_sync %}
-    - shairport-sync.service
-{% endif %}
-{% if install_snapclient %}
-    - snapclient.service
-{% endif %}
-{% if install_spotifyd %}
-    - spotifyd.service
-{% endif %}
-{% if install_upmpdcli %}
-    - upmpdcli.service
-{% endif %}
+{% include "_systemd_block.yml.j2" %}
 
 # Features
 zeroconf:
