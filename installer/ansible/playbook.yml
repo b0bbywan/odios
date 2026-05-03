@@ -64,29 +64,35 @@
     - name: Detect graphical session
       ansible.builtin.include_tasks: "tasks/check_graphical_session.yml"
 
+  # TODO(smart-upgrade): drop the redundant `Check for graphical session`
+  # include in the bluetooth role on the next bluetooth_version bump.
+  # TODO(smart-upgrade): pin mpd_discplayer apt version on the next
+  # mpd_discplayer_version bump.
+  # TODO(smart-upgrade): pin spotifyd apt version on the next
+  # spotifyd_version bump.
   roles:
     - role: common
     - role: upgrade
     - role: branding
-      when: install_branding | bool
+      when: run_branding | bool
     - role: pulseaudio
-      when: install_pulseaudio | bool
+      when: run_pulseaudio | bool
     - role: bluetooth
-      when: install_bluetooth | bool
+      when: run_bluetooth | bool
     - role: mpd
-      when: install_mpd | bool
+      when: run_mpd | bool
     - role: mpd_discplayer
-      when: install_mpd_discplayer | bool
+      when: run_mpd_discplayer | bool
     - role: shairport_sync
-      when: install_shairport_sync | bool
+      when: run_shairport_sync | bool
     - role: snapclient
-      when: install_snapclient | bool
+      when: run_snapclient | bool
     - role: upmpdcli
-      when: install_upmpdcli | bool
+      when: run_upmpdcli | bool
     - role: spotifyd
-      when: install_spotifyd | bool
+      when: run_spotifyd | bool
     - role: odio_api
-      when: install_odio_api | bool
+      when: run_odio_api | bool
 
   post_tasks:
     - name: Write installation state
@@ -98,7 +104,7 @@
     - name: Verify services are running
       ansible.builtin.include_tasks: "tasks/verify_services.yml"
 
-    # Last — write_state.yml runs odio-check-upgrade as target_user, which
+    # Last — write_state.yml runs `odio-upgrade check` as target_user, which
     # ansible needs the per-user tmp dir for. Removing it earlier would just
     # cause ansible to recreate it (with a warning).
     - name: Remove ansible remote_tmp directory

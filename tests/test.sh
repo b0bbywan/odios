@@ -67,9 +67,9 @@ install_sh_url() {
 odio_upgrade_url() {
     local tag="$1"
     if [[ "$tag" == "latest" ]]; then
-        echo "https://github.com/${GITHUB_REPO}/releases/latest/download/odio-upgrade"
+        echo "https://github.com/${GITHUB_REPO}/releases/latest/download/odio_upgrade.py"
     else
-        echo "https://github.com/${GITHUB_REPO}/releases/download/${tag}/odio-upgrade"
+        echo "https://github.com/${GITHUB_REPO}/releases/download/${tag}/odio_upgrade.py"
     fi
 }
 
