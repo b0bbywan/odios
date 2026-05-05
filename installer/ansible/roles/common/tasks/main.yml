@@ -53,6 +53,7 @@
     - audio
     - input
     - plugdev
+    - odio
 
 - name: Ensure user in audio group
   ansible.builtin.user:
@@ -62,9 +63,26 @@
       - audio
       - users
       - input
+      - odio
       - plugdev
       - systemd-journal
   become: true
+
+# When a human runs install.sh as someone other than target_user (e.g.
+# rpi-imager user "pi" installing for an "odio" appliance user), they
+# still need to read /var/lib/odio/state.json from their own login —
+# `odio-upgrade verify`, debugging, etc. Image mode skips this: build
+# users don't exist on the deployed device.
+- name: Ensure invoking user (live, ≠ target_user) in odio group
+  ansible.builtin.user:
+    name: "{{ ansible_user_id }}"
+    append: true
+    groups: [odio]
+  become: true
+  when:
+    - install_mode == "live"
+    - ansible_user_id != target_user
+    - ansible_user_id != "root"
 
 - name: User systemd directories
   ansible.builtin.file:
