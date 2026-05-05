@@ -1,10 +1,7 @@
 ---
-# Single source of truth for the role list: the filesystem. `common` and
-# `upgrade` are infrastructure (always run, no install_X opt-in); every
-# other role with an install_<name> defined in group_vars is "optional"
-# (user can opt in/out, smart-upgrade can skip on stable version). Roles
-# present in roles/ but not yet wired into install_X (e.g. WIP roles) are
-# filtered out.
+# Optional roles = filesystem-listed roles with a matching install_<name>
+# in vars. common/upgrade are infrastructure (always run, never listed);
+# unwired roles (no install_<name>) are filtered out.
 - name: List role directories
   ansible.builtin.find:
     paths: "{{ playbook_dir }}/roles"
@@ -24,17 +21,14 @@
   loop: "{{ _odios_optional_roles }}"
   when: lookup('vars', 'install_' ~ item) | bool
 
-# Explicit list of roles the user opted out of, so a future upgrade can tell
-# "deliberately excluded" (honor the choice) from "new role the install
-# predates" (fall back to install.sh's default for that flag).
+# Track opt-outs so upgrades can distinguish "user said no" from "role
+# didn't exist yet" (latter falls back to install.sh's default).
 - name: Build list of excluded roles
   ansible.builtin.set_fact:
     _odios_excluded_roles: "{{ _odios_optional_roles | difference(_odios_installed_roles) }}"
 
-# Same split for sub-flags: features holds opt-ins, features_excluded holds
-# opt-outs. odio-upgrade reads both lists with pure opt-out semantics — only
-# entries in features_excluded map to N, everything else (listed in features
-# or absent from both) gets Y on upgrade.
+# Same split for sub-flags. Pure opt-out semantics on upgrade: only
+# features_excluded maps to N; everything else gets Y.
 - name: Build list of enabled features
   ansible.builtin.set_fact:
     _odios_enabled_features: >-
@@ -53,48 +47,68 @@
         | difference(_odios_enabled_features)
       }}
 
-# setgid (2775) so files created by `odio-upgrade check` as target_user
-# inherit group `users` — needed for the timer to overwrite upgrades.json
-# without sudo.
+# /var/lib: state.json (root-only writes, group read). /var/cache:
+# upgrades.json (setgid + group-write so target_user can refresh via
+# `odio-upgrade check`). target_user joins `odio` in the common role.
+- name: Ensure /var/lib/odio exists
+  ansible.builtin.file:
+    path: /var/lib/odio
+    state: directory
+    owner: root
+    group: odio
+    mode: '2750'
+  become: true
+
 - name: Ensure /var/cache/odio exists
   ansible.builtin.file:
     path: /var/cache/odio
     state: directory
     owner: root
-    group: users
+    group: odio
     mode: '2775'
   become: true
 
-# Release history: ordered chronological list of every odios version that ran
-# write_state.yml. First install seeds it with [odio_version]; subsequent
-# upgrades append (dedup-consecutive). Old state.json files without the field
-# are backfilled from `odios` so we don't lose the pre-history version.
-# Pre-rc4 wrote state.json into the target_user's home; rc4+ uses /var/cache.
-- name: Read existing state.json (system path)
+# Release history: append on every run, dedup consecutive. Backfilled
+# from `odios` for state.json files predating the field.
+- name: Read existing state.json (canonical /var/lib path)
   ansible.builtin.slurp:
-    src: /var/cache/odio/state.json
-  register: _odios_existing_state_system
+    src: /var/lib/odio/state.json
+  register: _odios_existing_state_lib
   become: true
   failed_when: false
 
-- name: Read existing state.json (legacy per-user path)
+- name: Read existing state.json (2b1-era /var/cache migration path)
+  ansible.builtin.slurp:
+    src: /var/cache/odio/state.json
+  register: _odios_existing_state_cache
+  become: true
+  failed_when: false
+  when: _odios_existing_state_lib.content is not defined
+
+- name: Read existing state.json (pre-2b1 per-user path)
   ansible.builtin.slurp:
     src: "/home/{{ target_user }}/.cache/odio/state.json"
   register: _odios_existing_state_legacy
   become: true
   failed_when: false
-  when: _odios_existing_state_system.content is not defined
+  when:
+    - _odios_existing_state_lib.content is not defined
+    - _odios_existing_state_cache.content is not defined
 
 - name: Parse existing state
   ansible.builtin.set_fact:
     _odios_existing_state: >-
       {{
-        (_odios_existing_state_system.content | b64decode | from_json)
-        if _odios_existing_state_system.content is defined
+        (_odios_existing_state_lib.content | b64decode | from_json)
+        if _odios_existing_state_lib.content is defined
         else (
-          (_odios_existing_state_legacy.content | b64decode | from_json)
-          if (_odios_existing_state_legacy.content | default('')) | length > 0
-          else {}
+          (_odios_existing_state_cache.content | b64decode | from_json)
+          if (_odios_existing_state_cache.content | default('')) | length > 0
+          else (
+            (_odios_existing_state_legacy.content | b64decode | from_json)
+            if (_odios_existing_state_legacy.content | default('')) | length > 0
+            else {}
+          )
         )
       }}
 
@@ -121,12 +135,10 @@
         else _odios_prior_history + [odio_version]
       }}
 
-# Refresh every installed role's version from the target's vars/main.yml.
-# Roles skipped by smart-upgrade (RUN_X=N) didn't actually re-run, but
-# their target == prior versions match — so writing target is a no-op
-# in the supported (upgrade-only) flow. A `--force --version=<older>`
-# downgrade would write a target that doesn't reflect on-disk state;
-# that's accepted: downgrades aren't a supported path.
+# Refresh every installed role's version from vars/main.yml. RUN_X=N
+# roles weren't re-installed but target == prior, so writing target is
+# a no-op. Downgrades (`--force --version=<older>`) write a stale
+# target — accepted, not a supported path.
 - name: Read installed role versions from vars/main.yml
   ansible.builtin.set_fact:
     _odios_merged_role_versions: >-
@@ -148,13 +160,21 @@
       features_excluded: "{{ _odios_excluded_features }}"
       release_history: "{{ _odios_release_history }}"
 
-- name: Write /var/cache/odio/state.json
+- name: Write /var/lib/odio/state.json
   ansible.builtin.copy:
     content: "{{ _odios_state | to_nice_json }}\n"
-    dest: /var/cache/odio/state.json
+    dest: /var/lib/odio/state.json
     owner: root
-    group: users
-    mode: '0664'
+    group: odio
+    mode: '0640'
+  become: true
+
+# 2b1 wrote state.json under /var/cache; drop the stale copy now that
+# /var/lib is canonical.
+- name: Remove 2b1 /var/cache/odio/state.json after migration
+  ansible.builtin.file:
+    path: /var/cache/odio/state.json
+    state: absent
   become: true
 
 - name: Refresh /var/cache/odio/upgrades.json
