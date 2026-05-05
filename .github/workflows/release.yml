@@ -135,6 +135,13 @@ jobs:
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
+          # Stay out of /releases/latest until publish-manifest has uploaded
+          # the per-arch images + rpi-imager-manifest (~30 min). odio.love
+          # follows that endpoint, so flipping early would advertise a half-
+          # populated release. publish-manifest finalises with `gh release
+          # edit --prerelease=false --latest=true` once everything is in.
+          prerelease: true
+          make_latest: 'false'
           files: |
             ${{ needs.build.outputs.archive_name }}
             installer/install.sh
@@ -555,3 +562,10 @@ jobs:
         with:
           tag_name: ${{ steps.tag.outputs.value }}
           files: odio.rpi-imager-manifest
+
+      - name: Mark release as final (real releases only)
+        if: needs.build.outputs.is_release == 'true'
+        run: gh release edit "${{ steps.tag.outputs.value }}" --prerelease=false --latest=true
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
