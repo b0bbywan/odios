@@ -603,6 +603,74 @@ def run_apply(opts: ApplyOptions) -> int:
     return subprocess.run(cmd, env=env).returncode
 
 
+def _check_features_known(state: State) -> str | None:
+    bad = (set(state["features"]) | set(state["features_excluded"])) - _FEATURE_PACKAGES.keys()
+    return f"unknown features: {sorted(bad)}" if bad else None
+
+
+def _check_features_no_overlap(state: State) -> str | None:
+    overlap = set(state["features"]) & set(state["features_excluded"])
+    return f"features and features_excluded overlap: {sorted(overlap)}" if overlap else None
+
+
+def _check_history_matches_odios(state: State) -> str | None:
+    history = state.get("release_history") or []
+    odios = state.get("odios")
+    if history and odios and history[-1] != odios:
+        return f"release_history[-1]={history[-1]!r} != state.odios={odios!r}"
+    return None
+
+
+def _check_expected_version(state: State, expected: str) -> str | None:
+    ver = state.get("odios", "")
+    # PR pre-releases tag as `pr-<N>`; the resolved odios string is a
+    # git-describe (e.g. 2026.4.2b2-20-g7c1f6c4). Released tags match exactly.
+    if expected.startswith("pr-"):
+        if not _VERSION_RE.match(ver):
+            return f"state.odios={ver!r} not a valid version for {expected}"
+    elif ver != expected:
+        return f"state.odios={ver!r} expected {expected}"
+    return None
+
+
+def cmd_verify(argv: list[str]) -> int:
+    p = argparse.ArgumentParser(
+        prog="odio-upgrade verify",
+        description=(
+            "Read state.json from disk and run schema sanity checks. "
+            "Exit 0 if valid, 1 if invalid, 2 if state.json is missing."
+        ),
+    )
+    p.add_argument(
+        "--expected-version",
+        help="also assert state.odios matches this tag (test harness use)",
+    )
+    args = p.parse_args(argv)
+
+    _, raw, found_user = find_state()
+    if raw is None:
+        print("no state.json on disk", file=sys.stderr)
+        return 2
+    target_user = found_user or raw.get("target_user")
+    if not target_user:
+        print("target_user missing", file=sys.stderr)
+        return 1
+    state = backfill_state(raw, target_user)
+
+    checks: list[str | None] = [
+        _check_features_known(state),
+        _check_features_no_overlap(state),
+        _check_history_matches_odios(state),
+    ]
+    if args.expected_version:
+        checks.append(_check_expected_version(state, args.expected_version))
+
+    errors = [c for c in checks if c]
+    for e in errors:
+        print(f"  {e}", file=sys.stderr)
+    return 1 if errors else 0
+
+
 def cmd_check(argv: list[str]) -> int:
     p = argparse.ArgumentParser(
         prog="odio-upgrade check",
@@ -698,6 +766,8 @@ def main() -> int:
     argv = sys.argv[1:]
     if argv and argv[0] == "check":
         return cmd_check(argv[1:])
+    if argv and argv[0] == "verify":
+        return cmd_verify(argv[1:])
     # `apply` is the default; the word is optional for back-compat with the
     # legacy odio-upgrade CLI (--version, --force, --dry-run, --state).
     if argv and argv[0] == "apply":
