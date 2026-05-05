@@ -372,6 +372,14 @@ jobs:
             arch: arm64
             baseline_tag: "2026.4.2b2"
             test_action: upgrade-from-image-embedded
+          # Sanity: a non-target_user member of users + odio (with NOPASSWD
+          # sudo) can trigger the upgrade. Validates the group permissions
+          # on /var/lib/odio/state.json introduced this PR.
+          - platform: linux/arm64
+            runner: ubuntu-24.04-arm
+            arch: arm64
+            baseline_tag: "2026.4.2b1"
+            test_action: upgrade-from-image-fetch-as-other-user
           # Native amd64 covers the systemctl --user path. Baseline pushed
           # manually via scripts/build-baseline-amd64.sh.
           - platform: linux/amd64

@@ -110,6 +110,35 @@ run_odio_upgrade_embedded() {
         /usr/local/bin/odio-upgrade --version "${tag}" --force
 }
 
+# Validates that a non-target_user member of the `users` + `odio` groups
+# can trigger an upgrade by running odio-upgrade directly (no sudo prefix).
+# The odio group grants read on /var/lib/odio/state.json, install.sh's
+# internal sudo handles the privileged bits via /etc/sudoers.d. Pre-
+# creates the `odio` group because baselines that predate this PR don't
+# have it yet.
+run_odio_upgrade_fetch_as_other_user() {
+    local tag="$1"
+    local install_mode="${2:-image}"
+    local user="bob"
+    local url
+    url=$(odio_upgrade_url "$tag")
+
+    echo "=== Setting up ${user} (users + odio groups, NOPASSWD sudo) ==="
+    docker exec "${CONTAINER_NAME}" bash -c "
+        groupadd -f odio &&
+        useradd -m -s /bin/bash ${user} &&
+        usermod -aG users,odio ${user} &&
+        echo '${user} ALL=(ALL) NOPASSWD:ALL' > /etc/sudoers.d/${user}
+    "
+
+    echo "=== curl odio-upgrade (${url}) → run as ${user} (target=${tag}, mode=${install_mode}) ==="
+    docker exec -u "${user}" -e INSTALL_MODE="${install_mode}" "${CONTAINER_NAME}" bash -c "
+        curl -fsSL '${url}' -o /tmp/odio-upgrade &&
+        chmod +x /tmp/odio-upgrade &&
+        /tmp/odio-upgrade --version '${tag}' --force
+    "
+}
+
 # Real-release path: odio.love/manifest.json drives the target via
 # `odio-upgrade check`, then `systemctl --user start odio-upgrade.service`
 # runs the unit (no --version arg). Only valid when the published manifest
@@ -190,7 +219,7 @@ while [[ "${1:-}" == --* ]]; do
 done
 
 case "${1:-}" in
-  shell|rerun|clean|install|install-root|upgrade|upgrade-from-image-fetch|upgrade-from-image-embedded|upgrade-from-image-systemctl)
+  shell|rerun|clean|install|install-root|upgrade|upgrade-from-image-fetch|upgrade-from-image-embedded|upgrade-from-image-systemctl|upgrade-from-image-fetch-as-other-user)
     ACTION="$1"
     shift
     ;;
@@ -287,7 +316,7 @@ case "${ACTION}" in
     echo "=== Done ==="
     ;;
 
-  upgrade-from-image-fetch|upgrade-from-image-embedded|upgrade-from-image-systemctl)
+  upgrade-from-image-fetch|upgrade-from-image-embedded|upgrade-from-image-systemctl|upgrade-from-image-fetch-as-other-user)
     TARGET="${1:?target tag required (e.g. pr-42 or 2026.4.1rc2)}"
 
     # The whole point of upgrade-from-image-* is to test the upgrade code path on
@@ -317,9 +346,10 @@ EOF
 
     echo "=== [${ACTION}] Upgrading to ${TARGET} (image mode) ==="
     case "${ACTION}" in
-      upgrade-from-image-fetch)     run_odio_upgrade_fetch     "${TARGET}" ;;
-      upgrade-from-image-embedded)  run_odio_upgrade_embedded  "${TARGET}" ;;
-      upgrade-from-image-systemctl) run_odio_upgrade_systemctl              ;;
+      upgrade-from-image-fetch)              run_odio_upgrade_fetch              "${TARGET}" ;;
+      upgrade-from-image-embedded)           run_odio_upgrade_embedded           "${TARGET}" ;;
+      upgrade-from-image-systemctl)          run_odio_upgrade_systemctl                       ;;
+      upgrade-from-image-fetch-as-other-user) run_odio_upgrade_fetch_as_other_user "${TARGET}" ;;
     esac
 
     echo "=== [${ACTION}] Asserting state.json reflects ${TARGET} ==="
