@@ -129,18 +129,24 @@ run_install() {
     local tag="$1"
     local exec_user="${2:-}"          # empty = root
     local install_mode="${3:-image}"  # image (default) | live
+    local extra_env=()                # remaining args: KEY=VAL pairs forwarded to env(1)
+    if (( $# > 3 )); then
+        shift 3
+        extra_env=("$@")
+    fi
     local url
     url=$(install_sh_url "$tag")
 
     local user_flag=()
     [[ -n "$exec_user" ]] && user_flag=(-u "$exec_user")
 
-    echo "=== curl | bash ${exec_user:+as $exec_user }(${url}) [mode=${install_mode}] ==="
+    echo "=== curl | bash ${exec_user:+as $exec_user }(${url}) [mode=${install_mode}${extra_env:+ extra: ${extra_env[*]}}] ==="
     docker exec "${user_flag[@]}" "${CONTAINER_NAME}" \
       env \
         INSTALL_MODE="${install_mode}" \
         TARGET_USER=odio \
         ODIOS_VERSION="${tag}" \
+        "${extra_env[@]}" \
       bash -c "curl -fsSL '${url}' | bash"
 }
 
@@ -241,8 +247,12 @@ case "${ACTION}" in
     ;;
 
   install)
+    BASELINE="${1:-latest}"
+    shift || true
     start_container
-    run_install "${1:-latest}" odio
+    # Remaining args are forwarded as KEY=VAL env to install.sh (e.g.
+    # INSTALL_MPD=N), used by scripts/build-baseline-amd64.sh variants.
+    run_install "${BASELINE}" odio image "$@"
     echo "=== Done ==="
     ;;
 
