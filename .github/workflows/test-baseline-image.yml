@@ -1,8 +1,12 @@
 name: Build test-baseline image
 
-# Manually-triggered workflow that converts a published odios SD-card image
-# into a pushable Docker image used by the upgrade test (`test-upgrade` in
-# release.yml). Trigger once per baseline_tag listed in release.yml's matrix.
+# Manually-triggered workflow that builds a pushable Docker image used by
+# the upgrade test (`test-upgrade` in release.yml). Trigger once per
+# (baseline_tag, arch[, variant]) listed in release.yml's matrix.
+#
+# arm64: converts the published SD-card image via img-to-docker.sh.
+# amd64: layers install.sh onto Dockerfile.test via build-baseline-amd64.sh
+# (no SD image source on amd64).
 
 on:
   workflow_dispatch:
@@ -10,6 +14,22 @@ on:
       baseline_tag:
         description: "Baseline odios release tag (e.g. 2026.4.1rc2)"
         required: true
+      arch:
+        description: "Architecture"
+        type: choice
+        required: true
+        default: arm64
+        options:
+          - arm64
+          - amd64
+      variant:
+        description: "Variant (amd64 only — ignored for arm64)"
+        type: choice
+        required: true
+        default: default
+        options:
+          - default
+          - no-mpd-stack
 
 permissions:
   contents: read
@@ -17,11 +37,12 @@ permissions:
 
 jobs:
   build-baseline:
-    runs-on: ubuntu-24.04-arm
+    runs-on: ${{ inputs.arch == 'arm64' && 'ubuntu-24.04-arm' || 'ubuntu-24.04' }}
     steps:
       - uses: actions/checkout@v5
 
-      - name: Install dependencies
+      - name: Install dependencies (arm64)
+        if: inputs.arch == 'arm64'
         run: sudo apt-get update && sudo apt-get install -y xz-utils util-linux jq
 
       - name: Log in to GHCR
@@ -31,5 +52,16 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Build and push test-baseline image
-        run: ./scripts/img-to-docker.sh "${{ github.event.inputs.baseline_tag }}" arm64
+      - name: Build and push test-baseline image (arm64)
+        if: inputs.arch == 'arm64'
+        run: ./scripts/img-to-docker.sh "${{ inputs.baseline_tag }}" arm64
+
+      - name: Build and push test-baseline image (amd64)
+        if: inputs.arch == 'amd64'
+        run: |
+          case "${{ inputs.variant }}" in
+            default)      args=() ;;
+            no-mpd-stack) args=(--no-mpd-stack) ;;
+            *)            echo "unknown variant: ${{ inputs.variant }}" >&2; exit 2 ;;
+          esac
+          ./scripts/build-baseline-amd64.sh "${args[@]}" "${{ inputs.baseline_tag }}"

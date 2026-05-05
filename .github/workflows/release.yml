@@ -392,6 +392,22 @@ jobs:
             arch: amd64
             baseline_tag: "2026.4.2b1"
             test_action: upgrade-from-image-embedded
+          # Baseline installed without mpd / mpd-discplayer / upmpdcli —
+          # exercises smart-upgrade against a state.roles that legitimately
+          # omits those entries. Variant images built via
+          # `build-baseline-amd64.sh --no-mpd-stack`.
+          - platform: linux/amd64
+            runner: ubuntu-24.04
+            arch: amd64
+            baseline_tag: "2026.4.2b1"
+            baseline_variant: "-no-mpd-stack"
+            test_action: upgrade-from-image-fetch
+          - platform: linux/amd64
+            runner: ubuntu-24.04
+            arch: amd64
+            baseline_tag: "2026.4.2b2"
+            baseline_variant: "-no-mpd-stack"
+            test_action: upgrade-from-image-fetch
     steps:
       - uses: actions/checkout@v5
 
@@ -411,10 +427,10 @@ jobs:
             echo "value=pr-${{ github.event.pull_request.number }}" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: "Run upgrade test (${{ matrix.platform }}: ${{ matrix.baseline_tag }} -> ${{ steps.tag.outputs.value }} via ${{ matrix.test_action }})"
+      - name: "Run upgrade test (${{ matrix.platform }}: ${{ matrix.baseline_tag }}${{ matrix.baseline_variant }} -> ${{ steps.tag.outputs.value }} via ${{ matrix.test_action }})"
         run: ./tests/test.sh "${{ matrix.test_action }}" "${{ steps.tag.outputs.value }}"
         env:
-          REMOTE_IMAGE: ghcr.io/${{ github.repository }}/test-baseline:${{ matrix.baseline_tag }}-${{ matrix.arch }}
+          REMOTE_IMAGE: ghcr.io/${{ github.repository }}/test-baseline:${{ matrix.baseline_tag }}-${{ matrix.arch }}${{ matrix.baseline_variant }}
           PLATFORM: ${{ matrix.platform }}
 
       - name: Clean
