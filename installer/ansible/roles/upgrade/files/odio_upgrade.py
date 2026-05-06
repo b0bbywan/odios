@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Check for and apply odios upgrades.
 
-Two subcommands sharing the same version-comparison code:
+Subcommands:
 
   odio-upgrade check
       Compare local state.json against odio.love/manifest.json and refresh
@@ -13,11 +13,20 @@ Two subcommands sharing the same version-comparison code:
       manifest to compute per-role RUN_* skips, then pipe install.sh from
       the target release into bash.
 
+  odio-upgrade verify [--expected-version TAG]
+      Read state.json and run schema sanity checks (used in CI / for
+      inspecting an install).
+
+  odio-upgrade pwa-url
+      Print https://pwa.odio.love/#/i/<src-ip-of-default-route>.
+
 For backwards compatibility, `odio-upgrade` (no subcommand) defaults to `apply`.
 
 Exit codes:
-  check : 0 = up to date, 1 = upgrades available, 2 = error
-  apply : 0 = upgraded (or up-to-date without --force), 1 = install.sh failed, 2 = error
+  check    : 0 = up to date, 1 = upgrades available, 2 = error
+  apply    : 0 = upgraded (or up-to-date without --force), 1 = install.sh failed, 2 = error
+  verify   : 0 = valid, 1 = invalid, 2 = state.json missing
+  pwa-url  : 0 = printed (URL with /#/i/<ip>, or bare URL if no IP detectable)
 """
 import argparse
 import contextlib
@@ -34,6 +43,7 @@ from typing import TypedDict, cast
 
 GITHUB_REPO = "b0bbywan/odios"
 LATEST_MANIFEST_URL = "https://odio.love/manifest.json"
+PWA_URL = "https://pwa.odio.love"
 
 # state.json holds the only non-regenerable bits (roles_excluded,
 # features_excluded, release_history, install-time target_user) — lives
@@ -671,6 +681,32 @@ def cmd_verify(argv: list[str]) -> int:
     return 1 if errors else 0
 
 
+def cmd_pwa_url(argv: list[str]) -> int:
+    p = argparse.ArgumentParser(
+        prog="odio-upgrade pwa-url",
+        description=(
+            "Print the PWA URL pointing at this host's LAN-reachable IP "
+            "(the source IP of the default route)."
+        ),
+    )
+    p.parse_args(argv)
+
+    # No usable IP (no default route, `ip` missing, unparseable output) → fall
+    # back to the bare PWA URL so callers (motd, post-install summary) always
+    # get something printable.
+    try:
+        out = subprocess.run(
+            ["ip", "route", "get", "1.1.1.1"],
+            capture_output=True, text=True, check=True,
+        ).stdout
+    except (subprocess.CalledProcessError, FileNotFoundError):
+        print(PWA_URL)
+        return 0
+    m = re.search(r"\bsrc\s+(\S+)", out)
+    print(f"{PWA_URL}/#/i/{m.group(1)}" if m else PWA_URL)
+    return 0
+
+
 def cmd_check(argv: list[str]) -> int:
     p = argparse.ArgumentParser(
         prog="odio-upgrade check",
@@ -768,6 +804,8 @@ def main() -> int:
         return cmd_check(argv[1:])
     if argv and argv[0] == "verify":
         return cmd_verify(argv[1:])
+    if argv and argv[0] == "pwa-url":
+        return cmd_pwa_url(argv[1:])
     # `apply` is the default; the word is optional for back-compat with the
     # legacy odio-upgrade CLI (--version, --force, --dry-run, --state).
     if argv and argv[0] == "apply":
