@@ -73,11 +73,13 @@ ask_config() {
     read -rp "Install Bluetooth? [Y/n]: "                  INSTALL_BLUETOOTH
     read -rp "Install MPD? [Y/n]: "                        INSTALL_MPD
     read -rp "Install MPD disc player? [Y/n]: "            INSTALL_MPD_DISCPLAYER
+    if [[ "${INSTALL_MPD,,}" != "n" ]]; then
+        read -rp "Install myMPD (web UI)? [Y/n]: "         INSTALL_MYMPD
+    fi
     read -rp "Install Odio API? [Y/n]: "                   INSTALL_ODIO_API
     read -rp "Install Shairport Sync (AirPlay)? [Y/n]: "   INSTALL_SHAIRPORT_SYNC
     read -rp "Install Snapcast client? [Y/n]: "            INSTALL_SNAPCLIENT
     read -rp "Install UPnP/DLNA renderer? [Y/n]: "         INSTALL_UPMPDCLI
-    read -rp "Install myMPD (web UI)? [Y/n]: "             INSTALL_MYMPD
     read -rp "Install Spotifyd (Spotify Connect)? [Y/n]: " INSTALL_SPOTIFYD
     read -rp "Install branding (odio-motd login banner, hushlogin)? [Y/n]: " INSTALL_BRANDING
 
