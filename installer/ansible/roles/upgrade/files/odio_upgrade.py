@@ -420,6 +420,21 @@ def _role_up_to_date(
     return state_odios is None or parse_version(target) <= parse_version(state_odios)
 
 
+def _is_downgrade(target: str, state_odios: str | None) -> bool:
+    """True when both versions parse cleanly and target < state_odios.
+
+    Returns False for "latest" (parses to (0,)) or any unparseable string —
+    safer to let install.sh resolve and fail than to refuse on a parse miss.
+    """
+    if not state_odios:
+        return False
+    target_v = parse_version(target)
+    state_v = parse_version(state_odios)
+    if target_v == (0,) or state_v == (0,):
+        return False
+    return target_v < state_v
+
+
 def derive_run_env(
     state: State,
     manifest: Manifest | None,
@@ -596,6 +611,13 @@ def run_apply(opts: ApplyOptions) -> int:
         return 0
 
     version = resolve_version(opts.version, upgrades_path)
+    if _is_downgrade(version, state.get("odios")):
+        print(
+            f"Refusing to downgrade: target {version} < installed "
+            f"{state['odios']}.",
+            flush=True,
+        )
+        return 2
     url = install_url(version)
     env_overrides = _build_apply_env(state, version, target_user, upgrades_path)
 
