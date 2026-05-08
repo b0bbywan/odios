@@ -319,6 +319,19 @@ case "${ACTION}" in
   upgrade-from-image-fetch|upgrade-from-image-embedded|upgrade-from-image-systemctl|upgrade-from-image-fetch-as-other-user)
     TARGET="${1:?target tag required (e.g. pr-42 or 2026.4.1rc2)}"
 
+    # systemctl path drives the upgrade target via odio.love/manifest.json,
+    # so it can only validate after CI's publish-manifest job has caught up.
+    # Skip cleanly when the published `latest` doesn't match TARGET — the
+    # alternative is asserting against whatever was promoted last and
+    # falsely failing on every fresh tag.
+    if [[ "${ACTION}" == "upgrade-from-image-systemctl" ]]; then
+        published_latest=$(curl -fsSL https://odio.love/manifest.json | jq -r '.odios' 2>/dev/null || echo "")
+        if [[ "${published_latest}" != "${TARGET}" ]]; then
+            echo "=== [${ACTION}] SKIPPED — odio.love reports latest=${published_latest:-?}, target=${TARGET} (re-run after CI publish-manifest) ==="
+            exit 0
+        fi
+    fi
+
     # The whole point of upgrade-from-image-* is to test the upgrade code path on
     # a pre-provisioned baseline. Falling back to a fresh Dockerfile.test build
     # would silently test an install, not an upgrade — refuse up front.
