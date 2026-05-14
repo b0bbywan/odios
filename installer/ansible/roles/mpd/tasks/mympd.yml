@@ -68,6 +68,16 @@
   become: true
   notify: Restart mympd
 
+- name: Configure mympd home widgets
+  ansible.builtin.template:
+    src: home_list.j2
+    dest: "/home/{{ target_user }}/.config/mympd/state/home_list"
+    owner: "{{ target_user }}"
+    group: "{{ target_user }}"
+    mode: '0600'
+  become: true
+  notify: Restart mympd
+
 - name: Configure mympd http port
   ansible.builtin.copy:
     content: "{{ mpd_mympd_http_port }}"

@@ -6,7 +6,7 @@ bind: all
 port: 8018
 
 # Logging
-log_level: info
+logLevel: info
 
 power:
   enabled: {{ (odio_api_power_can_reboot or odio_api_power_can_poweroff) | lower }}

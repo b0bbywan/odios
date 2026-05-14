@@ -7,6 +7,9 @@
   become: true
   notify: Restart snapclient
 
+- name: Install snapclientmpris
+  ansible.builtin.include_tasks: snapclientmpris.yml
+
 - name: Disable system snapclient service
   ansible.builtin.include_tasks: "../../../tasks/systemd_disable_system.yml"
   vars:
