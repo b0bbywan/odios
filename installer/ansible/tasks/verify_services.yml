@@ -32,9 +32,9 @@
         + (['mpd-discplayer.service'] if install_mpd_discplayer | bool else [])
         + (['mympd.service']          if install_mympd          | bool else [])
         + (['shairport-sync.service'] if install_shairport_sync | bool else [])
-        + (['snapclient.service']     if install_snapclient     | bool else [])
         + (['upmpdcli.service']       if install_upmpdcli       | bool else [])
         + (['spotifyd.service']       if install_spotifyd       | bool else [])
+        + (['snapclient.service', 'snapclientmpris.service'] if install_snapclient | bool else [])
         + (['odio-api.service']       if install_odio_api       | bool else [])
       }}
   when: install_mode == "live"

@@ -1,0 +1,13 @@
+---
+- name: Install snapclientmpris
+  ansible.builtin.apt:
+    name: "snapclientmpris>={{ snapclient_snapclientmpris_version }}"
+    state: present
+    install_recommends: false
+  become: true
+  notify: Restart snapclientmpris
+
+- name: Enable user snapclient service
+  ansible.builtin.include_tasks: "../../../tasks/systemd_enable_user.yml"
+  vars:
+    service_name: snapclientmpris.service
