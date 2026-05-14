@@ -1,7 +1,7 @@
 ---
 - name: Install mympd v{{ mpd_mympd_apt_version }}
   ansible.builtin.apt:
-    name: "mympd={{ mpd_mympd_apt_version }}"
+    name: "mympd>={{ mpd_mympd_apt_version }}"
     state: present
     install_recommends: false
   become: true
