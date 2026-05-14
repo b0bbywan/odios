@@ -1,7 +1,7 @@
 ---
 - name: Install go-odio-api v{{ odio_api_apt_version }}
   ansible.builtin.apt:
-    name: "odio-api={{ odio_api_apt_version }}"
+    name: "odio-api>={{ odio_api_apt_version }}"
     state: present
     install_recommends: false
   become: true
