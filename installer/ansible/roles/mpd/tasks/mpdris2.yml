@@ -15,7 +15,6 @@
   ansible.builtin.apt:
     name:
       - "mpdris2>={{ mpd_mpdris2_apt_version }}"
-      - python3-mutagen
     state: present
     install_recommends: false
   become: true
