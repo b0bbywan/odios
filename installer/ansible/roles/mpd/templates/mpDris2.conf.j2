@@ -1,4 +1,5 @@
 [Connection]
-host = 127.0.0.1
-port = 6600
-music_dir = {{ mpd_music_directory }}
+host = {{ mpd_socket_path }}
+
+[Bling]
+notify = False

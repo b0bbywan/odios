@@ -76,19 +76,21 @@
       }
       state_file              "~/.local/share/mpd/state"
       sticker_file            "~/.local/share/mpd/sticker.sql"
+      auto_update             "yes"
   become: true
   become_user: "{{ target_user }}"
   notify: Restart mpd
 
-- name: MPD config - network
+# Listeners (unix socket + TCP 6600) are owned by the packaged mpd.socket
+# user unit (ListenStream=%t/mpd/socket, ListenStream=6600). MPD inherits them
+# via socket activation, so no bind_to_address/port belongs in mpd.conf. Drop
+# the old managed network block from previously-installed configs to avoid a
+# double-bind ("address already in use") against the socket unit.
+- name: MPD config - drop legacy network block
   ansible.builtin.blockinfile:
     path: "/home/{{ target_user }}/.config/mpd/mpd.conf"
     marker: "# {mark} ANSIBLE MANAGED BLOCK - network"
-    block: |
-      bind_to_address         "0.0.0.0"
-      bind_to_address         "/run/user/{{ target_user_uid }}/mpd.socket"
-      port                    "6600"
-      auto_update             "yes"
+    state: absent
   become: true
   become_user: "{{ target_user }}"
   notify: Restart mpd
@@ -158,7 +160,11 @@
     mode: '0775'
   become: true
 
-- name: Enable user MPD service
+- name: Enable user MPD socket and service
   ansible.builtin.include_tasks: "../../../tasks/systemd_enable_user.yml"
   vars:
-    service_name: mpd.service
+    service_name: "{{ item.name }}"
+    wanted_by: "{{ item.wanted_by | default('default.target') }}"
+  loop:
+    - { name: mpd.service }
+    - { name: mpd.socket, wanted_by: sockets.target }

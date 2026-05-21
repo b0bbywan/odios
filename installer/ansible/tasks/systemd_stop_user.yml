@@ -1,0 +1,21 @@
+---
+# Stop a systemd user service without disabling it (the enablement symlink
+# stays, so it comes back on next boot / via a Restart handler).
+# Only acts in live mode; ignores "Could not find" (service may be absent).
+# Variables:
+#   service_name: name of the service (e.g. mympd.service)
+
+- name: Stop user service - live
+  ansible.builtin.systemd:
+    name: "{{ service_name }}"
+    state: stopped
+    scope: user
+  environment:
+    XDG_RUNTIME_DIR: "/run/user/{{ target_user_uid }}"
+  become: true
+  become_user: "{{ target_user }}"
+  register: _stop_user_result
+  failed_when:
+    - _stop_user_result.failed | bool
+    - '"Could not find" not in (_stop_user_result.msg | default(""))'
+  when: install_mode == "live"

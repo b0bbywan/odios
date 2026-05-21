@@ -3,7 +3,7 @@
 
 MPDConnection:
   Type: "unix"
-  Address: "/run/user/{{ target_user_uid }}/mpd.socket"
+  Address: "{{ mpd_socket_path }}"
   ReconnectWait: 5
 
 AudioBackend: "none"
