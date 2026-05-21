@@ -1,7 +1,7 @@
 ---
 - name: Install spotifyd v{{ spotifyd_apt_version }}
   ansible.builtin.apt:
-    name: "spotifyd={{ spotifyd_apt_version }}"
+    name: "spotifyd>={{ spotifyd_apt_version }}"
     state: present
   become: true
   notify: Restart spotifyd
@@ -13,7 +13,7 @@
     owner: "{{ target_user }}"
     group: "{{ target_user }}"
     mode: '0755'
-  become: true
+  become: "{{ become_for_target_user }}"
 
 - name: Backup spotifyd config before changes
   ansible.builtin.include_tasks: "../../../tasks/backup_conf_before.yml"
@@ -30,7 +30,7 @@
     owner: "{{ target_user }}"
     group: "{{ target_user }}"
     mode: '0644'
-  become: true
+  become: "{{ become_for_target_user }}"
   notify: Restart spotifyd
 
 - name: Backup spotifyd config after changes

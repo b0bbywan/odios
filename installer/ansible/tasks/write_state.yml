@@ -89,7 +89,7 @@
   ansible.builtin.slurp:
     src: "/home/{{ target_user }}/.cache/odio/state.json"
   register: _odios_existing_state_legacy
-  become: true
+  become: "{{ become_for_target_user }}"
   failed_when: false
   when:
     - _odios_existing_state_lib.content is not defined
@@ -179,7 +179,7 @@
 
 - name: Refresh /var/cache/odio/upgrades.json
   ansible.builtin.command: /usr/local/bin/odio-upgrade check
-  become: true
+  become: "{{ become_for_target_user }}"
   become_user: "{{ target_user }}"
   changed_when: false
   failed_when: false

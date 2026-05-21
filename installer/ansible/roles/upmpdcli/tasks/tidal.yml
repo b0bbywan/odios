@@ -3,7 +3,7 @@
   ansible.builtin.pip:
     break_system_packages: true
     name: tidalapi
-  become: true
+  become: "{{ become_for_target_user }}"
   become_user: "{{ target_user }}"
 
 - name: Install upmpdcli-tidal

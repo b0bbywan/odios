@@ -28,7 +28,7 @@
     owner: "{{ target_user }}"
     group: "{{ target_user }}"
     mode: '0700'
-  become: true
+  become: "{{ become_for_target_user }}"
 
 - name: Create mpDris2 config file
   ansible.builtin.template:
@@ -36,8 +36,8 @@
     dest: "/home/{{ target_user }}/.config/mpDris2/mpDris2.conf"
     owner: "{{ target_user }}"
     group: "{{ target_user }}"
-    mode: '0700'
-  become: true
+    mode: '0600'
+  become: "{{ become_for_target_user }}"
   notify: Restart mpDris2
 
 - name: Enable user mpDris2 service

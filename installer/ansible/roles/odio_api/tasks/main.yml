@@ -14,7 +14,7 @@
     owner: "{{ target_user }}"
     group: "{{ target_user }}"
     mode: '0700'
-  become: true
+  become: "{{ become_for_target_user }}"
   loop:
     - "odio-api"
     - "odio-api/conf.d"
@@ -41,7 +41,7 @@
     org.freedesktop.login1.Manager CanReboot
   register: odio_api_can_reboot
   changed_when: false
-  become: true
+  become: "{{ become_for_target_user }}"
   become_user: "{{ target_user }}"
   ignore_errors: true
   when: install_mode == "live"
@@ -52,7 +52,7 @@
     org.freedesktop.login1.Manager CanPowerOff
   register: odio_api_can_poweroff
   changed_when: false
-  become: true
+  become: "{{ become_for_target_user }}"
   become_user: "{{ target_user }}"
   ignore_errors: true
   when: install_mode == "live"
@@ -78,7 +78,7 @@
     owner: "{{ target_user }}"
     group: "{{ target_user }}"
     mode: '0640'
-  become: true
+  become: "{{ become_for_target_user }}"
   notify: Restart odio-api
 
 - name: Deploy odio-api systemd reference (conf.d/.default)
@@ -88,7 +88,7 @@
     owner: "{{ target_user }}"
     group: "{{ target_user }}"
     mode: '0640'
-  become: true
+  become: "{{ become_for_target_user }}"
 
 - name: Backup odio-api config after changes
   ansible.builtin.include_tasks: "../../../tasks/backup_conf_after.yml"
