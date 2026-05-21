@@ -14,7 +14,7 @@
     owner: "{{ target_user }}"
     group: "{{ target_user }}"
     mode: '0700'
-  become: true
+  become: "{{ become_for_target_user }}"
 
 - name: Deploy odio custom_css
   ansible.builtin.copy:
@@ -23,7 +23,7 @@
     owner: "{{ target_user }}"
     group: "{{ target_user }}"
     mode: '0600'
-  become: true
+  become: "{{ become_for_target_user }}"
   notify: Restart mympd
 
 - name: Disable mympd ssl
@@ -33,7 +33,7 @@
     owner: "{{ target_user }}"
     group: "{{ target_user }}"
     mode: '0600'
-  become: true
+  become: "{{ become_for_target_user }}"
   notify: Restart mympd
 
 - name: Create mympd state directory
@@ -43,34 +43,16 @@
     owner: "{{ target_user }}"
     group: "{{ target_user }}"
     mode: '0700'
-  become: true
+  become: "{{ become_for_target_user }}"
 
-# myMPD autoconfigures its MPD connection by probing ${XDG_RUNTIME_DIR}/mpd/socket
-# (the standard user socket now created by the mpd.socket unit). Clear any stale
-# host/port left by older installs that pinned the legacy /run/user/UID/mpd.socket
-# path, so autoconf re-runs on next start. myMPD must be stopped first — it
-# rewrites state/ on shutdown, so a plain restart would just re-pin the old
-# value. Only act when a legacy pin is actually present.
-- name: Check for stale mympd MPD host pin
-  ansible.builtin.stat:
-    path: "/home/{{ target_user }}/.config/mympd/state/mpd_host"
-  register: mpd_mympd_stale_host
-  become: true
-
-- name: Stop mympd before clearing stale MPD pin
-  ansible.builtin.include_tasks: "../../../tasks/systemd_stop_user.yml"
-  vars:
-    service_name: mympd.service
-  when: mpd_mympd_stale_host.stat.exists
-
-- name: Remove stale mympd MPD host/port
-  ansible.builtin.file:
-    path: "/home/{{ target_user }}/.config/mympd/state/{{ item }}"
-    state: absent
-  become: true
-  loop:
-    - mpd_host
-    - mpd_port
+- name: Configure mympd MPD host (user socket)
+  ansible.builtin.copy:
+    content: "{{ mpd_socket_path }}"
+    dest: "/home/{{ target_user }}/.config/mympd/state/mpd_host"
+    owner: "{{ target_user }}"
+    group: "{{ target_user }}"
+    mode: '0600'
+  become: "{{ become_for_target_user }}"
   notify: Restart mympd
 
 - name: Configure mympd http port
@@ -80,7 +62,7 @@
     owner: "{{ target_user }}"
     group: "{{ target_user }}"
     mode: '0600'
-  become: true
+  become: "{{ become_for_target_user }}"
   notify: Restart mympd
 
 - name: Enable user mympd service

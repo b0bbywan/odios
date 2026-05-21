@@ -5,7 +5,7 @@
   ansible.builtin.file:
     path: "/home/{{ target_user }}/.local/bin/{{ item }}"
     state: absent
-  become: true
+  become: "{{ become_for_target_user }}"
   loop:
     - odio-check-upgrade
     - odio-upgrade
@@ -15,7 +15,7 @@
   ansible.builtin.file:
     path: "/home/{{ target_user }}/.config/systemd/user/{{ item }}"
     state: absent
-  become: true
+  become: "{{ become_for_target_user }}"
   loop:
     - odio-check-upgrade.service
     - odio-check-upgrade.timer

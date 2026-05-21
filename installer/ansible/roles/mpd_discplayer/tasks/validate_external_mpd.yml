@@ -9,6 +9,7 @@
       ansible.builtin.stat:
         path: "/home/{{ target_user }}/.config/mpd/mpd.conf"
       register: mpd_discplayer_conf_user
+      become: "{{ become_for_target_user }}"
 
     - name: Locate MPD config file (system)
       ansible.builtin.stat:
@@ -39,7 +40,7 @@
   ansible.builtin.slurp:
     src: "{{ mpd_discplayer_conf_path }}"
   register: mpd_discplayer_conf_raw
-  become: true
+  become: "{{ become_for_target_user }}"
 
 - name: Set MPD config content fact
   ansible.builtin.set_fact:

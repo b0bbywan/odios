@@ -16,6 +16,12 @@
         msg: "target_user must not be root"
       when: target_user == "root"
 
+    # Computed early so pre_tasks (remote_tmp) and every role can gate become
+    # on it. False when the invoker already is target_user — no become needed.
+    - name: Detect become requirement for target user
+      ansible.builtin.set_fact:
+        become_for_target_user: "{{ target_user != ansible_user_id }}"
+
     - name: Ensure dbus running
       ansible.builtin.systemd:
         name: dbus.service
@@ -44,6 +50,7 @@
         group: "{{ target_user }}"
         mode: '0700'
       become: true
+      when: become_for_target_user
 
     - name: Get target user UID
       ansible.builtin.command:
@@ -108,6 +115,7 @@
         path: "/home/{{ target_user }}/.ansible/tmp"
         state: absent
       become: true
+      when: become_for_target_user
 
     - name: Display installation summary
       ansible.builtin.debug:

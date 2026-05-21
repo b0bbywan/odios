@@ -6,7 +6,7 @@
     owner: "{{ target_user }}"
     group: "{{ target_user }}"
     mode: '0755'
-  become: true
+  become: "{{ become_for_target_user }}"
 
 - name: Install odio-motd script
   ansible.builtin.copy:
@@ -15,7 +15,7 @@
     owner: "{{ target_user }}"
     group: "{{ target_user }}"
     mode: '0755'
-  become: true
+  become: "{{ become_for_target_user }}"
 
 - name: Hook odio-motd into ~/.profile
   ansible.builtin.blockinfile:
@@ -29,7 +29,7 @@
       case $- in
           *i*) [ -x "$HOME/.local/bin/odio-motd" ] && "$HOME/.local/bin/odio-motd" ;;
       esac
-  become: true
+  become: "{{ become_for_target_user }}"
 
 - name: Suppress system motd for odio user
   ansible.builtin.file:
@@ -40,4 +40,4 @@
     mode: '0644'
     modification_time: preserve
     access_time: preserve
-  become: true
+  become: "{{ become_for_target_user }}"

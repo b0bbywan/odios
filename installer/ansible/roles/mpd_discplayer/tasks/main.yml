@@ -54,7 +54,7 @@
         plugin  "cdio_paranoia"
         speed "12"
       }
-  become: true
+  become: "{{ become_for_target_user }}"
   become_user: "{{ target_user }}"
   notify: Restart mpd
 
@@ -69,7 +69,7 @@
         enabled "true"
         as_directory "true"
       }
-  become: true
+  become: "{{ become_for_target_user }}"
   become_user: "{{ target_user }}"
   notify: Restart mpd
 
@@ -82,7 +82,7 @@
       neighbors {
         plugin "udisks"
       }
-  become: true
+  become: "{{ become_for_target_user }}"
   become_user: "{{ target_user }}"
   notify: Restart mpd
 
@@ -119,7 +119,7 @@
     owner: "{{ target_user }}"
     group: "{{ target_user }}"
     mode: '0700'
-  become: true
+  become: "{{ become_for_target_user }}"
 
 - name: Backup mpd-discplayer config before changes
   ansible.builtin.include_tasks: "../../../tasks/backup_conf_before.yml"
@@ -136,7 +136,7 @@
     owner: "{{ target_user }}"
     group: "{{ target_user }}"
     mode: '0644'
-  become: true
+  become: "{{ become_for_target_user }}"
   notify: Restart mpd-discplayer
 
 - name: Backup mpd-discplayer config after changes

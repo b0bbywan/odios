@@ -33,7 +33,7 @@
     owner: "{{ target_user }}"
     group: "{{ target_user }}"
     mode: '0755'
-  become: true
+  become: "{{ become_for_target_user }}"
 
 - name: Copy upmpdcli system config to user directory
   ansible.builtin.copy:
@@ -44,7 +44,7 @@
     mode: '0600'
     remote_src: true
     force: false
-  become: true
+  become: "{{ become_for_target_user }}"
 
 - name: Backup upmpdcli config before changes
   ansible.builtin.include_tasks: "../../../tasks/backup_conf_before.yml"
@@ -59,7 +59,7 @@
     path: "/home/{{ target_user }}/.config/upmpdcli/upmpdcli.conf"
     regexp: '^#?avfriendlyname\s*='
     line: "avfriendlyname = UpMpd/AV-{{ target_hostname }}"
-  become: true
+  become: "{{ become_for_target_user }}"
   become_user: "{{ target_user }}"
   notify: Restart upmpdcli
 
@@ -68,7 +68,7 @@
     path: "/home/{{ target_user }}/.config/upmpdcli/upmpdcli.conf"
     regexp: '^#?upnpav\s*='
     line: "upnpav = 1"
-  become: true
+  become: "{{ become_for_target_user }}"
   become_user: "{{ target_user }}"
   notify: Restart upmpdcli
 
@@ -77,7 +77,7 @@
     path: "/home/{{ target_user }}/.config/upmpdcli/upmpdcli.conf"
     regexp: '^#?openhome\s*='
     line: "openhome = 1"
-  become: true
+  become: "{{ become_for_target_user }}"
   become_user: "{{ target_user }}"
   notify: Restart upmpdcli
 
@@ -86,7 +86,7 @@
     path: "/home/{{ target_user }}/.config/upmpdcli/upmpdcli.conf"
     regexp: '^#?mpdhost\s*='
     line: "mpdhost = localhost"
-  become: true
+  become: "{{ become_for_target_user }}"
   become_user: "{{ target_user }}"
   notify: Restart upmpdcli
 
@@ -95,7 +95,7 @@
     path: "/home/{{ target_user }}/.config/upmpdcli/upmpdcli.conf"
     regexp: '^#?mpdport\s*='
     line: "mpdport = 6600"
-  become: true
+  become: "{{ become_for_target_user }}"
   become_user: "{{ target_user }}"
   notify: Restart upmpdcli
 

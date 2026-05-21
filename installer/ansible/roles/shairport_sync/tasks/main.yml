@@ -14,7 +14,7 @@
     owner: "{{ target_user }}"
     group: "{{ target_user }}"
     mode: '0755'
-  become: true
+  become: "{{ become_for_target_user }}"
 
 - name: Copy shairport-sync system config to user directory
   ansible.builtin.copy:
@@ -25,7 +25,7 @@
     mode: '0600'
     remote_src: true
     force: false
-  become: true
+  become: "{{ become_for_target_user }}"
 
 - name: Backup shairport-sync config before changes
   ansible.builtin.include_tasks: "../../../tasks/backup_conf_before.yml"
@@ -40,7 +40,7 @@
     path: "/home/{{ target_user }}/.config/shairport-sync/shairport-sync.conf"
     regexp: '^\s*//\s*name\s*=\s*"%H"'
     line: '	name = "%h";'
-  become: true
+  become: "{{ become_for_target_user }}"
   become_user: "{{ target_user }}"
   notify: Restart shairport-sync
 
@@ -49,7 +49,7 @@
     path: "/home/{{ target_user }}/.config/shairport-sync/shairport-sync.conf"
     regexp: '^\s*//?\s*output_backend\s*='
     line: '	output_backend = "pa";'
-  become: true
+  become: "{{ become_for_target_user }}"
   become_user: "{{ target_user }}"
   notify: Restart shairport-sync
 
@@ -58,7 +58,7 @@
     path: "/home/{{ target_user }}/.config/shairport-sync/shairport-sync.conf"
     regexp: '^\s*//?\s*mdns_backend\s*='
     line: '	mdns_backend = "avahi";'
-  become: true
+  become: "{{ become_for_target_user }}"
   become_user: "{{ target_user }}"
   notify: Restart shairport-sync
 
@@ -67,7 +67,7 @@
     path: "/home/{{ target_user }}/.config/shairport-sync/shairport-sync.conf"
     regexp: '^\s*server\s*=\s*"127\.0\.0\.1"'
     state: absent
-  become: true
+  become: "{{ become_for_target_user }}"
   become_user: "{{ target_user }}"
   notify: Restart shairport-sync
 
@@ -76,7 +76,7 @@
     path: "/home/{{ target_user }}/.config/shairport-sync/shairport-sync.conf"
     regexp: '^\s*//\s*application_name\s*=.*"Applications" tab'
     line: '	application_name = "Shairport Sync";'
-  become: true
+  become: "{{ become_for_target_user }}"
   become_user: "{{ target_user }}"
   notify: Restart shairport-sync
 

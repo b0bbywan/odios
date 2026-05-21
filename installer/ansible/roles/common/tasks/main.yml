@@ -35,14 +35,14 @@
   become: true
 
 # acl is required by ansible-core's `become_user` when the invoking user, root,
-# and target_user are three different identities — ansible drops tmp files via
-# setfacl, and falls back to the BSD `chmod +a` syntax (invalid on Linux) when
-# the package is absent.
+# and target_user are three different identities: ansible drops tmp files via
+# setfacl.
 - name: Install acl (needed by become_user)
   ansible.builtin.apt:
     name: acl
     state: present
   become: true
+  when: target_user != ansible_user_id
 
 - name: Ensure required groups exist
   ansible.builtin.group:
@@ -91,7 +91,7 @@
     owner: "{{ target_user }}"
     group: "{{ target_user }}"
     mode: '0755'
-  become: true
+  become: "{{ become_for_target_user }}"
   loop:
     - "/home/{{ target_user }}/.config/systemd/user"
     - "/home/{{ target_user }}/.config/systemd/user/default.target.wants"
