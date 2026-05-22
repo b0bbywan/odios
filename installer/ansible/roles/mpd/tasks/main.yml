@@ -133,6 +133,17 @@
   become_user: "{{ target_user }}"
   notify: Restart mpd
 
+# Optional user-local overrides (~/.config/mpd/mpd_local.conf), parsed last.
+- name: MPD config - local override include
+  ansible.builtin.blockinfile:
+    path: "/home/{{ target_user }}/.config/mpd/mpd.conf"
+    marker: "# {mark} ANSIBLE MANAGED BLOCK - local include"
+    block: |
+      include_optional "mpd_local.conf"
+  become: "{{ become_for_target_user }}"
+  become_user: "{{ target_user }}"
+  notify: Restart mpd
+
 - name: Backup MPD config after changes
   ansible.builtin.include_tasks: "../../../tasks/backup_conf_after.yml"
   vars:
