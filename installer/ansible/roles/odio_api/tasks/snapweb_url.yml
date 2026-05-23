@@ -1,0 +1,32 @@
+---
+- name: Read existing odio-api config
+  ansible.builtin.slurp:
+    src: "/home/{{ target_user }}/.config/odio-api/config.yaml"
+  register: odio_api_existing_cfg
+  failed_when: false
+  become: "{{ become_for_target_user }}"
+
+- name: Reuse existing snapweb URL
+  ansible.builtin.set_fact:
+    odio_api_snapweb_url: "{{ _snapclient_entry.url }}"
+  vars:
+    _cfg: "{{ odio_api_existing_cfg.content | default('') | b64decode | from_yaml | default({}, true) }}"
+    _snapclient_entry: "{{ (_cfg.systemd.user | default([]) | selectattr('name', 'equalto', 'snapclient.service') | list | first) | default({}) }}"
+  when: _snapclient_entry.url is defined
+
+- name: Discover snapweb URL via snapclientmpris
+  ansible.builtin.command: snapclientmpris --discover
+  register: odio_api_snapclient_discover
+  changed_when: false
+  become: "{{ become_for_target_user }}"
+  become_user: "{{ target_user }}"
+  ignore_errors: true
+  when: odio_api_snapweb_url is not defined
+
+- name: Set snapweb URL fact
+  ansible.builtin.set_fact:
+    odio_api_snapweb_url: "{{ odio_api_snapclient_discover.stdout | regex_search('snapweb:\\s*(\\S+)', '\\1') | first }}"
+  when:
+    - odio_api_snapweb_url is not defined
+    - odio_api_snapclient_discover is succeeded
+    - odio_api_snapclient_discover.stdout is search('snapweb:\\s*\\S+')

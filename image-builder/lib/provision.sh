@@ -76,6 +76,13 @@ PROVISION
     chmod 755 "$rootfs/usr/local/bin/odios-firstboot.sh"
     cp "$SCRIPT_DIR/files/vendor-data" "$rootfs/boot/firmware/vendor-data"
 
+    log_info "Installing network-dependent firstboot service..."
+    cp "$SCRIPT_DIR/files/odios-firstboot-network.sh" "$rootfs/usr/local/bin/odios-firstboot-network.sh"
+    chmod 755 "$rootfs/usr/local/bin/odios-firstboot-network.sh"
+    cp "$SCRIPT_DIR/files/odios-firstboot-network.service" \
+        "$rootfs/etc/systemd/system/odios-firstboot-network.service"
+    chroot "$rootfs" systemctl enable odios-firstboot-network.service
+
     log_info "Purging unnecessary packages..."
     local purge_list
     purge_list=$(chroot "$rootfs" dpkg -l "${PURGE_PACKAGES[@]}" 2>/dev/null \

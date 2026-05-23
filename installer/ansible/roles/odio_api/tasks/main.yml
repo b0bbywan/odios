@@ -63,6 +63,12 @@
     odio_api_power_can_poweroff: "{{ '\"yes\"' in odio_api_can_poweroff.stdout }}"
   when: install_mode == "live"
 
+- name: Resolve snapweb URL for systemd block
+  ansible.builtin.include_tasks: snapweb_url.yml
+  when:
+    - install_mode == "live"
+    - install_snapclient
+
 - name: Deploy odio-api configuration
   ansible.builtin.template:
     src: config.yaml.j2
