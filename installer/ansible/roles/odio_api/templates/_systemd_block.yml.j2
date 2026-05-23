@@ -22,9 +22,13 @@ systemd:
 {% endif %}
 {% if install_snapclient %}
     - name: snapclient.service
+{% if odio_api_snapweb_url is defined %}
+      url: "{{ odio_api_snapweb_url }}"
+{% endif %}
 {% endif %}
 {% if install_spotifyd %}
     - name: spotifyd.service
+      url: "https://open.spotify.com"
 {% endif %}
 {% if install_upmpdcli %}
     - name: upmpdcli.service

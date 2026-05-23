@@ -1,0 +1,15 @@
+[Unit]
+Description=odios first-boot network-dependent fixups
+After=network-online.target avahi-daemon.service
+Wants=network-online.target avahi-daemon.service
+ConditionPathExists=!/var/lib/odios/firstboot-network-done
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/local/bin/odios-firstboot-network.sh
+StandardOutput=append:/var/log/odios-firstboot-network.log
+StandardError=append:/var/log/odios-firstboot-network.log
+
+[Install]
+WantedBy=multi-user.target
