@@ -95,6 +95,8 @@
   loop:
     - "/home/{{ target_user }}/.config/systemd/user"
     - "/home/{{ target_user }}/.config/systemd/user/default.target.wants"
+    - "/home/{{ target_user }}/.config/systemd/user/sockets.target.wants"
+    - "/home/{{ target_user }}/.config/systemd/user/timers.target.wants"
 
 - name: Check linger status
   ansible.builtin.stat:

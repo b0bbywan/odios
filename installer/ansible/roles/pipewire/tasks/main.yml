@@ -67,10 +67,13 @@
 - name: Enable user PipeWire services
   ansible.builtin.include_tasks: "../../../tasks/systemd_enable_user.yml"
   vars:
-    service_name: "{{ item }}"
+    service_name: "{{ item.name }}"
+    wanted_by: "{{ item.wanted_by | default('default.target') }}"
   loop:
-    - pipewire.socket
-    - pipewire.service
-    - pipewire-pulse.socket
-    - pipewire-pulse.service
-    - wireplumber.service
+    # Sockets ship with [Install] WantedBy=sockets.target — image-mode would
+    # otherwise symlink into default.target.wants/ (cf systemd_enable_user.yml).
+    - { name: pipewire.socket, wanted_by: sockets.target }
+    - { name: pipewire.service }
+    - { name: pipewire-pulse.socket, wanted_by: sockets.target }
+    - { name: pipewire-pulse.service }
+    - { name: wireplumber.service }
