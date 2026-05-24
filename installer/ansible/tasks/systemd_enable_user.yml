@@ -4,6 +4,10 @@
 # Variables:
 #   service_name: name of the service (e.g. pulseaudio.service)
 #   service_unit_path: (optional) override, defaults to /usr/lib/systemd/user/{{ service_name }}
+#   wanted_by: (optional) target the unit is wanted by, defaults to default.target.
+#              Must match the unit file's [Install] WantedBy= (e.g. mpd.socket →
+#              sockets.target) — image-mode otherwise creates a non-canonical
+#              symlink that live `systemctl --user disable` won't remove.
 
 - name: Enable user service - live
   ansible.builtin.systemd:
@@ -20,7 +24,7 @@
 - name: Enable user service - image build
   ansible.builtin.file:
     src: "{{ service_unit_path | default('/usr/lib/systemd/user/' + service_name) }}"
-    dest: "/home/{{ target_user }}/.config/systemd/user/default.target.wants/{{ service_name }}"
+    dest: "/home/{{ target_user }}/.config/systemd/user/{{ wanted_by | default('default.target') }}.wants/{{ service_name }}"
     state: link
     owner: "{{ target_user }}"
     group: "{{ target_user }}"
