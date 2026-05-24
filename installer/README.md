@@ -330,6 +330,9 @@ Tests `install.sh` from a GitHub release inside a systemd container:
 # As root with TARGET_USER=odio — system installation case
 ./tests/test.sh install-root pr-5
 
+# As bob (NOPASSWD sudoer) with TARGET_USER=odio — second-admin case
+./tests/test.sh install-as-other-user pr-5
+
 # Against the latest stable release
 ./tests/test.sh install latest
 ```
