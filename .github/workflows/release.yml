@@ -133,7 +133,7 @@ jobs:
           name: manifest
 
       - name: Create GitHub Release
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           # Stay out of /releases/latest until publish-manifest has uploaded
           # the per-arch images + rpi-imager-manifest (~30 min). odio.love
@@ -170,7 +170,7 @@ jobs:
           name: manifest
 
       - name: Create GitHub Pre-Release
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           tag_name: pr-${{ github.event.pull_request.number }}
           name: "PR #${{ github.event.pull_request.number }} — ${{ needs.build.outputs.version }}"
@@ -540,7 +540,7 @@ jobs:
           merge-multiple: true
 
       - name: Upload images and per-arch manifests to release
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           tag_name: ${{ steps.tag.outputs.value }}
           files: |
@@ -581,7 +581,7 @@ jobs:
         run: ./scripts/build-rpi-manifests.py odio.rpi-imager-manifest entries/manifest-*/*.json
 
       - name: Upload combined manifest to release
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           tag_name: ${{ steps.tag.outputs.value }}
           files: odio.rpi-imager-manifest
