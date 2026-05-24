@@ -13,6 +13,7 @@ set -euo pipefail
 base="${1:-$(git describe --tags --abbrev=0 --match='[0-9][0-9][0-9][0-9].*' HEAD)}"
 roles_dir="installer/ansible/roles"
 drift=()
+bumped=()
 
 # A role is in drift when its files differ from <base> but its declared
 # version still matches what it was at <base> (or matches <base> itself
@@ -38,6 +39,8 @@ for d in "$roles_dir"/*/; do
     fi
   elif [[ "$cur" == "$old" ]]; then
     drift+=("$role (still $cur, but files changed since $base)")
+  else
+    bumped+=("$role:$cur")
   fi
 done
 
@@ -45,6 +48,22 @@ if [[ ${#drift[@]} -gt 0 ]]; then
   echo "Roles modified without bumping <role>_version in vars/main.yml:" >&2
   printf '  - %s\n' "${drift[@]}" >&2
   exit 1
+fi
+
+# All bumped roles in this branch must share the same target version
+# (the version of the release we're cutting). Pick the max as the target
+# and flag any role bumped to a lower version.
+if [[ ${#bumped[@]} -gt 0 ]]; then
+  target=$(printf '%s\n' "${bumped[@]}" | cut -d: -f2 | sort -V | tail -1)
+  misaligned=()
+  for entry in "${bumped[@]}"; do
+    [[ "${entry#*:}" == "$target" ]] || misaligned+=("${entry%:*} (${entry#*:}, expected $target)")
+  done
+  if [[ ${#misaligned[@]} -gt 0 ]]; then
+    echo "Roles bumped to a version below the branch target ($target):" >&2
+    printf '  - %s\n' "${misaligned[@]}" >&2
+    exit 1
+  fi
 fi
 
 echo "✓ All modified roles have bumped versions"
