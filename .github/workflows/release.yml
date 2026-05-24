@@ -231,16 +231,24 @@ jobs:
   test-playbook:
     needs: build-test-image
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - action: test
+            rerun: rerun
+          - action: test-as-other-user
+            rerun: rerun-as-other-user
     steps:
       - uses: actions/checkout@v5
 
-      - name: Run playbook test
-        run: ./tests/test.sh
+      - name: Run playbook (${{ matrix.action }})
+        run: ./tests/test.sh ${{ matrix.action }}
         env:
           REMOTE_IMAGE: ${{ needs.build-test-image.outputs.image }}
 
       - name: Re-run playbook (idempotence)
-        run: ./tests/test.sh rerun
+        run: ./tests/test.sh ${{ matrix.rerun }}
 
       - name: Clean
         if: always()
@@ -291,7 +299,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        mode: [install, install-root]
+        mode: [install, install-root, install-as-other-user]
     steps:
       - uses: actions/checkout@v5
 

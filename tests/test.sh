@@ -110,6 +110,18 @@ run_odio_upgrade_embedded() {
         /usr/local/bin/odio-upgrade --version "${tag}" --force
 }
 
+# Create a non-target_user with NOPASSWD sudo. Shared by the install/
+# upgrade variants that exercise the path where the invoker is not the
+# target_user.
+setup_other_user() {
+    local user="$1"
+    echo "=== Setting up ${user} (NOPASSWD sudo) ==="
+    docker exec "${CONTAINER_NAME}" bash -c "
+        useradd -m -s /bin/bash ${user} &&
+        echo '${user} ALL=(ALL) NOPASSWD:ALL' > /etc/sudoers.d/${user}
+    "
+}
+
 # Validates that a non-target_user member of the `users` + `odio` groups
 # can trigger an upgrade by running odio-upgrade directly (no sudo prefix).
 # The odio group grants read on /var/lib/odio/state.json, install.sh's
@@ -123,12 +135,11 @@ run_odio_upgrade_fetch_as_other_user() {
     local url
     url=$(odio_upgrade_url "$tag")
 
-    echo "=== Setting up ${user} (users + odio groups, NOPASSWD sudo) ==="
+    setup_other_user "${user}"
+    echo "=== Adding ${user} to users + odio groups ==="
     docker exec "${CONTAINER_NAME}" bash -c "
         groupadd -f odio &&
-        useradd -m -s /bin/bash ${user} &&
-        usermod -aG users,odio ${user} &&
-        echo '${user} ALL=(ALL) NOPASSWD:ALL' > /etc/sudoers.d/${user}
+        usermod -aG users,odio ${user}
     "
 
     echo "=== curl odio-upgrade (${url}) → run as ${user} (target=${tag}, mode=${install_mode}) ==="
@@ -137,6 +148,17 @@ run_odio_upgrade_fetch_as_other_user() {
         chmod +x /tmp/odio-upgrade &&
         /tmp/odio-upgrade --version '${tag}' --force
     "
+}
+
+# Validates that a non-target_user with NOPASSWD sudo can run install.sh
+# for TARGET_USER=odio. install.sh's internal `sudo apt-get` and the
+# playbook's `become` both rely on the invoker's sudo; the playbook
+# creates the odio user/group itself.
+run_install_as_other_user() {
+    local tag="$1"
+    local user="bob"
+    setup_other_user "${user}"
+    run_install "${tag}" "${user}" image "${@:2}"
 }
 
 # Real-release path: odio.love/manifest.json drives the target via
@@ -204,9 +226,11 @@ while [[ "${1:-}" == --* ]]; do
         echo "  shell              - Shell into running container"
         echo "  rerun              - Re-run playbook without restart"
         echo "  clean              - Remove container"
-        echo "  install [TAG]      - Test install.sh as user odio (sudo)"
-        echo "  install-root [TAG] - Test install.sh as root, TARGET_USER=odio"
-        echo "                       TAG examples: latest, pr-2, 2026.3.0"
+        echo "  install [TAG]               - Test install.sh as user odio (sudo)"
+        echo "  install-root [TAG]          - Test install.sh as root, TARGET_USER=odio"
+        echo "  install-as-other-user [TAG] - Test install.sh as bob (NOPASSWD sudoer), TARGET_USER=odio"
+        echo "  test-as-other-user          - Run playbook directly as bob (live mode) → exercises become_for_target_user paths"
+        echo "                                TAG examples: latest, pr-2, 2026.3.0"
         echo "  upgrade B T        - Upgrade from baseline tag B to target tag T (INSTALL_MODE=live)"
         echo "  upgrade-from-image-fetch T     - Upgrade to T on REMOTE_IMAGE — curls odio-upgrade from the T release first"
         echo "  upgrade-from-image-embedded T  - Same, but uses the baseline's /usr/local/bin/odio-upgrade"
@@ -219,7 +243,7 @@ while [[ "${1:-}" == --* ]]; do
 done
 
 case "${1:-}" in
-  shell|rerun|clean|install|install-root|upgrade|upgrade-from-image-fetch|upgrade-from-image-embedded|upgrade-from-image-systemctl|upgrade-from-image-fetch-as-other-user)
+  shell|rerun|rerun-as-other-user|clean|install|install-root|install-as-other-user|test|test-as-other-user|upgrade|upgrade-from-image-fetch|upgrade-from-image-embedded|upgrade-from-image-systemctl|upgrade-from-image-fetch-as-other-user)
     ACTION="$1"
     shift
     ;;
@@ -278,6 +302,16 @@ case "${ACTION}" in
         "$@"
     ;;
 
+  rerun-as-other-user)
+    echo "=== Re-running playbook as bob ==="
+    docker exec -u bob "${CONTAINER_NAME}" \
+      ansible-playbook -i inventory/localhost.yml /opt/odios/ansible/playbook.yml \
+        -e target_user=odio \
+        -e install_mode=live \
+        -e "mpd_discplayer_gnu_email=test@example.com" \
+        "$@"
+    ;;
+
   clean)
     docker rm -f "${CONTAINER_NAME}" 2>/dev/null || true
     echo "Cleaned."
@@ -296,6 +330,31 @@ case "${ACTION}" in
   install-root)
     start_container
     run_install "${1:-latest}"
+    echo "=== Done ==="
+    ;;
+
+  install-as-other-user)
+    BASELINE="${1:-latest}"
+    shift || true
+    start_container
+    run_install_as_other_user "${BASELINE}" "$@"
+    echo "=== Done ==="
+    ;;
+
+  test-as-other-user)
+    start_container
+    install_ansible
+    setup_other_user bob
+
+    echo "=== Running playbook as bob (target_user=odio, install_mode=live) ==="
+    docker exec -u bob "${CONTAINER_NAME}" \
+      ansible-playbook -v -i inventory/localhost.yml \
+        /opt/odios/ansible/playbook.yml \
+        -e target_user=odio \
+        -e install_mode=live \
+        -e "mpd_discplayer_gnu_email=test@example.com" \
+        "$@"
+
     echo "=== Done ==="
     ;;
 
