@@ -68,6 +68,9 @@ PYTHONPATH="vendor" python3 vendor/bin/ansible-playbook \\
     --connection=local
 PROVISION
 
+    log_info "Installing extra packages: ${INSTALL_PACKAGES[*]}"
+    chroot "$rootfs" apt-get install -y --no-install-recommends "${INSTALL_PACKAGES[@]}"
+
     log_info "Installing firstboot script and vendor-data..."
     cp "$SCRIPT_DIR/files/odios-firstboot.sh" "$rootfs/usr/local/bin/odios-firstboot.sh"
     chmod 755 "$rootfs/usr/local/bin/odios-firstboot.sh"

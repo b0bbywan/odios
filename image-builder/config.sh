@@ -14,6 +14,14 @@ export ODIOS_USER="odio"
 export XZ_COMPRESSION_LEVEL=9
 export XZ_THREADS=0                # 0 = use all available cores
 
+# Extra packages to install on the image (beyond what Ansible deploys).
+# Currently: yq (Python kislyuk, jq-syntax) — used by odios-firstboot-network.sh
+# to inject the discovered snapweb URL into odio-api's config.yaml.
+# shellcheck disable=SC2034  # sourced by build.sh
+INSTALL_PACKAGES=(
+    yq
+)
+
 # Packages to purge from the base image (not needed for headless audio)
 # shellcheck disable=SC2034  # sourced by build.sh
 PURGE_PACKAGES=(
