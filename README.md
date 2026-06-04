@@ -40,7 +40,7 @@
 
 # Open-source audiophile distribution for Debian/Ubuntu and Raspberry Pi with native Home Assistant integration.
 
-odios turns a €35 Raspberry Pi into what commercial streamers sell for €300–500: Bluetooth A2DP, AirPlay, Snapcast multi-room, UPnP/DLNA, CD playback with metadata — all in one box, controlled from a web app, no account or subscription required. Other PCs running PulseAudio or PipeWire can also stream directly to it over the network, making it a true whole-home audio sink.
+odios turns a €35 Raspberry Pi into what commercial streamers sell for €300–500: Bluetooth A2DP (in & out), AirPlay, Snapcast multi-room, UPnP/DLNA, CD playback with metadata — all in one box, controlled from a web app, no account or subscription required. Other PCs running PulseAudio or PipeWire can also stream directly to it over the network, making it a true whole-home audio sink.
 
 Built on modern foundations: everything runs as unprivileged systemd user services (no root daemons), orchestrated through a unified REST API written in Go. Battle-tested on a Raspberry Pi B+ (armv6l) for over 6 years without reinstall.
 
@@ -83,8 +83,8 @@ Most service run as **systemd user services** — no root daemons, full per-user
 | Shairport Sync | AirPlay receiver | user |
 | [Spotifyd](https://github.com/Spotifyd/spotifyd) | Spotify Connect receiver | user |
 | Snapcast | Multi-room audio client | user |
-| upmpdcli | UPnP/DLNA renderer | system |
-| Bluetooth | A2DP sink with automatic pairing | system |
+| upmpdcli | UPnP/DLNA renderer | user |
+| Bluetooth | A2DP sink with automatic pairing, plus audio output to Bluetooth speakers/headphones | system |
 
 ## Installation
 
@@ -144,6 +144,7 @@ systemctl --user start odio-upgrade   # same thing, via the installed user unit
 | **Minimum hardware** | **Raspberry Pi B** (armv6l, 2012) | Raspberry Pi 3 |
 | **Music library management** | ✅ Via myMPD (web UI) | ✅ Built-in library browser |
 | **Bluetooth A2DP** | ✅ Included | 💰 Premium only |
+| **Bluetooth output (speakers/headphones)** | ✅ Included | ⚠️ Community plugin only |
 | **AirPlay** | ✅ Included | ✅ Free plugin |
 | **Spotify Connect** | ✅ Included | ✅ Free plugin |
 | **Qobuz** | ✅ Included (via upmpdcli) | 💰 Premium only |
