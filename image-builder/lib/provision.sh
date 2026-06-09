@@ -61,7 +61,10 @@ mkdir -p /tmp/odios
 tar xzf /tmp/odios.tar.gz -C /tmp/odios
 cd /tmp/odios
 
-PYTHONPATH="vendor" python3 vendor/bin/ansible-playbook \\
+PYTHONPATH="vendor" \\
+ANSIBLE_STRATEGY=mitogen_linear \\
+ANSIBLE_STRATEGY_PLUGINS="vendor/ansible_mitogen/plugins/strategy" \\
+python3 vendor/bin/ansible-playbook \\
     -i ansible/inventory/localhost.yml \\
     ansible/playbook.yml \\
     ${extra_vars_flags} \\

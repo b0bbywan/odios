@@ -303,6 +303,12 @@ download_archive() {
     else
         echo -e "${GREEN}✓ Archive extracted${NC}"
     fi
+
+    # Mitogen become_user does os.chdir into the playbook basedir; let
+    # target_user traverse the invoker's 0700 tempdir when they differ.
+    if [[ "${TARGET_USER}" != "$(id -un)" ]]; then
+        chmod o+x "${WORK_DIR}" "${WORK_DIR}/ansible"
+    fi
     echo ""
 }
 
@@ -364,6 +370,8 @@ EOF
 
     # shellcheck disable=SC2086
     PYTHONPATH="${WORK_DIR}/vendor" \
+    ANSIBLE_STRATEGY=mitogen_linear \
+    ANSIBLE_STRATEGY_PLUGINS="${WORK_DIR}/vendor/ansible_mitogen/plugins/strategy" \
         python3 "${WORK_DIR}/vendor/bin/ansible-playbook" \
         -i "${WORK_DIR}/ansible/inventory/localhost.yml" \
         "${WORK_DIR}/ansible/playbook.yml" \

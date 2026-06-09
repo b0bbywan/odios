@@ -16,6 +16,8 @@ permissions:
 
 env:
   ANSIBLE_CORE_VERSION: '2.19.*'
+  # Vendored for the mitogen_linear strategy — speeds up playbook runs on armhf.
+  MITOGEN_VERSION: '0.3.49'
   ARCHIVE_PREFIX: odio
 
 jobs:
@@ -55,11 +57,13 @@ jobs:
           pip install \
             --target=staging/vendor \
             --no-compile \
-            "ansible-core==${{ env.ANSIBLE_CORE_VERSION }}"
+            "ansible-core==${{ env.ANSIBLE_CORE_VERSION }}" \
+            "mitogen==${{ env.MITOGEN_VERSION }}"
 
           # Collect licenses before stripping dist-info
           mkdir -p staging/licenses
           cp licences/ANSIBLE-LICENSE-GPLv3 staging/licenses/ANSIBLE-LICENSE-GPLv3
+          cp licences/MITOGEN-LICENSE-BSD3 staging/licenses/MITOGEN-LICENSE-BSD3
           cp LICENSE staging/licenses/ODIOS-LICENSE-BSD2
 
           # Remove packages with unavoidable native extensions — provided by the system at install time
@@ -69,6 +73,10 @@ jobs:
           find staging/vendor -name '*.so' -delete
           find staging/vendor -type d -name '__pycache__' -exec rm -rf {} + 2>/dev/null || true
           find staging/vendor -type d -name '*.dist-info' -exec rm -rf {} + 2>/dev/null || true
+
+          # Mitogen is pure Python — the strategy plugin must survive the strip
+          test -f staging/vendor/ansible_mitogen/plugins/strategy/mitogen_linear.py \
+            || { echo "::error::mitogen_linear strategy missing from vendor"; exit 1; }
 
           echo "Vendor size: $(du -sh staging/vendor | cut -f1)"
 
