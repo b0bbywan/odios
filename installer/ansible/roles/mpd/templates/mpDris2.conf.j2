@@ -1,5 +1,7 @@
 [Connection]
 host = {{ mpd_socket_path }}
 
-[Bling]
-notify = False
+[Cover]
+sources =  deezer, itunes, musicbrainz
+stream_sources = mympd, radiobrowser
+mympd_uri = http://localhost:{{ mpd_mympd_http_port }}
