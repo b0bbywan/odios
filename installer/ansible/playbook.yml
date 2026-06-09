@@ -2,6 +2,12 @@
 - name: Odio Streamer Installation
   hosts: localhost
 
+  # Skip the slow hardware fact probe (unused by odios); costly on armhf.
+  gather_subset:
+    - min
+    - network
+    - virtual
+
   vars_files:
     - group_vars/all.yml
 
