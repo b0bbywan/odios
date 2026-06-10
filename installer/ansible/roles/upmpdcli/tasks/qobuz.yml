@@ -5,3 +5,4 @@
     state: present
     install_recommends: false
   become: true
+  when: "'qobuz' not in odios_prior_features"
