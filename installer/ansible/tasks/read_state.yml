@@ -1,0 +1,55 @@
+---
+# Sets _odios_existing_state (reused by write_state.yml) and odios_prior_roles.
+- name: Read existing state.json (canonical /var/lib path)
+  ansible.builtin.slurp:
+    src: /var/lib/odio/state.json
+  register: _odios_existing_state_lib
+  become: true
+  failed_when: false
+
+- name: Read existing state.json (2b1-era /var/cache migration path)
+  ansible.builtin.slurp:
+    src: /var/cache/odio/state.json
+  register: _odios_existing_state_cache
+  become: true
+  failed_when: false
+  when: _odios_existing_state_lib.content is not defined
+
+- name: Read existing state.json (pre-2b1 per-user path)
+  ansible.builtin.slurp:
+    src: "/home/{{ target_user }}/.cache/odio/state.json"
+  register: _odios_existing_state_legacy
+  become: "{{ become_for_target_user }}"
+  failed_when: false
+  when:
+    - _odios_existing_state_lib.content is not defined
+    - _odios_existing_state_cache.content is not defined
+
+- name: Parse existing state
+  ansible.builtin.set_fact:
+    _odios_existing_state: >-
+      {{
+        (_odios_existing_state_lib.content | b64decode | from_json)
+        if _odios_existing_state_lib.content is defined
+        else (
+          (_odios_existing_state_cache.content | b64decode | from_json)
+          if (_odios_existing_state_cache.content | default('')) | length > 0
+          else (
+            (_odios_existing_state_legacy.content | b64decode | from_json)
+            if (_odios_existing_state_legacy.content | default('')) | length > 0
+            else {}
+          )
+        )
+      }}
+
+- name: List roles present in prior state (install-vs-upgrade gate)
+  ansible.builtin.set_fact:
+    odios_prior_roles: "{{ (_odios_existing_state.roles | default({})).keys() | list }}"
+
+- name: List features present in prior state (feature-vs-new gate)
+  ansible.builtin.set_fact:
+    odios_prior_features: "{{ _odios_existing_state.features | default([]) }}"
+
+- name: Prior role versions (introduced-in gate)
+  ansible.builtin.set_fact:
+    odios_prior_role_versions: "{{ _odios_existing_state.roles | default({}) }}"
