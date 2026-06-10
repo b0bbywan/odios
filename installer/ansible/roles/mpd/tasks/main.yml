@@ -7,6 +7,7 @@
     state: present
     install_recommends: false
   become: true
+  when: ansible_role_name not in odios_prior_roles
 
 - name: Install mpDris2 fork
   ansible.builtin.include_tasks: mpdris2.yml
@@ -22,27 +23,31 @@
   loop:
     - mpd.service
     - mpd.socket
+  when: ansible_role_name not in odios_prior_roles
 
-- name: Create MPD config directory
-  ansible.builtin.file:
-    path: "/home/{{ target_user }}/.config/mpd"
-    state: directory
-    owner: "{{ target_user }}"
-    group: "{{ target_user }}"
-    mode: '0700'
-  become: "{{ become_for_target_user }}"
+- name: MPD directories (first install)
+  when: ansible_role_name not in odios_prior_roles
+  block:
+    - name: Create MPD config directory
+      ansible.builtin.file:
+        path: "/home/{{ target_user }}/.config/mpd"
+        state: directory
+        owner: "{{ target_user }}"
+        group: "{{ target_user }}"
+        mode: '0700'
+      become: "{{ become_for_target_user }}"
 
-- name: Create MPD data directories
-  ansible.builtin.file:
-    path: "/home/{{ target_user }}/.local/share/mpd/{{ item }}"
-    state: directory
-    owner: "{{ target_user }}"
-    group: "{{ target_user }}"
-    mode: '0700'
-  become: "{{ become_for_target_user }}"
-  loop:
-    - playlists
-    - cache
+    - name: Create MPD data directories
+      ansible.builtin.file:
+        path: "/home/{{ target_user }}/.local/share/mpd/{{ item }}"
+        state: directory
+        owner: "{{ target_user }}"
+        group: "{{ target_user }}"
+        mode: '0700'
+      become: "{{ become_for_target_user }}"
+      loop:
+        - playlists
+        - cache
 
 - name: Backup MPD config before changes
   ansible.builtin.include_tasks: "../../../tasks/backup_conf_before.yml"
@@ -61,6 +66,7 @@
     mode: '0600'
     force: false
   become: "{{ become_for_target_user }}"
+  when: ansible_role_name not in odios_prior_roles
 
 - name: MPD config - paths
   ansible.builtin.blockinfile:
@@ -86,6 +92,13 @@
 # via socket activation, so no bind_to_address/port belongs in mpd.conf. Drop
 # the old managed network block from previously-installed configs to avoid a
 # double-bind ("address already in use") against the socket unit.
+- name: Determine if legacy MPD network block needs removal
+  ansible.builtin.set_fact:
+    mpd_drop_legacy_network: >-
+      {{ (ansible_role_name in odios_prior_roles)
+         and (odios_prior_role_versions[ansible_role_name] | default('0'))
+             is version('2026.5.0b2', '<', version_type='pep440') }}
+
 - name: MPD config - drop legacy network block
   ansible.builtin.blockinfile:
     path: "/home/{{ target_user }}/.config/mpd/mpd.conf"
@@ -94,6 +107,7 @@
   become: "{{ become_for_target_user }}"
   become_user: "{{ target_user }}"
   notify: Restart mpd
+  when: mpd_drop_legacy_network | bool
 
 - name: MPD config - zeroconf
   ansible.builtin.blockinfile:
@@ -152,30 +166,39 @@
     conf_owner: "{{ target_user }}"
     conf_group: "{{ target_user }}"
 
-- name: Create empty MPD state file
-  ansible.builtin.copy:
-    content: ""
-    dest: "/home/{{ target_user }}/.local/share/mpd/state"
-    owner: "{{ target_user }}"
-    group: "{{ target_user }}"
-    mode: '0644'
-    force: false
-  become: "{{ become_for_target_user }}"
+- name: MPD state file and music directory (first install)
+  when: ansible_role_name not in odios_prior_roles
+  block:
+    - name: Create empty MPD state file
+      ansible.builtin.copy:
+        content: ""
+        dest: "/home/{{ target_user }}/.local/share/mpd/state"
+        owner: "{{ target_user }}"
+        group: "{{ target_user }}"
+        mode: '0644'
+        force: false
+      become: "{{ become_for_target_user }}"
 
-- name: Create music directory
-  ansible.builtin.file:
-    path: "{{ mpd_music_directory }}"
-    state: directory
-    owner: "{{ target_user }}"
-    group: audio
-    mode: '0775'
-  become: true
+    - name: Create music directory
+      ansible.builtin.file:
+        path: "{{ mpd_music_directory }}"
+        state: directory
+        owner: "{{ target_user }}"
+        group: audio
+        mode: '0775'
+      become: true
 
-- name: Enable user MPD socket and service
+- name: Enable user MPD service
   ansible.builtin.include_tasks: "../../../tasks/systemd_enable_user.yml"
   vars:
-    service_name: "{{ item.name }}"
-    wanted_by: "{{ item.wanted_by | default('default.target') }}"
-  loop:
-    - { name: mpd.service }
-    - { name: mpd.socket, wanted_by: sockets.target }
+    service_name: mpd.service
+  when: ansible_role_name not in odios_prior_roles
+
+# mpd.socket (socket activation) shipped in 2026.5.0b2 — enable on older upgrades too.
+- name: Enable user MPD socket
+  ansible.builtin.include_tasks: "../../../tasks/systemd_enable_user.yml"
+  vars:
+    service_name: mpd.socket
+    wanted_by: sockets.target
+  when: (odios_prior_role_versions[ansible_role_name] | default('0'))
+        is version('2026.5.0b2', '<', version_type='pep440')
