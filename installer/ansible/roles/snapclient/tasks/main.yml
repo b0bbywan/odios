@@ -6,6 +6,7 @@
     install_recommends: false
   become: true
   notify: Restart snapclient
+  when: ansible_role_name not in odios_prior_roles
 
 - name: Install snapclientmpris
   ansible.builtin.include_tasks: snapclientmpris.yml
@@ -14,6 +15,7 @@
   ansible.builtin.include_tasks: "../../../tasks/systemd_disable_system.yml"
   vars:
     service_name: snapclient.service
+  when: ansible_role_name not in odios_prior_roles
 
 - name: Copy user snapclient service
   ansible.builtin.copy:
@@ -28,3 +30,4 @@
   ansible.builtin.include_tasks: "../../../tasks/systemd_enable_user.yml"
   vars:
     service_name: snapclient.service
+  when: ansible_role_name not in odios_prior_roles
