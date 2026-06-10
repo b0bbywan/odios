@@ -4,6 +4,7 @@
     name: "{{ item }}"
     state: restarted
     scope: user
+    daemon_reload: true
   environment:
     XDG_RUNTIME_DIR: "/run/user/{{ target_user_uid }}"
   loop:
