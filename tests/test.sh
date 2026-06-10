@@ -253,9 +253,19 @@ case "${1:-}" in
 esac
 
 install_ansible() {
-    echo "=== Installing ansible-core ==="
+    echo "=== Installing ansible-core + mitogen ==="
     docker exec "${CONTAINER_NAME}" \
-      pip3 install --break-system-packages --quiet "ansible-core==2.19.*"
+      pip3 install --break-system-packages --quiet "ansible-core==2.19.*" "mitogen==0.3.49"
+}
+
+# Enable Mitogen on the direct playbook path via env vars (CI speedup);
+# resolves the strategy dir, emits nothing if mitogen is absent.
+mitogen_exec_env() {
+    local dir
+    dir=$(docker exec "${CONTAINER_NAME}" python3 -c \
+      'import os, ansible_mitogen; print(os.path.join(os.path.dirname(ansible_mitogen.__file__), "plugins", "strategy"))' \
+      2>/dev/null) || return 0
+    [[ -n "$dir" ]] && echo "-e ANSIBLE_STRATEGY=mitogen_linear -e ANSIBLE_STRATEGY_PLUGINS=${dir}"
 }
 
 # Under QEMU user-mode, sudo setuid is not honoured — run ansible as root.
@@ -277,7 +287,7 @@ case "${ACTION}" in
 
     echo "=== Running playbook ==="
     # shellcheck disable=SC2046
-    docker exec $(ansible_exec_user) "${CONTAINER_NAME}" \
+    docker exec $(ansible_exec_user) $(mitogen_exec_env) "${CONTAINER_NAME}" \
       ansible-playbook -v -i inventory/localhost.yml \
         /opt/odios/ansible/playbook.yml \
         $(ansible_extra_flags) \
@@ -295,7 +305,7 @@ case "${ACTION}" in
   rerun)
     echo "=== Re-running playbook ==="
     # shellcheck disable=SC2046
-    docker exec $(ansible_exec_user) "${CONTAINER_NAME}" \
+    docker exec $(ansible_exec_user) $(mitogen_exec_env) "${CONTAINER_NAME}" \
       ansible-playbook -i inventory/localhost.yml /opt/odios/ansible/playbook.yml \
         $(ansible_extra_flags) \
         -e "mpd_discplayer_gnu_email=test@example.com" \
@@ -304,7 +314,8 @@ case "${ACTION}" in
 
   rerun-as-other-user)
     echo "=== Re-running playbook as bob ==="
-    docker exec -u bob "${CONTAINER_NAME}" \
+    # shellcheck disable=SC2046
+    docker exec -u bob $(mitogen_exec_env) "${CONTAINER_NAME}" \
       ansible-playbook -i inventory/localhost.yml /opt/odios/ansible/playbook.yml \
         -e target_user=odio \
         -e install_mode=live \
@@ -347,7 +358,8 @@ case "${ACTION}" in
     setup_other_user bob
 
     echo "=== Running playbook as bob (target_user=odio, install_mode=live) ==="
-    docker exec -u bob "${CONTAINER_NAME}" \
+    # shellcheck disable=SC2046
+    docker exec -u bob $(mitogen_exec_env) "${CONTAINER_NAME}" \
       ansible-playbook -v -i inventory/localhost.yml \
         /opt/odios/ansible/playbook.yml \
         -e target_user=odio \

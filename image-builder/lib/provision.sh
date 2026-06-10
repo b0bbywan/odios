@@ -52,16 +52,24 @@ provision_image() {
     fi
     extra_vars_flags+=" -e odio_version=${odios_version}"
 
+    # Extract on host so pure-Python Mitogen can be dropped into vendor/ for the
+    # mitogen_linear strategy (CI build speedup; never shipped — /tmp is wiped).
+    mkdir -p "$rootfs/tmp/odios"
+    tar xzf "$rootfs/tmp/odios.tar.gz" -C "$rootfs/tmp/odios"
+    python3 -m pip install --target="$rootfs/tmp/odios/vendor" --no-compile --no-deps \
+        "mitogen==${MITOGEN_VERSION:-0.3.49}"
+
     log_info "Running Ansible playbook inside chroot (odio_version=${odios_version})..."
     chroot "$rootfs" /bin/bash -e <<PROVISION
 set -euo pipefail
 export LC_ALL=C.UTF-8
 export LANG=C.UTF-8
-mkdir -p /tmp/odios
-tar xzf /tmp/odios.tar.gz -C /tmp/odios
 cd /tmp/odios
 
-PYTHONPATH="vendor" python3 vendor/bin/ansible-playbook \\
+PYTHONPATH="vendor" \\
+ANSIBLE_STRATEGY=mitogen_linear \\
+ANSIBLE_STRATEGY_PLUGINS="vendor/ansible_mitogen/plugins/strategy" \\
+python3 vendor/bin/ansible-playbook \\
     -i ansible/inventory/localhost.yml \\
     ansible/playbook.yml \\
     ${extra_vars_flags} \\
