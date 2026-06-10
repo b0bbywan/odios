@@ -8,6 +8,7 @@
     install_recommends: false
   become: true
   notify: Restart pulseaudio
+  when: ansible_role_name not in odios_prior_roles
 
 - name: Copy pulse-tcp script
   ansible.builtin.copy:
@@ -29,43 +30,46 @@
   become: true
   notify: Restart pulse-tcp
 
-- name: Check if pipewire is installed
-  ansible.builtin.command: dpkg-query -W -f='${Status}' pipewire
-  register: pulseaudio_pw_status
-  failed_when: false
-  changed_when: false
+- name: Disable PipeWire (first install)
+  when: ansible_role_name not in odios_prior_roles
+  block:
+    - name: Check if pipewire is installed
+      ansible.builtin.command: dpkg-query -W -f='${Status}' pipewire
+      register: pulseaudio_pw_status
+      failed_when: false
+      changed_when: false
 
-- name: Find existing PipeWire unit files
-  ansible.builtin.stat:
-    path: "/usr/lib/systemd/user/{{ item }}"
-  register: pulseaudio_pw_units
-  loop:
-    - pipewire.service
-    - pipewire.socket
-    - pipewire-pulse.service
-    - pipewire-pulse.socket
-    - wireplumber.service
-  when: "'install ok installed' in pulseaudio_pw_status.stdout"
+    - name: Find existing PipeWire unit files
+      ansible.builtin.stat:
+        path: "/usr/lib/systemd/user/{{ item }}"
+      register: pulseaudio_pw_units
+      loop:
+        - pipewire.service
+        - pipewire.socket
+        - pipewire-pulse.service
+        - pipewire-pulse.socket
+        - wireplumber.service
+      when: "'install ok installed' in pulseaudio_pw_status.stdout"
 
-- name: Disable and stop existing PipeWire units for target user
-  ansible.builtin.include_tasks: "../../../tasks/systemd_disable_user.yml"
-  vars:
-    service_name: "{{ item.item }}"
-  loop: "{{ pulseaudio_pw_units.results }}"
-  when:
-    - pulseaudio_pw_units is defined
-    - item.stat is defined
-    - item.stat.exists
+    - name: Disable and stop existing PipeWire units for target user
+      ansible.builtin.include_tasks: "../../../tasks/systemd_disable_user.yml"
+      vars:
+        service_name: "{{ item.item }}"
+      loop: "{{ pulseaudio_pw_units.results }}"
+      when:
+        - pulseaudio_pw_units is defined
+        - item.stat is defined
+        - item.stat.exists
 
-- name: Mask existing PipeWire units for target user
-  ansible.builtin.include_tasks: "../../../tasks/systemd_mask_user.yml"
-  vars:
-    service_name: "{{ item.item }}"
-  loop: "{{ pulseaudio_pw_units.results }}"
-  when:
-    - pulseaudio_pw_units is defined
-    - item.stat is defined
-    - item.stat.exists
+    - name: Mask existing PipeWire units for target user
+      ansible.builtin.include_tasks: "../../../tasks/systemd_mask_user.yml"
+      vars:
+        service_name: "{{ item.item }}"
+      loop: "{{ pulseaudio_pw_units.results }}"
+      when:
+        - pulseaudio_pw_units is defined
+        - item.stat is defined
+        - item.stat.exists
 
 - name: Enable user PulseAudio services
   ansible.builtin.include_tasks: "../../../tasks/systemd_enable_user.yml"
@@ -74,3 +78,4 @@
   loop:
     - pulseaudio.service
     - pulse-tcp.service
+  when: ansible_role_name not in odios_prior_roles
