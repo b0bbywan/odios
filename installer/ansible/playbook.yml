@@ -8,6 +8,12 @@
     - network
     - virtual
 
+  # force-unsafe-io: skip dpkg's per-file fsync (brutal on SD cards) for the
+  # whole run. Default dpkg_options is force-confdef,force-confold — extend it.
+  module_defaults:
+    ansible.builtin.apt:
+      dpkg_options: force-confdef,force-confold,force-unsafe-io
+
   vars_files:
     - group_vars/all.yml
 
