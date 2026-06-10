@@ -14,6 +14,7 @@
     group: "{{ target_user }}"
     mode: '0755'
   become: "{{ become_for_target_user }}"
+  when: ansible_role_name not in odios_prior_roles
 
 - name: Backup spotifyd config before changes
   ansible.builtin.include_tasks: "../../../tasks/backup_conf_before.yml"
@@ -45,3 +46,4 @@
   ansible.builtin.include_tasks: "../../../tasks/systemd_enable_user.yml"
   vars:
     service_name: spotifyd.service
+  when: ansible_role_name not in odios_prior_roles
