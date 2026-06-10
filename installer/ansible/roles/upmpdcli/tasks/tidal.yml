@@ -1,14 +1,24 @@
 ---
-- name: Install tidalapi python package
-  ansible.builtin.pip:
-    break_system_packages: true
-    name: tidalapi
-  become: "{{ become_for_target_user }}"
-  become_user: "{{ target_user }}"
+- name: Tidal plugin (first activation)
+  when: "'tidal' not in odios_prior_features"
+  block:
+    - name: Install python3-pip
+      ansible.builtin.apt:
+        name: python3-pip
+        state: present
+        install_recommends: false
+      become: true
 
-- name: Install upmpdcli-tidal
-  ansible.builtin.apt:
-    name: upmpdcli-tidal
-    state: present
-    install_recommends: false
-  become: true
+    - name: Install tidalapi python package
+      ansible.builtin.pip:
+        break_system_packages: true
+        name: tidalapi
+      become: "{{ become_for_target_user }}"
+      become_user: "{{ target_user }}"
+
+    - name: Install upmpdcli-tidal
+      ansible.builtin.apt:
+        name: upmpdcli-tidal
+        state: present
+        install_recommends: false
+      become: true
