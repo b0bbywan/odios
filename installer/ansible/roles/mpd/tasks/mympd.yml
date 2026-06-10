@@ -1,4 +1,11 @@
 ---
+# True on fresh installs, when mympd is newly enabled, or on upgrades from before
+# the home shortcuts shipped (mpd 2026.5.0b3).
+- name: Determine mympd first setup
+  ansible.builtin.set_fact:
+    mpd_mympd_first_setup: >-
+      {{ ('mympd' not in odios_prior_features) or odios_role_pre_scaffold }}
+
 - name: Install mympd v{{ mpd_mympd_apt_version }}
   ansible.builtin.apt:
     name: "mympd>={{ mpd_mympd_apt_version }}"
@@ -7,144 +14,151 @@
   become: true
   notify: Restart mympd
 
-- name: Create mympd config directory
-  ansible.builtin.file:
-    path: "/home/{{ target_user }}/.config/mympd/config"
-    state: directory
-    owner: "{{ target_user }}"
-    group: "{{ target_user }}"
-    mode: '0700'
-  become: "{{ become_for_target_user }}"
+- name: MyMPD state and pics directories (first setup)
+  when: mpd_mympd_first_setup | bool
+  block:
+    - name: Create mympd config directory
+      ansible.builtin.file:
+        path: "/home/{{ target_user }}/.config/mympd/config"
+        state: directory
+        owner: "{{ target_user }}"
+        group: "{{ target_user }}"
+        mode: '0700'
+      become: "{{ become_for_target_user }}"
 
-- name: Deploy odio custom_css
-  ansible.builtin.copy:
-    src: custom_css
-    dest: "/home/{{ target_user }}/.config/mympd/config/custom_css"
-    owner: "{{ target_user }}"
-    group: "{{ target_user }}"
-    mode: '0600'
-  become: "{{ become_for_target_user }}"
-  notify: Restart mympd
+    - name: Deploy odio custom_css
+      ansible.builtin.copy:
+        src: custom_css
+        dest: "/home/{{ target_user }}/.config/mympd/config/custom_css"
+        owner: "{{ target_user }}"
+        group: "{{ target_user }}"
+        mode: '0600'
+      become: "{{ become_for_target_user }}"
+      notify: Restart mympd
 
-- name: Disable mympd ssl
-  ansible.builtin.copy:
-    content: "false"
-    dest: "/home/{{ target_user }}/.config/mympd/config/ssl"
-    owner: "{{ target_user }}"
-    group: "{{ target_user }}"
-    mode: '0600'
-  become: "{{ become_for_target_user }}"
-  notify: Restart mympd
+    - name: Disable mympd ssl
+      ansible.builtin.copy:
+        content: "false"
+        dest: "/home/{{ target_user }}/.config/mympd/config/ssl"
+        owner: "{{ target_user }}"
+        group: "{{ target_user }}"
+        mode: '0600'
+      become: "{{ become_for_target_user }}"
+      notify: Restart mympd
 
-- name: Create mympd state directory
-  ansible.builtin.file:
-    path: "/home/{{ target_user }}/.config/mympd/state"
-    state: directory
-    owner: "{{ target_user }}"
-    group: "{{ target_user }}"
-    mode: '0700'
-  become: "{{ become_for_target_user }}"
+    - name: Create mympd state directory
+      ansible.builtin.file:
+        path: "/home/{{ target_user }}/.config/mympd/state"
+        state: directory
+        owner: "{{ target_user }}"
+        group: "{{ target_user }}"
+        mode: '0700'
+      become: "{{ become_for_target_user }}"
 
-- name: Create mympd pics directories
-  ansible.builtin.file:
-    path: "/home/{{ target_user }}/.config/mympd/{{ item }}"
-    state: directory
-    owner: "{{ target_user }}"
-    group: "{{ target_user }}"
-    mode: '0700'
-  become: "{{ become_for_target_user }}"
-  loop:
-    - pics
-    - pics/thumbs
+    - name: Create mympd pics directories
+      ansible.builtin.file:
+        path: "/home/{{ target_user }}/.config/mympd/{{ item }}"
+        state: directory
+        owner: "{{ target_user }}"
+        group: "{{ target_user }}"
+        mode: '0700'
+      become: "{{ become_for_target_user }}"
+      loop:
+        - pics
+        - pics/thumbs
 
-# Served by myMPD at /browse/pics/odio.html. The home_list icon points there
-# with a relative URL so the page loads on the same host the client used to
-# reach myMPD; its inline JS then redirects to <that-host>:8018/ui. Avoids
-# baking the build machine's IP (ansible_default_ipv4) into home_list on Pi
-# image flows, and stays mDNS-independent (works on mobile clients).
-- name: Deploy odio UI redirect page
-  ansible.builtin.copy:
-    src: odio.html
-    dest: "/home/{{ target_user }}/.config/mympd/pics/odio.html"
-    owner: "{{ target_user }}"
-    group: "{{ target_user }}"
-    mode: '0644'
-  become: "{{ become_for_target_user }}"
+- name: MyMPD initial state (first setup)
+  when: mpd_mympd_first_setup | bool
+  block:
+    # Served by myMPD at /browse/pics/odio.html. The home_list icon points there
+    # with a relative URL so the page loads on the same host the client used to
+    # reach myMPD; its inline JS then redirects to <that-host>:8018/ui. Avoids
+    # baking the build machine's IP (ansible_default_ipv4) into home_list on Pi
+    # image flows, and stays mDNS-independent (works on mobile clients).
+    - name: Deploy odio UI redirect page
+      ansible.builtin.copy:
+        src: odio.html
+        dest: "/home/{{ target_user }}/.config/mympd/pics/odio.html"
+        owner: "{{ target_user }}"
+        group: "{{ target_user }}"
+        mode: '0644'
+      become: "{{ become_for_target_user }}"
 
-# Referenced by home_list's image field as "odio-logo.png" — myMPD's
-# getImageUri resolves bare names against /browse/pics/thumbs/ (cf
-# htdocs/js/images.js).
-- name: Deploy odio home icon logo
-  ansible.builtin.copy:
-    src: odio-logo.png
-    dest: "/home/{{ target_user }}/.config/mympd/pics/thumbs/odio-logo.png"
-    owner: "{{ target_user }}"
-    group: "{{ target_user }}"
-    mode: '0644'
-  become: "{{ become_for_target_user }}"
+    # Referenced by home_list's image field as "odio-logo.png" — myMPD's
+    # getImageUri resolves bare names against /browse/pics/thumbs/ (cf
+    # htdocs/js/images.js).
+    - name: Deploy odio home icon logo
+      ansible.builtin.copy:
+        src: odio-logo.png
+        dest: "/home/{{ target_user }}/.config/mympd/pics/thumbs/odio-logo.png"
+        owner: "{{ target_user }}"
+        group: "{{ target_user }}"
+        mode: '0644'
+      become: "{{ become_for_target_user }}"
 
-# Pin myMPD to MPD's user socket via state/mpd_host. myMPD rewrites state/ on
-# shutdown, so writing while it runs gets clobbered — stop it first, but only
-# when host or widgets actually change (idempotent; never left stopped on no-op).
-- name: Preview mympd MPD host pin
-  ansible.builtin.copy:
-    content: "{{ mpd_socket_path }}"
-    dest: "/home/{{ target_user }}/.config/mympd/state/mpd_host"
-    owner: "{{ target_user }}"
-    group: "{{ target_user }}"
-    mode: '0600'
-  check_mode: true
-  register: mpd_mympd_host_preview
-  become: "{{ become_for_target_user }}"
+    # Pin myMPD to MPD's user socket via state/mpd_host. myMPD rewrites state/ on
+    # shutdown, so writing while it runs gets clobbered — stop it first, but only
+    # when host or widgets actually change (idempotent; never left stopped on no-op).
+    - name: Preview mympd MPD host pin
+      ansible.builtin.copy:
+        content: "{{ mpd_socket_path }}"
+        dest: "/home/{{ target_user }}/.config/mympd/state/mpd_host"
+        owner: "{{ target_user }}"
+        group: "{{ target_user }}"
+        mode: '0600'
+      check_mode: true
+      register: mpd_mympd_host_preview
+      become: "{{ become_for_target_user }}"
 
-- name: Preview mympd home widgets
-  ansible.builtin.template:
-    src: home_list.j2
-    dest: "/home/{{ target_user }}/.config/mympd/state/home_list"
-    owner: "{{ target_user }}"
-    group: "{{ target_user }}"
-    mode: '0600'
-  check_mode: true
-  register: mpd_mympd_widgets_preview
-  become: "{{ become_for_target_user }}"
+    - name: Preview mympd home widgets
+      ansible.builtin.template:
+        src: home_list.j2
+        dest: "/home/{{ target_user }}/.config/mympd/state/home_list"
+        owner: "{{ target_user }}"
+        group: "{{ target_user }}"
+        mode: '0600'
+      check_mode: true
+      register: mpd_mympd_widgets_preview
+      become: "{{ become_for_target_user }}"
 
-- name: Stop mympd before rewriting state
-  ansible.builtin.include_tasks: "../../../tasks/systemd_stop_user.yml"
-  vars:
-    service_name: mympd.service
-  when: mpd_mympd_host_preview is changed or mpd_mympd_widgets_preview is changed
+    - name: Stop mympd before rewriting state
+      ansible.builtin.include_tasks: "../../../tasks/systemd_stop_user.yml"
+      vars:
+        service_name: mympd.service
+      when: mpd_mympd_host_preview is changed or mpd_mympd_widgets_preview is changed
 
-- name: Configure mympd MPD host (user socket)
-  ansible.builtin.copy:
-    content: "{{ mpd_socket_path }}"
-    dest: "/home/{{ target_user }}/.config/mympd/state/mpd_host"
-    owner: "{{ target_user }}"
-    group: "{{ target_user }}"
-    mode: '0600'
-  become: "{{ become_for_target_user }}"
-  notify: Restart mympd
+    - name: Configure mympd MPD host (user socket)
+      ansible.builtin.copy:
+        content: "{{ mpd_socket_path }}"
+        dest: "/home/{{ target_user }}/.config/mympd/state/mpd_host"
+        owner: "{{ target_user }}"
+        group: "{{ target_user }}"
+        mode: '0600'
+      become: "{{ become_for_target_user }}"
+      notify: Restart mympd
 
-- name: Configure mympd home widgets
-  ansible.builtin.template:
-    src: home_list.j2
-    dest: "/home/{{ target_user }}/.config/mympd/state/home_list"
-    owner: "{{ target_user }}"
-    group: "{{ target_user }}"
-    mode: '0600'
-  become: "{{ become_for_target_user }}"
-  notify: Restart mympd
+    - name: Configure mympd home widgets
+      ansible.builtin.template:
+        src: home_list.j2
+        dest: "/home/{{ target_user }}/.config/mympd/state/home_list"
+        owner: "{{ target_user }}"
+        group: "{{ target_user }}"
+        mode: '0600'
+      become: "{{ become_for_target_user }}"
+      notify: Restart mympd
 
-- name: Configure mympd http port
-  ansible.builtin.copy:
-    content: "{{ mpd_mympd_http_port }}"
-    dest: "/home/{{ target_user }}/.config/mympd/config/http_port"
-    owner: "{{ target_user }}"
-    group: "{{ target_user }}"
-    mode: '0600'
-  become: "{{ become_for_target_user }}"
-  notify: Restart mympd
+    - name: Configure mympd http port
+      ansible.builtin.copy:
+        content: "{{ mpd_mympd_http_port }}"
+        dest: "/home/{{ target_user }}/.config/mympd/config/http_port"
+        owner: "{{ target_user }}"
+        group: "{{ target_user }}"
+        mode: '0600'
+      become: "{{ become_for_target_user }}"
+      notify: Restart mympd
 
 - name: Enable user mympd service
   ansible.builtin.include_tasks: "../../../tasks/systemd_enable_user.yml"
   vars:
     service_name: mympd.service
+  when: mpd_mympd_first_setup | bool

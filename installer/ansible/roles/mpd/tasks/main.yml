@@ -1,48 +1,51 @@
 ---
-- name: Install MPD packages
-  ansible.builtin.apt:
-    name:
-      - mpd
-      - mpc
-    state: present
-    install_recommends: false
-  become: true
-
-- name: Install mpDris2 fork
-  ansible.builtin.include_tasks: mpdris2.yml
-
-- name: Install myMPD web UI
-  ansible.builtin.include_tasks: mympd.yml
-  when: install_mympd | bool
-
-- name: Disable system MPD service
-  ansible.builtin.include_tasks: "../../../tasks/systemd_disable_system.yml"
+# odios_role_pre_scaffold: true on installs predating the latest mpd scaffold
+# (myMPD home shortcuts, 2026.5.0b3); gates every mpd migration.
+- name: Resolve prior role version
+  ansible.builtin.include_tasks: "../../../tasks/resolve_prior_version.yml"
   vars:
-    service_name: "{{ item }}"
-  loop:
-    - mpd.service
-    - mpd.socket
+    scaffold_version: '2026.5.0b3'
 
-- name: Create MPD config directory
-  ansible.builtin.file:
-    path: "/home/{{ target_user }}/.config/mpd"
-    state: directory
-    owner: "{{ target_user }}"
-    group: "{{ target_user }}"
-    mode: '0700'
-  become: "{{ become_for_target_user }}"
+- name: MPD packages, system unit and directories (first install)
+  when: ansible_role_name not in odios_prior_roles
+  block:
+    - name: Install MPD packages
+      ansible.builtin.apt:
+        name:
+          - mpd
+          - mpc
+        state: present
+        install_recommends: false
+      become: true
 
-- name: Create MPD data directories
-  ansible.builtin.file:
-    path: "/home/{{ target_user }}/.local/share/mpd/{{ item }}"
-    state: directory
-    owner: "{{ target_user }}"
-    group: "{{ target_user }}"
-    mode: '0700'
-  become: "{{ become_for_target_user }}"
-  loop:
-    - playlists
-    - cache
+    - name: Disable system MPD service
+      ansible.builtin.include_tasks: "../../../tasks/systemd_disable_system.yml"
+      vars:
+        service_name: "{{ item }}"
+      loop:
+        - mpd.service
+        - mpd.socket
+
+    - name: Create MPD config directory
+      ansible.builtin.file:
+        path: "/home/{{ target_user }}/.config/mpd"
+        state: directory
+        owner: "{{ target_user }}"
+        group: "{{ target_user }}"
+        mode: '0700'
+      become: "{{ become_for_target_user }}"
+
+    - name: Create MPD data directories
+      ansible.builtin.file:
+        path: "/home/{{ target_user }}/.local/share/mpd/{{ item }}"
+        state: directory
+        owner: "{{ target_user }}"
+        group: "{{ target_user }}"
+        mode: '0700'
+      become: "{{ become_for_target_user }}"
+      loop:
+        - playlists
+        - cache
 
 - name: Backup MPD config before changes
   ansible.builtin.include_tasks: "../../../tasks/backup_conf_before.yml"
@@ -61,6 +64,7 @@
     mode: '0600'
     force: false
   become: "{{ become_for_target_user }}"
+  when: ansible_role_name not in odios_prior_roles
 
 - name: MPD config - paths
   ansible.builtin.blockinfile:
@@ -93,6 +97,9 @@
     state: absent
   become: "{{ become_for_target_user }}"
   become_user: "{{ target_user }}"
+  when:
+    - ansible_role_name in odios_prior_roles
+    - odios_role_pre_scaffold | bool
   notify: Restart mpd
 
 - name: MPD config - zeroconf
@@ -152,30 +159,44 @@
     conf_owner: "{{ target_user }}"
     conf_group: "{{ target_user }}"
 
-- name: Create empty MPD state file
-  ansible.builtin.copy:
-    content: ""
-    dest: "/home/{{ target_user }}/.local/share/mpd/state"
-    owner: "{{ target_user }}"
-    group: "{{ target_user }}"
-    mode: '0644'
-    force: false
-  become: "{{ become_for_target_user }}"
+- name: MPD state file, music directory and service (first install)
+  when: ansible_role_name not in odios_prior_roles
+  block:
+    - name: Create empty MPD state file
+      ansible.builtin.copy:
+        content: ""
+        dest: "/home/{{ target_user }}/.local/share/mpd/state"
+        owner: "{{ target_user }}"
+        group: "{{ target_user }}"
+        mode: '0644'
+        force: false
+      become: "{{ become_for_target_user }}"
 
-- name: Create music directory
-  ansible.builtin.file:
-    path: "{{ mpd_music_directory }}"
-    state: directory
-    owner: "{{ target_user }}"
-    group: audio
-    mode: '0775'
-  become: true
+    - name: Create music directory
+      ansible.builtin.file:
+        path: "{{ mpd_music_directory }}"
+        state: directory
+        owner: "{{ target_user }}"
+        group: audio
+        mode: '0775'
+      become: true
 
-- name: Enable user MPD socket and service
+    - name: Enable user MPD service
+      ansible.builtin.include_tasks: "../../../tasks/systemd_enable_user.yml"
+      vars:
+        service_name: mpd.service
+
+# mpd.socket (socket activation) shipped in 2026.5.0b2 — enable on older upgrades too.
+- name: Enable user MPD socket
   ansible.builtin.include_tasks: "../../../tasks/systemd_enable_user.yml"
   vars:
-    service_name: "{{ item.name }}"
-    wanted_by: "{{ item.wanted_by | default('default.target') }}"
-  loop:
-    - { name: mpd.service }
-    - { name: mpd.socket, wanted_by: sockets.target }
+    service_name: mpd.socket
+    wanted_by: sockets.target
+  when: odios_role_pre_scaffold | bool
+
+- name: Install mpDris2 fork
+  ansible.builtin.include_tasks: mpdris2.yml
+
+- name: Install myMPD web UI
+  ansible.builtin.include_tasks: mympd.yml
+  when: install_mympd | bool
