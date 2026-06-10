@@ -1,31 +1,41 @@
 ---
-- name: Install shairport-sync
-  ansible.builtin.apt:
-    name: shairport-sync
-    state: present
-    install_recommends: false
-  become: true
-  notify: Restart shairport-sync
+# odios_role_pre_scaffold: true on installs predating the pulseaudio TCP server
+# setting removal (shairport_sync 2026.4.1rc1).
+- name: Resolve prior role version
+  ansible.builtin.include_tasks: "../../../tasks/resolve_prior_version.yml"
+  vars:
+    scaffold_version: '2026.4.1rc1'
 
-- name: Create user shairport-sync config directory
-  ansible.builtin.file:
-    path: "/home/{{ target_user }}/.config/shairport-sync"
-    state: directory
-    owner: "{{ target_user }}"
-    group: "{{ target_user }}"
-    mode: '0755'
-  become: "{{ become_for_target_user }}"
+- name: Shairport-sync install and config scaffolding (first install)
+  when: ansible_role_name not in odios_prior_roles
+  block:
+    - name: Install shairport-sync
+      ansible.builtin.apt:
+        name: shairport-sync
+        state: present
+        install_recommends: false
+      become: true
+      notify: Restart shairport-sync
 
-- name: Copy shairport-sync system config to user directory
-  ansible.builtin.copy:
-    src: /etc/shairport-sync.conf
-    dest: "/home/{{ target_user }}/.config/shairport-sync/shairport-sync.conf"
-    owner: "{{ target_user }}"
-    group: "{{ target_user }}"
-    mode: '0600'
-    remote_src: true
-    force: false
-  become: "{{ become_for_target_user }}"
+    - name: Create user shairport-sync config directory
+      ansible.builtin.file:
+        path: "/home/{{ target_user }}/.config/shairport-sync"
+        state: directory
+        owner: "{{ target_user }}"
+        group: "{{ target_user }}"
+        mode: '0755'
+      become: "{{ become_for_target_user }}"
+
+    - name: Copy shairport-sync system config to user directory
+      ansible.builtin.copy:
+        src: /etc/shairport-sync.conf
+        dest: "/home/{{ target_user }}/.config/shairport-sync/shairport-sync.conf"
+        owner: "{{ target_user }}"
+        group: "{{ target_user }}"
+        mode: '0600'
+        remote_src: true
+        force: false
+      become: "{{ become_for_target_user }}"
 
 - name: Backup shairport-sync config before changes
   ansible.builtin.include_tasks: "../../../tasks/backup_conf_before.yml"
@@ -70,6 +80,9 @@
   become: "{{ become_for_target_user }}"
   become_user: "{{ target_user }}"
   notify: Restart shairport-sync
+  when:
+    - ansible_role_name in odios_prior_roles
+    - odios_role_pre_scaffold | bool
 
 - name: Configure shairport-sync application name
   ansible.builtin.lineinfile:
@@ -88,29 +101,32 @@
     conf_group: "{{ target_user }}"
     conf_mode: '0600'
 
-- name: Configure dbus policy for shairport-sync
-  ansible.builtin.blockinfile:
-    path: /usr/share/dbus-1/system.d/shairport-sync-dbus-policy.conf
-    marker: "<!-- {mark} ANSIBLE MANAGED BLOCK -->"
-    insertafter: '<busconfig>'
-    block: |
-        <policy user="{{ target_user }}">
-          <allow own="org.gnome.ShairportSync"/>
-        </policy>
-  become: true
-  notify: Reload dbus
+- name: Shairport-sync dbus policy (first install)
+  when: ansible_role_name not in odios_prior_roles
+  block:
+    - name: Configure dbus policy for shairport-sync
+      ansible.builtin.blockinfile:
+        path: /usr/share/dbus-1/system.d/shairport-sync-dbus-policy.conf
+        marker: "<!-- {mark} ANSIBLE MANAGED BLOCK -->"
+        insertafter: '<busconfig>'
+        block: |
+            <policy user="{{ target_user }}">
+              <allow own="org.gnome.ShairportSync"/>
+            </policy>
+      become: true
+      notify: Reload dbus
 
-- name: Configure dbus policy for shairport-sync MPRIS
-  ansible.builtin.blockinfile:
-    path: /usr/share/dbus-1/system.d/shairport-sync-mpris-policy.conf
-    marker: "<!-- {mark} ANSIBLE MANAGED BLOCK -->"
-    insertafter: '<busconfig>'
-    block: |
-        <policy user="{{ target_user }}">
-          <allow own="org.mpris.MediaPlayer2.ShairportSync"/>
-        </policy>
-  become: true
-  notify: Reload dbus
+    - name: Configure dbus policy for shairport-sync MPRIS
+      ansible.builtin.blockinfile:
+        path: /usr/share/dbus-1/system.d/shairport-sync-mpris-policy.conf
+        marker: "<!-- {mark} ANSIBLE MANAGED BLOCK -->"
+        insertafter: '<busconfig>'
+        block: |
+            <policy user="{{ target_user }}">
+              <allow own="org.mpris.MediaPlayer2.ShairportSync"/>
+            </policy>
+      become: true
+      notify: Reload dbus
 
 - name: Deploy shairport-sync user service
   ansible.builtin.copy:
@@ -121,12 +137,15 @@
     group: root
   become: true
 
-- name: Disable system shairport-sync service
-  ansible.builtin.include_tasks: "../../../tasks/systemd_disable_system.yml"
-  vars:
-    service_name: shairport-sync.service
+- name: Shairport-sync service setup (first install)
+  when: ansible_role_name not in odios_prior_roles
+  block:
+    - name: Disable system shairport-sync service
+      ansible.builtin.include_tasks: "../../../tasks/systemd_disable_system.yml"
+      vars:
+        service_name: shairport-sync.service
 
-- name: Enable user shairport-sync service
-  ansible.builtin.include_tasks: "../../../tasks/systemd_enable_user.yml"
-  vars:
-    service_name: shairport-sync.service
+    - name: Enable user shairport-sync service
+      ansible.builtin.include_tasks: "../../../tasks/systemd_enable_user.yml"
+      vars:
+        service_name: shairport-sync.service
