@@ -1,4 +1,10 @@
 ---
+# odios_role_pre_scaffold: true on installs predating conf.d (odio_api 2026.5.0b1).
+- name: Resolve prior role version
+  ansible.builtin.include_tasks: "../../../tasks/resolve_prior_version.yml"
+  vars:
+    scaffold_version: '2026.5.0b1'
+
 - name: Install go-odio-api v{{ odio_api_apt_version }}
   ansible.builtin.apt:
     name: "odio-api>={{ odio_api_apt_version }}"
@@ -25,7 +31,9 @@
     group: "{{ target_user }}"
     mode: '0700'
   become: "{{ become_for_target_user }}"
+  when: odios_role_pre_scaffold | bool
 
+# Headless/image only, on installs predating the role scaffold.
 - name: Deploy polkit shutdown rule
   ansible.builtin.template:
     src: 10-allow-shutdown.rules.j2
@@ -34,14 +42,24 @@
     group: root
     mode: '0644'
   become: true
-  when: is_headless or install_mode == "image"
+  when:
+    - is_headless or install_mode == "image"
+    - odios_role_pre_scaffold | bool
 
+# Decode the existing config once for power + snapweb reuse below. The slurp only
+# runs on upgrades (the file can't exist on a first install); decode defaults to {}.
 - name: Read existing odio-api config
   ansible.builtin.slurp:
     src: "/home/{{ target_user }}/.config/odio-api/config.yaml"
   register: odio_api_existing_cfg
   failed_when: false
   become: "{{ become_for_target_user }}"
+  when: ansible_role_name in odios_prior_roles
+
+- name: Decode existing odio-api config
+  ansible.builtin.set_fact:
+    odio_api_existing_config: >-
+      {{ odio_api_existing_cfg.content | default('') | b64decode | from_yaml | default({}, true) }}
 
 - name: Resolve power capabilities
   ansible.builtin.include_tasks: power.yml
@@ -75,3 +93,4 @@
   ansible.builtin.include_tasks: "../../../tasks/systemd_enable_user.yml"
   vars:
     service_name: odio-api.service
+  when: ansible_role_name not in odios_prior_roles
