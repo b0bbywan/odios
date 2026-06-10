@@ -1,5 +1,5 @@
 ---
-# odio_api_existing_cfg is slurped once in main.yml (shared with snapweb reuse).
+# odio_api_existing_config is decoded once in main.yml (shared with snapweb reuse).
 - name: Detect power capabilities (first install)
   when: ansible_role_name not in odios_prior_roles
   block:
@@ -42,6 +42,5 @@
     odio_api_power_can_reboot: "{{ _caps.reboot | default(false) }}"
     odio_api_power_can_poweroff: "{{ _caps.poweroff | default(false) }}"
   vars:
-    _cfg: "{{ odio_api_existing_cfg.content | default('') | b64decode | from_yaml | default({}, true) }}"
-    _caps: "{{ (_cfg.power | default({})).capabilities | default({}) }}"
+    _caps: "{{ (odio_api_existing_config.power | default({})).capabilities | default({}) }}"
   when: ansible_role_name in odios_prior_roles
