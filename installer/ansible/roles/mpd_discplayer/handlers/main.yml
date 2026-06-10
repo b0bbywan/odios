@@ -4,6 +4,7 @@
     name: mpd-discplayer.service
     state: restarted
     scope: user
+    daemon_reload: true
   environment:
     XDG_RUNTIME_DIR: "/run/user/{{ target_user_uid }}"
   become: "{{ become_for_target_user }}"
