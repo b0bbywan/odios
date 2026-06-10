@@ -9,15 +9,22 @@
 
 - name: Create odio-api config directory
   ansible.builtin.file:
-    path: "/home/{{ target_user }}/.config/{{ item }}"
+    path: "/home/{{ target_user }}/.config/odio-api"
     state: directory
     owner: "{{ target_user }}"
     group: "{{ target_user }}"
     mode: '0700'
   become: "{{ become_for_target_user }}"
-  loop:
-    - "odio-api"
-    - "odio-api/conf.d"
+  when: ansible_role_name not in odios_prior_roles
+
+- name: Create odio-api conf.d directory
+  ansible.builtin.file:
+    path: "/home/{{ target_user }}/.config/odio-api/conf.d"
+    state: directory
+    owner: "{{ target_user }}"
+    group: "{{ target_user }}"
+    mode: '0700'
+  become: "{{ become_for_target_user }}"
 
 - name: Deploy polkit shutdown rule
   ansible.builtin.template:
@@ -29,39 +36,15 @@
   become: true
   when: is_headless or install_mode == "image"
 
-- name: Set power capability facts (image build)
-  ansible.builtin.set_fact:
-    odio_api_power_can_reboot: true
-    odio_api_power_can_poweroff: true
-  when: install_mode == "image"
-
-- name: Check CanReboot via logind DBus
-  ansible.builtin.command: >
-    busctl --system call org.freedesktop.login1 /org/freedesktop/login1
-    org.freedesktop.login1.Manager CanReboot
-  register: odio_api_can_reboot
-  changed_when: false
+- name: Read existing odio-api config
+  ansible.builtin.slurp:
+    src: "/home/{{ target_user }}/.config/odio-api/config.yaml"
+  register: odio_api_existing_cfg
+  failed_when: false
   become: "{{ become_for_target_user }}"
-  become_user: "{{ target_user }}"
-  ignore_errors: true
-  when: install_mode == "live"
 
-- name: Check CanPoweroff via logind DBus
-  ansible.builtin.command: >
-    busctl --system call org.freedesktop.login1 /org/freedesktop/login1
-    org.freedesktop.login1.Manager CanPowerOff
-  register: odio_api_can_poweroff
-  changed_when: false
-  become: "{{ become_for_target_user }}"
-  become_user: "{{ target_user }}"
-  ignore_errors: true
-  when: install_mode == "live"
-
-- name: Set power capability facts (live)
-  ansible.builtin.set_fact:
-    odio_api_power_can_reboot: "{{ '\"yes\"' in odio_api_can_reboot.stdout }}"
-    odio_api_power_can_poweroff: "{{ '\"yes\"' in odio_api_can_poweroff.stdout }}"
-  when: install_mode == "live"
+- name: Resolve power capabilities
+  ansible.builtin.include_tasks: power.yml
 
 - name: Resolve snapweb URL for systemd block
   ansible.builtin.include_tasks: snapweb_url.yml
