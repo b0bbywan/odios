@@ -1,88 +1,46 @@
 ---
-- name: Check odio gpg file
-  ansible.builtin.stat:
-    path: "{{ gpg_file }}"
-  register: common_gpg_stat
+# odios_role_pre_scaffold: true on installs predating the timers/sockets wants
+# dirs (common 2026.5.0b1).
+- name: Resolve prior role version
+  ansible.builtin.include_tasks: "../../../tasks/resolve_prior_version.yml"
+  vars:
+    scaffold_version: '2026.5.0b1'
 
-- name: Add apt.odio.love gpg key
-  ansible.builtin.get_url:
-    url: "{{ odio_gpg }}"
-    dest: /tmp/odio.gpg
-    mode: '0644'
-  when: not common_gpg_stat.stat.exists
+- name: APT key setup
+  when: ansible_role_name not in odios_prior_roles
+  block:
+    - name: Check odio gpg file
+      ansible.builtin.stat:
+        path: "{{ gpg_file }}"
+      register: common_gpg_stat
 
-- name: Dearmor GPG key
-  ansible.builtin.command:
-    cmd: "gpg --dearmor -o {{ gpg_file }} /tmp/odio.gpg"
-    creates: "{{ gpg_file }}"
-  become: true
+    - name: Add apt.odio.love gpg key
+      ansible.builtin.get_url:
+        url: "{{ odio_gpg }}"
+        dest: /tmp/odio.gpg
+        mode: '0644'
+      when: not common_gpg_stat.stat.exists
 
-- name: Copy odio apt source
-  ansible.builtin.template:
-    src: odio.sources.j2
-    dest: /etc/apt/sources.list.d/odio.sources
-    mode: '0644'
-    owner: root
-    group: root
-  become: true
+    - name: Dearmor GPG key
+      ansible.builtin.command:
+        cmd: "gpg --dearmor -o {{ gpg_file }} /tmp/odio.gpg"
+        creates: "{{ gpg_file }}"
+      become: true
 
-# Single apt update for the whole playbook — covers system repos + the odio
-# source added just above. Later roles must NOT set `update_cache: true`
-# (exception: upmpdcli, which adds its own ppa mid-playbook).
+    - name: Copy odio apt source
+      ansible.builtin.template:
+        src: odio.sources.j2
+        dest: /etc/apt/sources.list.d/odio.sources
+        mode: '0644'
+        owner: root
+        group: root
+      become: true
+
+# Single apt update for the whole run; later roles must not re-update (except upmpdcli's ppa).
 - name: Update apt cache
   ansible.builtin.apt:
     update_cache: true
   become: true
-
-# acl is required by ansible-core's `become_user` when the invoking user, root,
-# and target_user are three different identities: ansible drops tmp files via
-# setfacl.
-- name: Install acl (needed by become_user)
-  ansible.builtin.apt:
-    name: acl
-    state: present
-  become: true
-  when: target_user != ansible_user_id
-
-- name: Ensure required groups exist
-  ansible.builtin.group:
-    name: "{{ item }}"
-    state: present
-  become: true
-  loop:
-    - audio
-    - input
-    - plugdev
-    - odio
-
-- name: Ensure user in audio group
-  ansible.builtin.user:
-    name: "{{ target_user }}"
-    append: true
-    groups:
-      - audio
-      - users
-      - input
-      - odio
-      - plugdev
-      - systemd-journal
-  become: true
-
-# When a human runs install.sh as someone other than target_user (e.g.
-# rpi-imager user "pi" installing for an "odio" appliance user), they
-# still need to read /var/lib/odio/state.json from their own login —
-# `odio-upgrade verify`, debugging, etc. Image mode skips this: build
-# users don't exist on the deployed device.
-- name: Ensure invoking user (live, ≠ target_user) in odio group
-  ansible.builtin.user:
-    name: "{{ ansible_user_id }}"
-    append: true
-    groups: [odio]
-  become: true
-  when:
-    - install_mode == "live"
-    - ansible_user_id != target_user
-    - ansible_user_id != "root"
 
 - name: User systemd directories
   ansible.builtin.file:
@@ -97,44 +55,92 @@
     - "/home/{{ target_user }}/.config/systemd/user/default.target.wants"
     - "/home/{{ target_user }}/.config/systemd/user/sockets.target.wants"
     - "/home/{{ target_user }}/.config/systemd/user/timers.target.wants"
+  when: odios_role_pre_scaffold | bool
 
-- name: Check linger status
-  ansible.builtin.stat:
-    path: "/var/lib/systemd/linger/{{ target_user }}"
-  register: common_linger_stat
+- name: First-install scaffolding
+  when: ansible_role_name not in odios_prior_roles
+  block:
+    # Needed by become_user when invoker, root and target_user are three identities.
+    - name: Install acl (needed by become_user)
+      ansible.builtin.apt:
+        name: acl
+        state: present
+      become: true
+      when: target_user != ansible_user_id
 
-- name: Enable user session persistence (linger) - live
-  ansible.builtin.command:
-    cmd: "loginctl enable-linger {{ target_user }}"
-  become: true
-  changed_when: true
-  when:
-    - not common_linger_stat.stat.exists
-    - install_mode == "live"
+    - name: Ensure required groups exist
+      ansible.builtin.group:
+        name: "{{ item }}"
+        state: present
+      become: true
+      loop:
+        - audio
+        - input
+        - plugdev
+        - odio
 
-- name: Ensure linger directory exists - image build
-  ansible.builtin.file:
-    path: /var/lib/systemd/linger
-    state: directory
-    owner: root
-    group: root
-    mode: '0755'
-  become: true
-  when:
-    - not common_linger_stat.stat.exists
-    - install_mode == "image"
+    - name: Ensure user in audio group
+      ansible.builtin.user:
+        name: "{{ target_user }}"
+        append: true
+        groups:
+          - audio
+          - users
+          - input
+          - odio
+          - plugdev
+          - systemd-journal
+      become: true
 
-- name: Enable user session persistence (linger) - image build
-  ansible.builtin.file:
-    path: "/var/lib/systemd/linger/{{ target_user }}"
-    state: touch
-    mode: '0644'
-    modification_time: preserve
-    access_time: preserve
-  become: true
-  when:
-    - not common_linger_stat.stat.exists
-    - install_mode == "image"
+    # So the invoker can read /var/lib/odio/state.json from its own login.
+    - name: Ensure invoking user (live, ≠ target_user) in odio group
+      ansible.builtin.user:
+        name: "{{ ansible_user_id }}"
+        append: true
+        groups: [odio]
+      become: true
+      when:
+        - install_mode == "live"
+        - ansible_user_id != target_user
+        - ansible_user_id != "root"
 
-- name: Setup polkit
-  ansible.builtin.include_tasks: polkit.yml
+    - name: Check linger status
+      ansible.builtin.stat:
+        path: "/var/lib/systemd/linger/{{ target_user }}"
+      register: common_linger_stat
+
+    - name: Enable user session persistence (linger) - live
+      ansible.builtin.command:
+        cmd: "loginctl enable-linger {{ target_user }}"
+      become: true
+      changed_when: true
+      when:
+        - not common_linger_stat.stat.exists
+        - install_mode == "live"
+
+    - name: Ensure linger directory exists - image build
+      ansible.builtin.file:
+        path: /var/lib/systemd/linger
+        state: directory
+        owner: root
+        group: root
+        mode: '0755'
+      become: true
+      when:
+        - not common_linger_stat.stat.exists
+        - install_mode == "image"
+
+    - name: Enable user session persistence (linger) - image build
+      ansible.builtin.file:
+        path: "/var/lib/systemd/linger/{{ target_user }}"
+        state: touch
+        mode: '0644'
+        modification_time: preserve
+        access_time: preserve
+      become: true
+      when:
+        - not common_linger_stat.stat.exists
+        - install_mode == "image"
+
+    - name: Setup polkit
+      ansible.builtin.include_tasks: polkit.yml
