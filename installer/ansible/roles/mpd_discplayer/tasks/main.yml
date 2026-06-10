@@ -1,4 +1,11 @@
 ---
+# odios_role_pre_scaffold: true on installs predating the udisk polkit rule
+# (mpd_discplayer 2026.4.0rc7).
+- name: Resolve prior role version
+  ansible.builtin.include_tasks: "../../../tasks/resolve_prior_version.yml"
+  vars:
+    scaffold_version: '2026.4.0rc7'
+
 # When MPD is managed by odios, the conf path is known and already backed up by the mpd role.
 # When MPD is external, we detect it and back up its config ourselves.
 
@@ -11,20 +18,24 @@
   ansible.builtin.include_tasks: validate_external_mpd.yml
   when: not (install_mpd | bool)
 
-- name: Ensure cdrom group exists
-  ansible.builtin.group:
-    name: cdrom
-    state: present
-  become: true
+- name: CD-ROM group (first install)
+  when: ansible_role_name not in odios_prior_roles
+  block:
+    - name: Ensure cdrom group exists
+      ansible.builtin.group:
+        name: cdrom
+        state: present
+      become: true
 
-- name: Ensure user in cdrom group
-  ansible.builtin.user:
-    name: "{{ target_user }}"
-    append: true
-    groups:
-      - cdrom
-  become: true
+    - name: Ensure user in cdrom group
+      ansible.builtin.user:
+        name: "{{ target_user }}"
+        append: true
+        groups:
+          - cdrom
+      become: true
 
+# Headless/image only, on installs predating the role scaffold.
 - name: Deploy udisk polkit rule
   ansible.builtin.template:
     src: mpd-udisks.rules.j2
@@ -33,93 +44,101 @@
     group: "root"
     mode: '0644'
   become: true
-  when: is_headless or install_mode == "image"
+  when:
+    - is_headless or install_mode == "image"
+    - odios_role_pre_scaffold | bool
 
-- name: Backup MPD config before changes (external MPD only)
-  ansible.builtin.include_tasks: "../../../tasks/backup_conf_before.yml"
-  vars:
-    conf_path: "{{ mpd_conf_path }}"
-    conf_mode: '0600'
-    conf_owner: "{{ target_user }}"
-    conf_group: "{{ target_user }}"
-  when: not (install_mpd | bool)
+- name: MPD config for disc player (first install)
+  when: ansible_role_name not in odios_prior_roles
+  block:
+    - name: Backup MPD config before changes (external MPD only)
+      ansible.builtin.include_tasks: "../../../tasks/backup_conf_before.yml"
+      vars:
+        conf_path: "{{ mpd_conf_path }}"
+        conf_mode: '0600'
+        conf_owner: "{{ target_user }}"
+        conf_group: "{{ target_user }}"
+      when: not (install_mpd | bool)
 
-- name: Configure mpd cdio
-  ansible.builtin.blockinfile:
-    path: "{{ mpd_conf_path }}"
-    marker: "# {mark} ANSIBLE MANAGED BLOCK - cdio input"
-    block: |
-      # Input plugins
-      input {
-        plugin  "cdio_paranoia"
-        speed "12"
-      }
-  become: "{{ become_for_target_user }}"
-  become_user: "{{ target_user }}"
-  notify: Restart mpd
+    - name: Configure mpd cdio
+      ansible.builtin.blockinfile:
+        path: "{{ mpd_conf_path }}"
+        marker: "# {mark} ANSIBLE MANAGED BLOCK - cdio input"
+        block: |
+          # Input plugins
+          input {
+            plugin  "cdio_paranoia"
+            speed "12"
+          }
+      become: "{{ become_for_target_user }}"
+      become_user: "{{ target_user }}"
+      notify: Restart mpd
 
-- name: Configure mpd playlist plugin
-  ansible.builtin.blockinfile:
-    path: "{{ mpd_conf_path }}"
-    marker: "# {mark} ANSIBLE MANAGED BLOCK - playlist plugin"
-    block: |
-      # Playlist plugins
-      playlist_plugin {
-        name "cue"
-        enabled "true"
-        as_directory "true"
-      }
-  become: "{{ become_for_target_user }}"
-  become_user: "{{ target_user }}"
-  notify: Restart mpd
+    - name: Configure mpd playlist plugin
+      ansible.builtin.blockinfile:
+        path: "{{ mpd_conf_path }}"
+        marker: "# {mark} ANSIBLE MANAGED BLOCK - playlist plugin"
+        block: |
+          # Playlist plugins
+          playlist_plugin {
+            name "cue"
+            enabled "true"
+            as_directory "true"
+          }
+      become: "{{ become_for_target_user }}"
+      become_user: "{{ target_user }}"
+      notify: Restart mpd
 
-- name: Configure mpd udisk neighbor
-  ansible.builtin.blockinfile:
-    path: "{{ mpd_conf_path }}"
-    marker: "# {mark} ANSIBLE MANAGED BLOCK - udisk neighbor"
-    block: |
-      # Neighbors - USB device discovery
-      neighbors {
-        plugin "udisks"
-      }
-  become: "{{ become_for_target_user }}"
-  become_user: "{{ target_user }}"
-  notify: Restart mpd
+    - name: Configure mpd udisk neighbor
+      ansible.builtin.blockinfile:
+        path: "{{ mpd_conf_path }}"
+        marker: "# {mark} ANSIBLE MANAGED BLOCK - udisk neighbor"
+        block: |
+          # Neighbors - USB device discovery
+          neighbors {
+            plugin "udisks"
+          }
+      become: "{{ become_for_target_user }}"
+      become_user: "{{ target_user }}"
+      notify: Restart mpd
 
-- name: Backup MPD config after changes (external MPD only)
-  ansible.builtin.include_tasks: "../../../tasks/backup_conf_after.yml"
-  vars:
-    conf_path: "{{ mpd_conf_path }}"
-    conf_mode: '0600'
-    conf_owner: "{{ target_user }}"
-    conf_group: "{{ target_user }}"
-  when: not (install_mpd | bool)
+    - name: Backup MPD config after changes (external MPD only)
+      ansible.builtin.include_tasks: "../../../tasks/backup_conf_after.yml"
+      vars:
+        conf_path: "{{ mpd_conf_path }}"
+        conf_mode: '0600'
+        conf_owner: "{{ target_user }}"
+        conf_group: "{{ target_user }}"
+      when: not (install_mpd | bool)
 
 - name: Install mpd-discplayer v{{ mpd_discplayer_apt_version }}
   ansible.builtin.apt:
-    name: "mpd-discplayer={{ mpd_discplayer_apt_version }}"
+    name: "mpd-discplayer>={{ mpd_discplayer_apt_version }}"
     state: present
     install_recommends: false
   become: true
   notify: Restart mpd-discplayer
 
-- name: Copy .mpdignore to music directory
-  ansible.builtin.copy:
-    src: .mpdignore
-    dest: "{{ mpd_music_directory }}/.mpdignore"
-    mode: '0644'
-    owner: "{{ target_user }}"
-    group: audio
-  become: true
+- name: MPD-discplayer scaffolding (first install)
+  when: ansible_role_name not in odios_prior_roles
+  block:
+    - name: Copy .mpdignore to music directory
+      ansible.builtin.copy:
+        src: .mpdignore
+        dest: "{{ mpd_music_directory }}/.mpdignore"
+        mode: '0644'
+        owner: "{{ target_user }}"
+        group: audio
+      become: true
 
-- name: Create mpd-discplayer config directory
-  ansible.builtin.file:
-    path: "/home/{{ target_user }}/.config/mpd-discplayer"
-    state: directory
-    owner: "{{ target_user }}"
-    group: "{{ target_user }}"
-    mode: '0700'
-  become: "{{ become_for_target_user }}"
+    - name: Create mpd-discplayer config directory
+      ansible.builtin.file:
+        path: "/home/{{ target_user }}/.config/mpd-discplayer"
+        state: directory
+        owner: "{{ target_user }}"
+        group: "{{ target_user }}"
+        mode: '0700'
+      become: "{{ become_for_target_user }}"
 
 - name: Deploy mpd-discplayer configuration
   ansible.builtin.template:
@@ -135,3 +154,4 @@
   ansible.builtin.include_tasks: "../../../tasks/systemd_enable_user.yml"
   vars:
     service_name: mpd-discplayer.service
+  when: ansible_role_name not in odios_prior_roles
