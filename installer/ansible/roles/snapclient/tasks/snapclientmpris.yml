@@ -11,3 +11,4 @@
   ansible.builtin.include_tasks: "../../../tasks/systemd_enable_user.yml"
   vars:
     service_name: snapclientmpris.service
+  when: odios_role_pre_scaffold | bool

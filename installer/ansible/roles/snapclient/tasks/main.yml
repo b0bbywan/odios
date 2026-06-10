@@ -1,19 +1,26 @@
 ---
-- name: Install snapclient
-  ansible.builtin.apt:
-    name: snapclient
-    state: present
-    install_recommends: false
-  become: true
-  notify: Restart snapclient
-
-- name: Install snapclientmpris
-  ansible.builtin.include_tasks: snapclientmpris.yml
-
-- name: Disable system snapclient service
-  ansible.builtin.include_tasks: "../../../tasks/systemd_disable_system.yml"
+# odios_role_pre_scaffold: true on installs predating the user snapclient service
+# (snapclient 2026.5.0b3).
+- name: Resolve prior role version
+  ansible.builtin.include_tasks: "../../../tasks/resolve_prior_version.yml"
   vars:
-    service_name: snapclient.service
+    scaffold_version: '2026.5.0b3'
+
+- name: Snapclient install and system service (first install)
+  when: ansible_role_name not in odios_prior_roles
+  block:
+    - name: Install snapclient
+      ansible.builtin.apt:
+        name: snapclient
+        state: present
+        install_recommends: false
+      become: true
+      notify: Restart snapclient
+
+    - name: Disable system snapclient service
+      ansible.builtin.include_tasks: "../../../tasks/systemd_disable_system.yml"
+      vars:
+        service_name: snapclient.service
 
 - name: Copy user snapclient service
   ansible.builtin.copy:
@@ -28,3 +35,7 @@
   ansible.builtin.include_tasks: "../../../tasks/systemd_enable_user.yml"
   vars:
     service_name: snapclient.service
+  when: ansible_role_name not in odios_prior_roles
+
+- name: Install snapclientmpris
+  ansible.builtin.include_tasks: snapclientmpris.yml
