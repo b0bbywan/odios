@@ -1,11 +1,5 @@
 ---
-- name: Read existing odio-api config
-  ansible.builtin.slurp:
-    src: "/home/{{ target_user }}/.config/odio-api/config.yaml"
-  register: odio_api_existing_cfg
-  failed_when: false
-  become: "{{ become_for_target_user }}"
-
+# odio_api_existing_cfg is slurped once in main.yml (shared with power reuse).
 - name: Reuse existing snapweb URL
   ansible.builtin.set_fact:
     odio_api_snapweb_url: "{{ _snapclient_entry.url }}"
