@@ -17,6 +17,13 @@
   become: "{{ become_for_target_user }}"
   when: ansible_role_name not in odios_prior_roles
 
+# conf.d shipped in 2026.5.0b1; recreate on upgrades from older installs.
+- name: Determine if odio-api conf.d needs creating
+  ansible.builtin.set_fact:
+    odio_api_create_confd: >-
+      {{ (odios_prior_role_versions[ansible_role_name] | default('0'))
+         is version('2026.5.0b1', '<', version_type='pep440') }}
+
 - name: Create odio-api conf.d directory
   ansible.builtin.file:
     path: "/home/{{ target_user }}/.config/odio-api/conf.d"
@@ -25,6 +32,15 @@
     group: "{{ target_user }}"
     mode: '0700'
   become: "{{ become_for_target_user }}"
+  when: odio_api_create_confd | bool
+
+# Headless/image only, and only on installs predating the rule (odio_api 2026.4.0rc7).
+- name: Determine if polkit shutdown rule needs deploying
+  ansible.builtin.set_fact:
+    odio_api_deploy_polkit: >-
+      {{ (is_headless or install_mode == "image")
+         and (odios_prior_role_versions[ansible_role_name] | default('0'))
+             is version('2026.4.0rc7', '<', version_type='pep440') }}
 
 - name: Deploy polkit shutdown rule
   ansible.builtin.template:
@@ -34,7 +50,7 @@
     group: root
     mode: '0644'
   become: true
-  when: is_headless or install_mode == "image"
+  when: odio_api_deploy_polkit | bool
 
 - name: Read existing odio-api config
   ansible.builtin.slurp:
@@ -75,3 +91,4 @@
   ansible.builtin.include_tasks: "../../../tasks/systemd_enable_user.yml"
   vars:
     service_name: odio-api.service
+  when: ansible_role_name not in odios_prior_roles
