@@ -83,6 +83,9 @@
     - name: Detect graphical session
       ansible.builtin.include_tasks: "tasks/check_graphical_session.yml"
 
+    - name: Read prior install state
+      ansible.builtin.include_tasks: "tasks/read_state.yml"
+
   roles:
     - role: common
       when: run_common | bool
