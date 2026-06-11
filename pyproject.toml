@@ -14,10 +14,16 @@ warn_unused_ignores = true
 warn_redundant_casts = true
 disallow_any_generics = true
 warn_return_any = true
-mypy_path = "installer/ansible/roles/upgrade/files"
+mypy_path = ["installer/ansible/roles/upgrade/files", "installer/ansible/callback_plugins"]
 files = [
     "installer/ansible/roles/upgrade/files/odio_upgrade.py",
+    "installer/ansible/callback_plugins/odio_progress.py",
     "scripts/build-manifest.py",
     "scripts/build-rpi-manifests.py",
     "tests/test_odio_upgrade.py",
+    "tests/test_odio_progress.py",
 ]
+
+[[tool.mypy.overrides]]
+module = "ansible.*"
+ignore_missing_imports = true
