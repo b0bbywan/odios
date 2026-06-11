@@ -53,3 +53,12 @@
 - name: Prior role versions (introduced-in gate)
   ansible.builtin.set_fact:
     odios_prior_role_versions: "{{ _odios_existing_state.roles | default({}) }}"
+
+# odio-upgrade --reinstall sets this: blank the prior facts so every role runs
+# its first-install scaffold (and version-gated migrations) as if fresh.
+- name: Force full scaffold (reinstall)
+  ansible.builtin.set_fact:
+    odios_prior_roles: []
+    odios_prior_features: []
+    odios_prior_role_versions: {}
+  when: odios_force_scaffold | default(false) | bool
