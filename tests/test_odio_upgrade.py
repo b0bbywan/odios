@@ -688,6 +688,36 @@ class BuildApplyEnvTests(unittest.TestCase):
         self.assertNotIn("RUN_MPD", env)
         self.assertIn("all roles bumped", out.getvalue())
 
+    def test_reinstall_emits_force_scaffold_and_no_run_skips(self):
+        # Even with an up-to-date manifest (mpd would normally get RUN_MPD=N),
+        # --reinstall suppresses the skip and sets the scaffold force flag.
+        state = _state(roles={"mpd": "2026.5.0"}, odios="2026.5.0")
+        manifest: Manifest = {"odios": "2026.5.0", "roles": {"mpd": "2026.5.0"}}
+        out = io.StringIO()
+        with (
+            patch.object(ou, "fetch_manifest", return_value=manifest),
+            contextlib.redirect_stdout(out),
+        ):
+            env = ou._build_apply_env(
+                state, "2026.5.0", "alice", "/nonexistent/upgrades.json",
+                reinstall=True,
+            )
+        self.assertNotIn("RUN_MPD", env)
+        self.assertEqual(env["ODIOS_FORCE_SCAFFOLD"], "Y")
+        self.assertIn("reinstall: running all roles", out.getvalue())
+
+
+class CmdApplyArgsTests(unittest.TestCase):
+    def test_reinstall_flag_flows_into_apply_options(self):
+        with patch.object(ou, "run_apply", return_value=0) as run:
+            ou.cmd_apply(["--reinstall"])
+        self.assertTrue(run.call_args.args[0].reinstall)
+
+    def test_reinstall_defaults_false(self):
+        with patch.object(ou, "run_apply", return_value=0) as run:
+            ou.cmd_apply([])
+        self.assertFalse(run.call_args.args[0].reinstall)
+
 
 class ComputeRoleUpgradesTests(unittest.TestCase):
     @staticmethod

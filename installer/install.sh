@@ -351,6 +351,7 @@ run_playbook() {
   "run_mpd_discplayer":     $(bool "$RUN_MPD_DISCPLAYER"),
   "run_branding":           $(bool "$RUN_BRANDING"),
   "run_upgrade":            $(bool "$RUN_UPGRADE"),
+  "odios_force_scaffold":   $(bool "${ODIOS_FORCE_SCAFFOLD:-N}"),
   "run_common":             $(bool "$RUN_COMMON")
 }
 EOF
