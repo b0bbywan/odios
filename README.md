@@ -119,10 +119,11 @@ Each release installs `/usr/local/bin/odio-upgrade` with two subcommands: `check
 ```bash
 odio-upgrade                    # alias of `apply` — upgrade to the latest reported version
 odio-upgrade apply --version 2026.5.0 # target a specific version
+odio-upgrade apply --reinstall  # re-run every role in full (repair a broken install)
 systemctl --user start odio-upgrade   # same thing, via the installed user unit
 ```
 
-`odio-upgrade` reads `/var/lib/odio/state.json` (or rebuilds from dpkg as a last resort) to preserve the feature selection and role opt-outs across upgrades. Run `odio-upgrade --dry-run --force` to see what would be invoked without running it.
+`odio-upgrade` reads `/var/lib/odio/state.json` (or rebuilds from dpkg as a last resort) to preserve the feature selection and role opt-outs across upgrades. Run `odio-upgrade --dry-run --force` to see what would be invoked without running it. Use `--reinstall` to force every role through a full first-install pass (bypassing the smart-upgrade skips) when an install needs repairing.
 
 ## Recommended clients
 
