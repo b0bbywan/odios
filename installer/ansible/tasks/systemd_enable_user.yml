@@ -27,5 +27,6 @@
     state: link
     owner: "{{ target_user }}"
     group: "{{ target_user }}"
+    follow: false
   become: true
   when: install_mode == "image"
