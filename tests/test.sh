@@ -104,10 +104,20 @@ run_odio_upgrade_fetch() {
 run_odio_upgrade_embedded() {
     local tag="$1"
     local install_mode="${2:-image}"
+    local extra=("${@:3}")            # args after tag + mode forwarded to odio-upgrade
 
     echo "=== embedded /usr/local/bin/odio-upgrade → run as odio (target=${tag}, mode=${install_mode}) ==="
-    docker exec -u odio -e INSTALL_MODE="${install_mode}" "${CONTAINER_NAME}" \
-        /usr/local/bin/odio-upgrade --version "${tag}" --force
+    if [[ "${install_mode}" == "live" ]]; then
+        # live touches `systemctl --user`, so it needs XDG_RUNTIME_DIR and the
+        # lingered user manager (up from the baseline image boot) — same prelude
+        # as the systemctl path.
+        docker exec -u odio -e INSTALL_MODE="${install_mode}" "${CONTAINER_NAME}" \
+            bash -c "${USER_SYSTEMD_PRELUDE}"'exec /usr/local/bin/odio-upgrade --version "$1" --force "${@:2}"' \
+            _ "${tag}" "${extra[@]}"
+    else
+        docker exec -u odio -e INSTALL_MODE="${install_mode}" "${CONTAINER_NAME}" \
+            /usr/local/bin/odio-upgrade --version "${tag}" --force "${extra[@]}"
+    fi
 }
 
 # Create a non-target_user with NOPASSWD sudo. Shared by the install/
@@ -184,6 +194,31 @@ assert_state_schema() {
         < installer/ansible/roles/upgrade/files/odio_upgrade.py
 }
 
+# Assert the odio_progress callback fired on the captured upgrade output:
+# begin/progress/end events plus the synthetic setup/finalize bracket steps.
+assert_progress() {
+    local log="$1" ev step
+    for ev in begin progress end; do
+        grep -q "ODIO_PROGRESS=.*\"event\": \"${ev}\"" "$log" \
+          || { echo "ERROR: odio_progress '${ev}' event missing" >&2; exit 1; }
+    done
+    for step in setup finalize; do
+        grep -q "ODIO_PROGRESS=.*\"step\": \"${step}\"" "$log" \
+          || { echo "ERROR: odio_progress '${step}' step missing" >&2; exit 1; }
+    done
+    echo "=== odio_progress OK (begin/setup/.../finalize/end) ==="
+}
+
+# Live embedded upgrade with --progress, capturing stdout to assert the callback fired.
+run_odio_upgrade_progress() {
+    local tag="$1"
+    local log=/tmp/odio-upgrade-progress.log
+    run_odio_upgrade_embedded "${tag}" live --progress > "${log}" 2>&1 \
+      || { cat "${log}"; echo "odio-upgrade failed" >&2; exit 1; }
+    cat "${log}"
+    assert_progress "${log}"
+}
+
 run_install() {
     local tag="$1"
     local exec_user="${2:-}"          # empty = root
@@ -236,6 +271,7 @@ while [[ "${1:-}" == --* ]]; do
         echo "  upgrade-from-image-embedded T  - Same, but uses the baseline's /usr/local/bin/odio-upgrade"
         echo "  upgrade-from-image-systemctl   - Same, but via systemctl --user start odio-upgrade.service"
         echo "                                   (target driven by odio.love/manifest.json — no arg)"
+        echo "  upgrade-from-image-progress T  - Same (embedded, live) but with --progress → assert odio_progress events"
         exit 0
         ;;
     esac
@@ -243,7 +279,7 @@ while [[ "${1:-}" == --* ]]; do
 done
 
 case "${1:-}" in
-  shell|rerun|rerun-as-other-user|clean|install|install-root|install-as-other-user|test|test-as-other-user|upgrade|upgrade-from-image-fetch|upgrade-from-image-embedded|upgrade-from-image-systemctl|upgrade-from-image-fetch-as-other-user)
+  shell|rerun|rerun-as-other-user|clean|install|install-root|install-as-other-user|test|test-as-other-user|upgrade|upgrade-from-image-fetch|upgrade-from-image-embedded|upgrade-from-image-systemctl|upgrade-from-image-fetch-as-other-user|upgrade-from-image-progress)
     ACTION="$1"
     shift
     ;;
@@ -344,6 +380,7 @@ case "${ACTION}" in
     echo "=== Done ==="
     ;;
 
+
   install-as-other-user)
     BASELINE="${1:-latest}"
     shift || true
@@ -387,7 +424,7 @@ case "${ACTION}" in
     echo "=== Done ==="
     ;;
 
-  upgrade-from-image-fetch|upgrade-from-image-embedded|upgrade-from-image-systemctl|upgrade-from-image-fetch-as-other-user)
+  upgrade-from-image-fetch|upgrade-from-image-embedded|upgrade-from-image-systemctl|upgrade-from-image-fetch-as-other-user|upgrade-from-image-progress)
     TARGET="${1:?target tag required (e.g. pr-42 or 2026.4.1rc2)}"
 
     # systemctl path drives the upgrade target via odio.love/manifest.json,
@@ -428,12 +465,13 @@ EOF
 
     start_container
 
-    echo "=== [${ACTION}] Upgrading to ${TARGET} (image mode) ==="
+    echo "=== [${ACTION}] Upgrading to ${TARGET} ==="
     case "${ACTION}" in
       upgrade-from-image-fetch)              run_odio_upgrade_fetch              "${TARGET}" ;;
       upgrade-from-image-embedded)           run_odio_upgrade_embedded           "${TARGET}" ;;
       upgrade-from-image-systemctl)          run_odio_upgrade_systemctl                       ;;
       upgrade-from-image-fetch-as-other-user) run_odio_upgrade_fetch_as_other_user "${TARGET}" ;;
+      upgrade-from-image-progress)            run_odio_upgrade_progress           "${TARGET}" ;;
     esac
 
     echo "=== [${ACTION}] Asserting state.json reflects ${TARGET} ==="
