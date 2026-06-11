@@ -364,8 +364,20 @@ EOF
     local become_flag=""
     $NEEDS_BECOME_PASS && become_flag="--ask-become-pass"
 
+    # Opt-in (ODIOS_PROGRESS=Y): pass the callback env only when enabled. An empty
+    # ANSIBLE_CALLBACKS_ENABLED makes ansible load a "" plugin and fail, so the
+    # vars must be absent (not empty) when off.
+    local progress_env=()
+    if [[ "$(bool "${ODIOS_PROGRESS:-N}")" == "true" ]]; then
+        progress_env=(
+            "ANSIBLE_CALLBACK_PLUGINS=${WORK_DIR}/ansible/callback_plugins"
+            ANSIBLE_CALLBACKS_ENABLED=odio_progress
+        )
+    fi
+
     # shellcheck disable=SC2086
     PYTHONPATH="${WORK_DIR}/vendor" \
+        env "${progress_env[@]}" \
         python3 "${WORK_DIR}/vendor/bin/ansible-playbook" \
         -i "${WORK_DIR}/ansible/inventory/localhost.yml" \
         "${WORK_DIR}/ansible/playbook.yml" \
