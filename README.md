@@ -121,7 +121,6 @@ odio-upgrade                    # alias of `apply` — upgrade to the latest rep
 odio-upgrade apply --version 2026.5.0 # target a specific version
 odio-upgrade apply --reinstall  # re-run every role in full (repair a broken install)
 odio-upgrade apply --skip-odio-api-restart  # upgrade without restarting odio-api
-systemctl --user start odio-upgrade   # same thing, via the installed user unit
 ```
 
 `odio-upgrade` reads `/var/lib/odio/state.json` (or rebuilds from dpkg as a last resort) to preserve the feature selection and role opt-outs across upgrades. Run `odio-upgrade --dry-run --force` to see what would be invoked without running it. Use `--reinstall` to force every role through a full first-install pass (bypassing the smart-upgrade skips) when an install needs repairing. Use `--skip-odio-api-restart` when the upgrade is driven by odio-api itself, so it isn't restarted mid-run.
