@@ -299,7 +299,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        mode: [install, install-root, install-as-other-user]
+        mode: [install, install-root, install-as-other-user, install-progress]
     steps:
       - uses: actions/checkout@v5
 

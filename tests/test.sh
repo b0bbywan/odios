@@ -184,6 +184,20 @@ assert_state_schema() {
         < installer/ansible/roles/upgrade/files/odio_upgrade.py
 }
 
+# Assert the opt-in odio_progress callback fired: begin/progress/end events on
+# stdout, plus the final one mirrored to the status file.
+assert_progress() {
+    local log="$1" ev
+    for ev in begin progress end; do
+        grep -q "ODIO_PROGRESS=.*\"event\": \"${ev}\"" "$log" \
+          || { echo "ERROR: odio_progress '${ev}' event missing" >&2; exit 1; }
+    done
+    docker exec "${CONTAINER_NAME}" \
+      grep -q '"event": "end"' /var/cache/odio/upgrade-status.json \
+      || { echo "ERROR: /var/cache/odio/upgrade-status.json missing or incomplete" >&2; exit 1; }
+    echo "=== odio_progress OK (begin/progress/end + status.json) ==="
+}
+
 run_install() {
     local tag="$1"
     local exec_user="${2:-}"          # empty = root
@@ -229,6 +243,7 @@ while [[ "${1:-}" == --* ]]; do
         echo "  install [TAG]               - Test install.sh as user odio (sudo)"
         echo "  install-root [TAG]          - Test install.sh as root, TARGET_USER=odio"
         echo "  install-as-other-user [TAG] - Test install.sh as bob (NOPASSWD sudoer), TARGET_USER=odio"
+        echo "  install-progress [TAG]      - Test install.sh with ODIOS_PROGRESS=Y → assert odio_progress events"
         echo "  test-as-other-user          - Run playbook directly as bob (live mode) → exercises become_for_target_user paths"
         echo "                                TAG examples: latest, pr-2, 2026.3.0"
         echo "  upgrade B T        - Upgrade from baseline tag B to target tag T (INSTALL_MODE=live)"
@@ -243,7 +258,7 @@ while [[ "${1:-}" == --* ]]; do
 done
 
 case "${1:-}" in
-  shell|rerun|rerun-as-other-user|clean|install|install-root|install-as-other-user|test|test-as-other-user|upgrade|upgrade-from-image-fetch|upgrade-from-image-embedded|upgrade-from-image-systemctl|upgrade-from-image-fetch-as-other-user)
+  shell|rerun|rerun-as-other-user|clean|install|install-root|install-as-other-user|install-progress|test|test-as-other-user|upgrade|upgrade-from-image-fetch|upgrade-from-image-embedded|upgrade-from-image-systemctl|upgrade-from-image-fetch-as-other-user)
     ACTION="$1"
     shift
     ;;
@@ -330,6 +345,16 @@ case "${ACTION}" in
   install-root)
     start_container
     run_install "${1:-latest}"
+    echo "=== Done ==="
+    ;;
+
+  install-progress)
+    start_container
+    PROGRESS_LOG=/tmp/odio-progress-install.log
+    run_install "${1:-latest}" odio live ODIOS_PROGRESS=Y > "${PROGRESS_LOG}" 2>&1 \
+      || { cat "${PROGRESS_LOG}"; echo "install.sh failed" >&2; exit 1; }
+    cat "${PROGRESS_LOG}"
+    assert_progress "${PROGRESS_LOG}"
     echo "=== Done ==="
     ;;
 
