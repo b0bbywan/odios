@@ -400,6 +400,14 @@ jobs:
             arch: amd64
             baseline_tag: "2026.4.2b1"
             test_action: upgrade-from-image-embedded
+          # odio_progress callback: baseline built from this PR (its embedded
+          # odio-upgrade knows --progress), upgraded live with --progress so the
+          # ODIO_PROGRESS events are asserted on the captured output.
+          - platform: linux/amd64
+            runner: ubuntu-24.04
+            arch: amd64
+            baseline_tag: "pr-64"
+            test_action: upgrade-from-image-progress
           # Baseline installed without mpd / mpd-discplayer / upmpdcli —
           # exercises smart-upgrade against a state.roles that legitimately
           # omits those entries. Variant images built via
