@@ -8,6 +8,7 @@ Covers the three input shapes the upgrade script must handle:
 
 Run with: python3 -m unittest tests.test_odio_upgrade
 """
+
 import contextlib
 import io
 import json
@@ -126,9 +127,7 @@ class BackfillStateTests(unittest.TestCase):
         result = self._call(state, branding=True, tidal=True)
 
         self.assertIn("branding", result["roles"])
-        expected_excluded = sorted(
-            set(ou._ROLE_PACKAGES) - {"pulseaudio", "bluetooth", "odio_api"}
-        )
+        expected_excluded = sorted(set(ou._ROLE_PACKAGES) - {"pulseaudio", "bluetooth", "odio_api"})
         self.assertEqual(result["roles_excluded"], expected_excluded)
         self.assertEqual(result["features"], ["tidal"])
         self.assertEqual(result["features_excluded"], [])
@@ -188,9 +187,7 @@ class BackfillStateTests(unittest.TestCase):
         result = self._call(state, branding=False, tidal=True)  # disk lies — state wins
         self.assertEqual(result["roles_excluded"], ["spotifyd"])
         self.assertEqual(result["features"], [])
-        self.assertEqual(
-            result["features_excluded"], ["qobuz", "tidal", "upnpwebradios"]
-        )
+        self.assertEqual(result["features_excluded"], ["qobuz", "tidal", "upnpwebradios"])
         self.assertIn("branding", result["roles"])
 
     def test_partial_features_filled_but_not_overwritten(self):
@@ -199,8 +196,8 @@ class BackfillStateTests(unittest.TestCase):
         # (pure opt-out → Y at derive time, not forced N here).
         state: StateLegacy = {"roles": {"pulseaudio": "x"}, "features": ["tidal"]}
         result = self._call(state, tidal=False, qobuz=True)
-        self.assertIn("tidal", result["features"])   # preserved (state wins over dpkg)
-        self.assertIn("qobuz", result["features"])   # from dpkg
+        self.assertIn("tidal", result["features"])  # preserved (state wins over dpkg)
+        self.assertIn("qobuz", result["features"])  # from dpkg
         self.assertNotIn("upnpwebradios", result["features"])
         self.assertEqual(result["features_excluded"], [])
 
@@ -301,7 +298,7 @@ class BackfillDeriveIntegrationTests(unittest.TestCase):
         self.assertEqual(env["INSTALL_QOBUZ"], "Y")
         self.assertEqual(env["INSTALL_TIDAL"], "Y")
         self.assertNotIn("INSTALL_UPNPWEBRADIOS", env)  # install.sh default Y
-        self.assertNotIn("INSTALL_BRANDING", env)        # install.sh default Y
+        self.assertNotIn("INSTALL_BRANDING", env)  # install.sh default Y
 
 
 class ResolveTargetUserTests(unittest.TestCase):
@@ -518,9 +515,7 @@ class DeriveRunEnvTests(unittest.TestCase):
         # role gets RUN_X=N — the maximum-skip case the feature exists for.
         roles = {"mpd": "2026.5.0", "odio_api": "2026.5.0", "upgrade": "2026.5.0"}
         install_env = {f"INSTALL_{r.upper()}": "Y" for r in roles}
-        env = ou.derive_run_env(
-            self._state(roles), self._manifest(roles), install_env
-        )
+        env = ou.derive_run_env(self._state(roles), self._manifest(roles), install_env)
         for role in roles:
             self.assertEqual(env[f"RUN_{role.upper()}"], "N", role)
 
@@ -659,7 +654,9 @@ class BuildApplyEnvTests(unittest.TestCase):
             patch.object(ou, "fetch_manifest", return_value=manifest),
             contextlib.redirect_stdout(out),
         ):
-            env = ou._build_apply_env(state, "2026.5.0", "alice", "/nonexistent/upgrades.json")
+            env = ou._build_apply_env(
+                state, "2026.5.0", "alice", "/nonexistent/upgrades.json", ou.ApplyOptions()
+            )
         self.assertEqual(env["TARGET_USER"], "alice")
         self.assertEqual(env["ODIOS_VERSION"], "2026.5.0")
         self.assertEqual(env.get("RUN_MPD"), "N")
@@ -672,7 +669,9 @@ class BuildApplyEnvTests(unittest.TestCase):
             patch.object(ou, "fetch_manifest", return_value=None),
             contextlib.redirect_stdout(out),
         ):
-            env = ou._build_apply_env(state, "2026.5.0", "alice", "/nonexistent/upgrades.json")
+            env = ou._build_apply_env(
+                state, "2026.5.0", "alice", "/nonexistent/upgrades.json", ou.ApplyOptions()
+            )
         self.assertNotIn("RUN_MPD", env)
         self.assertIn("manifest unavailable", out.getvalue())
 
@@ -684,7 +683,9 @@ class BuildApplyEnvTests(unittest.TestCase):
             patch.object(ou, "fetch_manifest", return_value=manifest),
             contextlib.redirect_stdout(out),
         ):
-            env = ou._build_apply_env(state, "2026.5.0", "alice", "/nonexistent/upgrades.json")
+            env = ou._build_apply_env(
+                state, "2026.5.0", "alice", "/nonexistent/upgrades.json", ou.ApplyOptions()
+            )
         self.assertNotIn("RUN_MPD", env)
         self.assertIn("all roles bumped", out.getvalue())
 
@@ -699,12 +700,47 @@ class BuildApplyEnvTests(unittest.TestCase):
             contextlib.redirect_stdout(out),
         ):
             env = ou._build_apply_env(
-                state, "2026.5.0", "alice", "/nonexistent/upgrades.json",
-                reinstall=True,
+                state,
+                "2026.5.0",
+                "alice",
+                "/nonexistent/upgrades.json",
+                ou.ApplyOptions(reinstall=True),
             )
         self.assertNotIn("RUN_MPD", env)
         self.assertEqual(env["ODIOS_FORCE_SCAFFOLD"], "Y")
         self.assertIn("reinstall: running all roles", out.getvalue())
+
+    def test_skip_odio_api_restart_emits_env(self):
+        state = _state(roles={"mpd": "2026.5.0"}, odios="2026.5.0")
+        manifest: Manifest = {"odios": "2026.5.0", "roles": {"mpd": "2026.5.0"}}
+        with (
+            patch.object(ou, "fetch_manifest", return_value=manifest),
+            contextlib.redirect_stdout(io.StringIO()),
+        ):
+            env = ou._build_apply_env(
+                state,
+                "2026.5.0",
+                "alice",
+                "/nonexistent/upgrades.json",
+                ou.ApplyOptions(skip_odio_api_restart=True),
+            )
+        self.assertEqual(env["ODIOS_SKIP_ODIO_API_RESTART"], "Y")
+
+    def test_skip_odio_api_restart_absent_by_default(self):
+        state = _state(roles={"mpd": "2026.5.0"}, odios="2026.5.0")
+        manifest: Manifest = {"odios": "2026.5.0", "roles": {"mpd": "2026.5.0"}}
+        with (
+            patch.object(ou, "fetch_manifest", return_value=manifest),
+            contextlib.redirect_stdout(io.StringIO()),
+        ):
+            env = ou._build_apply_env(
+                state,
+                "2026.5.0",
+                "alice",
+                "/nonexistent/upgrades.json",
+                ou.ApplyOptions(),
+            )
+        self.assertNotIn("ODIOS_SKIP_ODIO_API_RESTART", env)
 
 
 class CmdApplyArgsTests(unittest.TestCase):
@@ -717,6 +753,11 @@ class CmdApplyArgsTests(unittest.TestCase):
         with patch.object(ou, "run_apply", return_value=0) as run:
             ou.cmd_apply([])
         self.assertFalse(run.call_args.args[0].reinstall)
+
+    def test_skip_odio_api_restart_flag_flows_into_apply_options(self):
+        with patch.object(ou, "run_apply", return_value=0) as run:
+            ou.cmd_apply(["--skip-odio-api-restart"])
+        self.assertTrue(run.call_args.args[0].skip_odio_api_restart)
 
 
 class ComputeRoleUpgradesTests(unittest.TestCase):
@@ -773,7 +814,8 @@ class BuildUpgradesReportTests(unittest.TestCase):
     def test_upgrade_available_when_a_role_is_bumped(self):
         state: StateLegacy = {"odios": "2026.5.0", "roles": {"mpd": "2026.4.0"}}
         report = ou._build_upgrades_report(
-            state, {"odios": "2026.5.0", "roles": {"mpd": "2026.5.0"}},
+            state,
+            {"odios": "2026.5.0", "roles": {"mpd": "2026.5.0"}},
         )
         self.assertTrue(report["upgrade_available"])
         self.assertEqual(report["current"], "2026.5.0")
@@ -785,7 +827,8 @@ class BuildUpgradesReportTests(unittest.TestCase):
         # still surface as an upgrade — that's the OR in upgrade_available.
         state: StateLegacy = {"odios": "2026.4.0", "roles": {"mpd": "2026.5.0"}}
         report = ou._build_upgrades_report(
-            state, {"odios": "2026.5.0", "roles": {"mpd": "2026.5.0"}},
+            state,
+            {"odios": "2026.5.0", "roles": {"mpd": "2026.5.0"}},
         )
         self.assertTrue(report["upgrade_available"])
         self.assertEqual(report["roles"], [])
@@ -793,7 +836,8 @@ class BuildUpgradesReportTests(unittest.TestCase):
     def test_up_to_date_when_neither_odios_nor_roles_bumped(self):
         state: StateLegacy = {"odios": "2026.5.0", "roles": {"mpd": "2026.5.0"}}
         report = ou._build_upgrades_report(
-            state, {"odios": "2026.5.0", "roles": {"mpd": "2026.5.0"}},
+            state,
+            {"odios": "2026.5.0", "roles": {"mpd": "2026.5.0"}},
         )
         self.assertFalse(report["upgrade_available"])
         self.assertEqual(report["roles"], [])
