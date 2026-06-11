@@ -34,7 +34,7 @@ jobs:
       - uses: actions/setup-python@v6
         with:
           python-version: '3.12'
-      - run: pip install pyyaml
+      - run: pip install pyyaml "ansible-core==2.19.*"
       - run: python3 -m unittest discover -v tests
 
   python-lint:
