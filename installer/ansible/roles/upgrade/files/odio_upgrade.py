@@ -8,7 +8,7 @@ Subcommands:
       /var/cache/odio/upgrades.json. Wired to a daily systemd user timer.
 
   odio-upgrade apply [--version VERSION] [--state PATH] [--dry-run]
-                     [--force] [--reinstall]
+                     [--force] [--reinstall] [--skip-odio-api-restart]
       Locate state.json (or rebuild from dpkg as a last resort), derive
       INSTALL_* env vars matching the previous install, fetch the target
       manifest to compute per-role RUN_* skips, then pipe install.sh from
@@ -475,6 +475,7 @@ class ApplyOptions:
     dry_run: bool = False
     force: bool = False
     reinstall: bool = False
+    skip_odio_api_restart: bool = False
 
 
 @dataclass
@@ -513,6 +514,12 @@ def cmd_apply(argv: list[str]) -> int:
         help="re-run every role in full: no smart-upgrade skips, all "
              "first-install scaffold re-applied (implies --force)",
     )
+    p.add_argument(
+        "--skip-odio-api-restart",
+        action="store_true",
+        help="don't restart odio-api during the run (for upgrades driven by "
+             "odio-api itself, which would otherwise kill its own process)",
+    )
     args = p.parse_args(argv)
     return run_apply(ApplyOptions(
         version=args.version,
@@ -520,6 +527,7 @@ def cmd_apply(argv: list[str]) -> int:
         dry_run=args.dry_run,
         force=args.force,
         reinstall=args.reinstall,
+        skip_odio_api_restart=args.skip_odio_api_restart,
     ))
 
 
@@ -576,7 +584,7 @@ def _load_state(opts: ApplyOptions) -> tuple[str | None, State, str] | None:
 
 def _build_apply_env(
     state: State, version: str, target_user: str, upgrades_path: str,
-    reinstall: bool = False,
+    opts: ApplyOptions,
 ) -> dict[str, str]:
     install_env = derive_install_env(state)
     manifest = _resolve_manifest(version, upgrades_path)
@@ -584,18 +592,20 @@ def _build_apply_env(
     # ODIOS_FORCE_SCAFFOLD=Y (read_state.yml blanks odios_prior_* so first-
     # install scaffold re-applies). The RUN_X skip alone wouldn't be enough —
     # a re-run role still skips its scaffold without the force flag.
-    run_env = {} if reinstall else derive_run_env(state, manifest, install_env)
+    run_env = {} if opts.reinstall else derive_run_env(state, manifest, install_env)
     env_overrides = {
         **install_env,
         **run_env,
         "ODIOS_VERSION": version,
         "TARGET_USER": target_user,
     }
-    if reinstall:
+    if opts.reinstall:
         env_overrides["ODIOS_FORCE_SCAFFOLD"] = "Y"
+    if opts.skip_odio_api_restart:
+        env_overrides["ODIOS_SKIP_ODIO_API_RESTART"] = "Y"
 
     skipped = sorted(k.removeprefix("RUN_").lower() for k in run_env)
-    if reinstall:
+    if opts.reinstall:
         print("  reinstall: running all roles with full scaffold", flush=True)
     elif skipped:
         print(
@@ -639,7 +649,7 @@ def run_apply(opts: ApplyOptions) -> int:
         return 2
     url = install_url(version)
     env_overrides = _build_apply_env(
-        state, version, target_user, upgrades_path, reinstall=opts.reinstall,
+        state, version, target_user, upgrades_path, opts,
     )
 
     print(f"Upgrading to {version} via {url}", flush=True)
