@@ -1,32 +1,43 @@
 ---
-# Pre-rc3 installs shipped the scripts in ~/.local/bin via the branding role.
-# Remove them so the system-wide copy in /usr/local/bin is the only one in PATH.
-- name: Remove legacy per-user upgrade scripts
-  ansible.builtin.file:
-    path: "/home/{{ target_user }}/.local/bin/{{ item }}"
-    state: absent
-  become: "{{ become_for_target_user }}"
-  loop:
-    - odio-check-upgrade
-    - odio-upgrade
+- name: Determine if upgrade-role legacy migration is needed
+  ansible.builtin.set_fact:
+    upgrade_migrate_legacy: >-
+      {{ (odios_prior_role_versions[ansible_role_name] | default('0'))
+         is version('2026.5.0b1', '<', version_type='pep440') }}
 
-# Same story for the systemd units — moved from per-user to /etc/systemd/user/.
-- name: Remove legacy per-user upgrade unit files
-  ansible.builtin.file:
-    path: "/home/{{ target_user }}/.config/systemd/user/{{ item }}"
-    state: absent
-  become: "{{ become_for_target_user }}"
-  loop:
-    - odio-check-upgrade.service
-    - odio-check-upgrade.timer
-    - odio-upgrade.service
+- name: Clean up pre-current-layout upgrade artifacts
+  when: upgrade_migrate_legacy | bool
+  block:
+    - name: Remove legacy per-user upgrade scripts
+      ansible.builtin.file:
+        path: "/home/{{ target_user }}/.local/bin/{{ item }}"
+        state: absent
+      become: "{{ become_for_target_user }}"
+      loop:
+        - odio-check-upgrade
+        - odio-upgrade
 
-# Legacy: image-mode used to symlink the timer into default.target.wants/.
-- name: Remove legacy timer wants symlink
-  ansible.builtin.file:
-    path: "/home/{{ target_user }}/.config/systemd/user/default.target.wants/odio-check-upgrade.timer"
-    state: absent
-  become: "{{ become_for_target_user }}"
+    - name: Remove legacy per-user upgrade unit files
+      ansible.builtin.file:
+        path: "/home/{{ target_user }}/.config/systemd/user/{{ item }}"
+        state: absent
+      become: "{{ become_for_target_user }}"
+      loop:
+        - odio-check-upgrade.service
+        - odio-check-upgrade.timer
+        - odio-upgrade.service
+
+    - name: Remove legacy timer wants symlink
+      ansible.builtin.file:
+        path: "/home/{{ target_user }}/.config/systemd/user/default.target.wants/odio-check-upgrade.timer"
+        state: absent
+      become: "{{ become_for_target_user }}"
+
+    - name: Remove legacy odio-check-upgrade script
+      ansible.builtin.file:
+        path: /usr/local/bin/odio-check-upgrade
+        state: absent
+      become: true
 
 - name: Install odio-upgrade script
   ansible.builtin.copy:
@@ -35,14 +46,6 @@
     owner: root
     group: root
     mode: '0755'
-  become: true
-
-# Pre-merge installs shipped odio-check-upgrade as its own script;
-# replaced by `odio-upgrade check`. Drop the orphan binary.
-- name: Remove legacy odio-check-upgrade script
-  ansible.builtin.file:
-    path: /usr/local/bin/odio-check-upgrade
-    state: absent
   become: true
 
 - name: Deploy odio-upgrade systemd user units (system-wide)
@@ -64,6 +67,7 @@
     service_name: odio-check-upgrade.timer
     service_unit_path: /etc/systemd/user/odio-check-upgrade.timer
     wanted_by: timers.target
+  when: upgrade_migrate_legacy | bool
 
 - name: Install unattended-upgrades (image mode)
   ansible.builtin.apt:
