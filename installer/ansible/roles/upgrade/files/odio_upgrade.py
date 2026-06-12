@@ -9,6 +9,8 @@ Subcommands:
 
   odio-upgrade apply [--version VERSION] [--state PATH] [--dry-run]
                      [--force] [--reinstall] [--skip-odio-api-restart]
+  odio-upgrade apply [--version VERSION] [--state PATH] [--dry-run] [--force]
+                     [--progress]
       Locate state.json (or rebuild from dpkg as a last resort), derive
       INSTALL_* env vars matching the previous install, fetch the target
       manifest to compute per-role RUN_* skips, then pipe install.sh from
@@ -476,6 +478,7 @@ class ApplyOptions:
     force: bool = False
     reinstall: bool = False
     skip_odio_api_restart: bool = False
+    progress: bool = False
 
 
 @dataclass
@@ -520,6 +523,12 @@ def cmd_apply(argv: list[str]) -> int:
         help="don't restart odio-api during the run (for upgrades driven by "
              "odio-api itself, which would otherwise kill its own process)",
     )
+    p.add_argument(
+        "--progress",
+        action="store_true",
+        help="set ODIOS_PROGRESS=Y so install.sh emits ODIO_PROGRESS events "
+             "(consumed by odio-api via journald)",
+    )
     args = p.parse_args(argv)
     return run_apply(ApplyOptions(
         version=args.version,
@@ -528,6 +537,7 @@ def cmd_apply(argv: list[str]) -> int:
         force=args.force,
         reinstall=args.reinstall,
         skip_odio_api_restart=args.skip_odio_api_restart,
+        progress=args.progress,
     ))
 
 
@@ -603,6 +613,8 @@ def _build_apply_env(
         env_overrides["ODIOS_FORCE_SCAFFOLD"] = "Y"
     if opts.skip_odio_api_restart:
         env_overrides["ODIOS_SKIP_ODIO_API_RESTART"] = "Y"
+    if opts.progress:
+        env_overrides["ODIOS_PROGRESS"] = "Y"
 
     skipped = sorted(k.removeprefix("RUN_").lower() for k in run_env)
     if opts.reinstall:
