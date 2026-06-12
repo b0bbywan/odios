@@ -8,6 +8,7 @@ Subcommands:
       /var/cache/odio/upgrades.json. Wired to a daily systemd user timer.
 
   odio-upgrade apply [--version VERSION] [--state PATH] [--dry-run] [--force]
+                     [--progress]
       Locate state.json (or rebuild from dpkg as a last resort), derive
       INSTALL_* env vars matching the previous install, fetch the target
       manifest to compute per-role RUN_* skips, then pipe install.sh from
@@ -472,6 +473,7 @@ class ApplyOptions:
     state: str | None = None
     dry_run: bool = False
     force: bool = False
+    progress: bool = False
 
 
 @dataclass
@@ -504,12 +506,19 @@ def cmd_apply(argv: list[str]) -> int:
         action="store_true",
         help="run even if no upgrade is reported",
     )
+    p.add_argument(
+        "--progress",
+        action="store_true",
+        help="set ODIOS_PROGRESS=Y so install.sh emits ODIO_PROGRESS events "
+             "(consumed by odio-api via journald)",
+    )
     args = p.parse_args(argv)
     return run_apply(ApplyOptions(
         version=args.version,
         state=args.state,
         dry_run=args.dry_run,
         force=args.force,
+        progress=args.progress,
     ))
 
 
@@ -620,6 +629,8 @@ def run_apply(opts: ApplyOptions) -> int:
         return 2
     url = install_url(version)
     env_overrides = _build_apply_env(state, version, target_user, upgrades_path)
+    if opts.progress:
+        env_overrides["ODIOS_PROGRESS"] = "Y"
 
     print(f"Upgrading to {version} via {url}", flush=True)
     print("  env passed to install.sh:", flush=True)
