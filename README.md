@@ -121,9 +121,10 @@ odio-upgrade                    # alias of `apply` — upgrade to the latest rep
 odio-upgrade apply --version 2026.5.0 # target a specific version
 odio-upgrade apply --reinstall  # re-run every role in full (repair a broken install)
 odio-upgrade apply --skip-odio-api-restart  # upgrade without restarting odio-api
+odio-upgrade apply --progress   # emit structured progress events for odio-api
 ```
 
-`odio-upgrade` reads `/var/lib/odio/state.json` (or rebuilds from dpkg as a last resort) to preserve the feature selection and role opt-outs across upgrades. Run `odio-upgrade --dry-run --force` to see what would be invoked without running it. Use `--reinstall` to force every role through a full first-install pass (bypassing the smart-upgrade skips) when an install needs repairing. Use `--skip-odio-api-restart` when the upgrade is driven by odio-api itself, so it isn't restarted mid-run.
+`odio-upgrade` reads `/var/lib/odio/state.json` (or rebuilds from dpkg as a last resort) to preserve the feature selection and role opt-outs across upgrades. Run `odio-upgrade --dry-run --force` to see what would be invoked without running it. Use `--reinstall` to force every role through a full first-install pass (bypassing the smart-upgrade skips) when an install needs repairing. Use `--skip-odio-api-restart` when the upgrade is driven by odio-api itself, so it isn't restarted mid-run. Use `--progress` to emit structured `ODIO_PROGRESS` JSON lines (one per role and phase) to stdout for odio-api to display, without altering the normal output.
 
 ## Recommended clients
 
