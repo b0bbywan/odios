@@ -143,7 +143,6 @@ odio-upgrade apply --version 2026.5.0   # target a specific release
 odio-upgrade apply --dry-run --force    # print what would be invoked, do nothing
 odio-upgrade apply --reinstall          # re-run every role in full (repair a broken install)
 odio-upgrade apply --skip-odio-api-restart  # don't restart odio-api during the run
-systemctl --user start odio-upgrade     # same, via the installed user unit (log in journalctl)
 ```
 
 `apply` fetches the target release's `manifest.json` and skips roles whose installed version already matches — only the roles that actually bumped re-run. On top of that, each role that does run skips its first-install scaffolding (config-directory creation, service enablement, version-gated migrations) since the prior state already records it. The amount of time saved scales with how few roles changed in the target release.
