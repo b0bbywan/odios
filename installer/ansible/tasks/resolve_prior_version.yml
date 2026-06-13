@@ -1,0 +1,8 @@
+---
+# odios_role_pre_scaffold: true when this install predates the role's current
+# scaffold version (or the role is brand new); drives every scaffold/migration gate.
+- name: Resolve prior role version
+  ansible.builtin.set_fact:
+    odios_role_pre_scaffold: >-
+      {{ (odios_prior_role_versions[ansible_role_name] | default('0'))
+         is version(scaffold_version, '<', version_type='pep440') }}
