@@ -1,8 +1,14 @@
 """Emit structured install/upgrade progress for odio-api to consume.
 
-Prints one `ODIO_PROGRESS=<json>` line per milestone to stdout, captured by
-journald when run under odio-upgrade.service; odio-api reads it back from the
-journal (no status file on disk).
+Each milestone goes out two ways: one `ODIO_PROGRESS=<json>` line to stdout
+(captured by journald for logs and the CI assertion), and the same JSON object,
+newline-delimited and unprefixed, over the unix socket odio-api listens on
+(`$XDG_RUNTIME_DIR/odio-api/upgrade.sock`). odio-api opens that socket at boot
+and relays each line as an upgrade.info event; the socket is the live channel
+(no journal polling). Socket I/O runs on a daemon thread so it never blocks the
+playbook: the connection is best-effort and reopened lazily, so a run outside
+odio-api just writes stdout, and a drop (odio-api restarting mid-upgrade)
+reconnects on the next event so later ones, notably `end`, still get through.
 
 Event schema (the contract odio-api parses): a generic begin/progress/end
 core, enriched with ansible-flavoured fields a generic consumer can ignore.
@@ -15,7 +21,13 @@ state, restart, health-check) so those phases aren't dead air.
 """
 from __future__ import annotations
 
+import contextlib
 import json
+import os
+import queue
+import socket
+import threading
+import time
 from typing import Literal, TypedDict
 
 from ansible.plugins.callback import CallbackBase
@@ -24,7 +36,7 @@ DOCUMENTATION = """
   name: odio_progress
   type: notification
   short_description: structured install/upgrade progress for odio-api
-  description: Emits one ODIO_PROGRESS JSON line per step to stdout.
+  description: Emits one JSON event per step to stdout and odio-api's unix socket.
   requirements:
     - enable in configuration (callbacks_enabled)
 """
@@ -32,6 +44,20 @@ DOCUMENTATION = """
 PREFIX = "ODIO_PROGRESS="
 SETUP = "setup"
 FINALIZE = "finalize"
+
+# Retry the unsent tail across odio-api's end-of-run restart (~1-2s rebind).
+RESEND_ATTEMPTS = 6
+RESEND_INTERVAL_S = 0.5
+
+
+def _socket_path() -> str | None:
+    runtime = os.environ.get("XDG_RUNTIME_DIR")
+    if not runtime:
+        # Under sudo (uid 0) /run/user/0 is never the target_user's socket.
+        if os.getuid() == 0:
+            return None
+        runtime = f"/run/user/{os.getuid()}"
+    return os.path.join(runtime, "odio-api", "upgrade.sock")
 
 
 class BeginEvent(TypedDict):
@@ -69,9 +95,93 @@ class CallbackModule(CallbackBase):
         self._seen: set[str] = set()
         self._current: int = 0
         self._finalize_done: bool = False
+        # Socket I/O runs on a daemon thread so it never blocks the playbook:
+        # _emit just enqueues; the worker owns _sock/_pending (no lock needed)
+        # and does all connect/reconnect/send work.
+        self._sock: socket.socket | None = None
+        self._pending: list[str] = []      # events awaiting (re)delivery
+        self._ever_connected: bool = False
+        self._warned_no_path: bool = False
+        self._queue: queue.Queue[str | None] = queue.Queue()
+        self._worker = threading.Thread(target=self._run, daemon=True)
+        self._worker.start()
+
+    def _run(self) -> None:
+        # Drain the queue until the sentinel; None means "finish and stop".
+        while True:
+            line = self._queue.get()
+            if line is None:
+                self._drain_pending()
+                self._close()
+                return
+            self._deliver(line)
+
+    def _connect(self) -> None:
+        # Best-effort: no listener (run outside odio-api) leaves progress off.
+        # Short timeout so a half-restarted odio-api can't stall the worker.
+        path = _socket_path()
+        if path is None:
+            if not self._warned_no_path:
+                self._display.warning(
+                    "odio_progress: XDG_RUNTIME_DIR unset under root; "
+                    "progress socket disabled")
+                self._warned_no_path = True
+            return
+        try:
+            sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+            sock.settimeout(1.0)
+            sock.connect(path)
+            self._sock = sock
+            self._ever_connected = True
+        except OSError:
+            self._sock = None
+
+    def _send(self, line: str) -> bool:
+        if self._sock is None:
+            self._connect()
+        if self._sock is None:
+            return False
+        try:
+            self._sock.sendall((line + "\n").encode())
+            return True
+        except OSError:
+            self._close()
+            return False
+
+    def _flush(self) -> None:
+        while self._pending and self._send(self._pending[0]):
+            self._pending.pop(0)
+
+    def _deliver(self, line: str) -> None:
+        # Buffer + flush so a missed event is resent, not dropped.
+        self._pending.append(line)
+        self._flush()
+
+    def _drain_pending(self) -> None:
+        # Bridge odio-api's end-of-run restart: retry the unsent tail.
+        if not self._ever_connected:
+            return
+        for _ in range(RESEND_ATTEMPTS):
+            self._flush()
+            if not self._pending:
+                return
+            time.sleep(RESEND_INTERVAL_S)
+
+    def _close(self) -> None:
+        if self._sock is not None:
+            with contextlib.suppress(OSError):
+                self._sock.close()
+            self._sock = None
+
+    def _shutdown(self) -> None:
+        # Join covers the resend window so a late `end` still lands.
+        self._queue.put(None)
+        self._worker.join(timeout=RESEND_ATTEMPTS * RESEND_INTERVAL_S + 1)
 
     def _emit(self, payload: Event) -> None:
-        self._display.display(PREFIX + json.dumps(payload, sort_keys=True))
+        line = json.dumps(payload, sort_keys=True)
+        self._display.display(PREFIX + line)  # stdout (journald, CI capture)
+        self._queue.put(line)                  # handed to the background sender
 
     def _progress(self, step: str) -> None:
         self._current += 1
@@ -129,3 +239,4 @@ class CallbackModule(CallbackBase):
         failed = bool(stats.failures or stats.dark)
         changed = sum(stats.changed.values())
         self._emit(EndEvent(event="end", success=not failed, changed=changed))
+        self._shutdown()

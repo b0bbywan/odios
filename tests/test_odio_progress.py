@@ -4,11 +4,18 @@
 Drives the v2_* hooks with mocked play/task/stats objects and asserts the
 ODIO_PROGRESS events emitted via the (mocked) display.
 """
+import contextlib
 import json
+import os
+import shutil
+import socket
 import sys
+import tempfile
+import threading
+import time
 import unittest
 from pathlib import Path
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 
 sys.path.insert(
     0,
@@ -181,6 +188,172 @@ class EndTests(_Base):
     def test_end_failure_sets_success_false(self):
         self.cb.v2_playbook_on_stats(_stats(changed=1, failed=True))
         self.assertFalse(self.events()[-1]["success"])
+
+
+def _wait_for(pred, timeout: float = 3.0) -> bool:
+    deadline = time.monotonic() + timeout
+    while time.monotonic() < deadline:
+        if pred():
+            return True
+        time.sleep(0.01)
+    return False
+
+
+class _Listener:
+    """AF_UNIX server collecting the newline-delimited JSON the callback sends."""
+
+    def __init__(self, path: str) -> None:
+        self.received: list[dict[str, object]] = []
+        with contextlib.suppress(FileNotFoundError):
+            os.unlink(path)
+        self._sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+        self._sock.bind(path)
+        self._sock.listen(8)
+        self._sock.settimeout(0.1)
+        self._stop = threading.Event()
+        self._thread = threading.Thread(target=self._serve, daemon=True)
+        self._thread.start()
+
+    def _serve(self) -> None:
+        while not self._stop.is_set():
+            try:
+                conn, _ = self._sock.accept()
+            except OSError:
+                continue
+            self._read(conn)
+
+    def _read(self, conn: socket.socket) -> None:
+        conn.settimeout(0.1)
+        buf = b""
+        while not self._stop.is_set():
+            try:
+                data = conn.recv(4096)
+            except TimeoutError:
+                continue
+            except OSError:
+                break
+            if not data:
+                break
+            buf += data
+            while b"\n" in buf:
+                line, buf = buf.split(b"\n", 1)
+                self.received.append(json.loads(line))
+        conn.close()
+
+    def stop(self) -> None:
+        self._stop.set()
+        with contextlib.suppress(OSError):
+            self._sock.close()
+        self._thread.join(timeout=1)
+
+
+class SocketPathTests(unittest.TestCase):
+    def test_uses_xdg_runtime_dir(self):
+        with patch.dict(os.environ, {"XDG_RUNTIME_DIR": "/run/user/4242"}):
+            self.assertEqual(
+                op._socket_path(), "/run/user/4242/odio-api/upgrade.sock")
+
+    def test_falls_back_to_uid_without_xdg(self):
+        with patch.dict(os.environ, {}, clear=True), \
+                patch.object(op.os, "getuid", return_value=4242):
+            self.assertEqual(
+                op._socket_path(), "/run/user/4242/odio-api/upgrade.sock")
+
+    def test_none_under_root_without_xdg(self):
+        with patch.dict(os.environ, {}, clear=True), \
+                patch.object(op.os, "getuid", return_value=0):
+            self.assertIsNone(op._socket_path())
+
+
+class _SocketBase(unittest.TestCase):
+    def setUp(self) -> None:
+        self.tmp = tempfile.mkdtemp()
+        self.path = os.path.join(self.tmp, "upgrade.sock")
+        p = patch.object(op, "_socket_path", return_value=self.path)
+        p.start()
+        self.addCleanup(p.stop)
+        self.addCleanup(shutil.rmtree, self.tmp, ignore_errors=True)
+
+    def _cb(self) -> "op.CallbackModule":
+        cb = op.CallbackModule()
+        cb._display = MagicMock()
+        self.addCleanup(self._stop, cb)
+        return cb
+
+    def _stop(self, cb) -> None:
+        cb._pending.clear()
+        cb._queue.put(None)
+        cb._worker.join(timeout=1)
+
+
+class SocketDeliveryTests(_SocketBase):
+    def test_events_delivered_over_socket(self):
+        listener = _Listener(self.path)
+        self.addCleanup(listener.stop)
+        cb = self._cb()
+        cb._emit({"event": "begin", "total": 2, "roles": ["setup", "finalize"]})
+        cb._emit({"event": "end", "success": True, "changed": 0})
+        cb._shutdown()
+        self.assertTrue(_wait_for(lambda: len(listener.received) == 2))
+        self.assertEqual(listener.received, [
+            {"event": "begin", "total": 2, "roles": ["setup", "finalize"]},
+            {"event": "end", "success": True, "changed": 0},
+        ])
+
+
+class SocketBufferTests(_SocketBase):
+    def test_no_listener_buffers_without_connecting(self):
+        cb = self._cb()
+        cb._deliver('{"event": "end"}')
+        self.assertEqual(cb._pending, ['{"event": "end"}'])
+        self.assertFalse(cb._ever_connected)
+
+    def test_flush_sends_buffered_in_order(self):
+        cb = self._cb()
+        cb._deliver('{"n": 1}')
+        cb._deliver('{"n": 2}')
+        self.assertEqual(len(cb._pending), 2)
+        listener = _Listener(self.path)
+        self.addCleanup(listener.stop)
+        cb._flush()
+        self.assertEqual(cb._pending, [])
+        self.assertTrue(cb._ever_connected)
+        self.assertTrue(_wait_for(lambda: listener.received == [{"n": 1}, {"n": 2}]))
+
+    def test_connect_gives_up_and_warns_once_when_path_none(self):
+        cb = self._cb()
+        with patch.object(op, "_socket_path", return_value=None):
+            cb._connect()
+            cb._connect()
+        self.assertIsNone(cb._sock)
+        self.assertFalse(cb._ever_connected)
+        self.assertEqual(cb._display.warning.call_count, 1)
+
+    def test_drain_skips_and_keeps_tail_when_never_connected(self):
+        cb = self._cb()
+        cb._deliver('{"event": "end"}')
+        start = time.monotonic()
+        cb._drain_pending()
+        self.assertLess(time.monotonic() - start, op.RESEND_INTERVAL_S)
+        self.assertEqual(cb._pending, ['{"event": "end"}'])
+
+    def test_drain_resends_tail_after_reconnect(self):
+        # odio-api up, delivers; then it restarts (socket drops) and the tail
+        # must be resent once it comes back.
+        listener = _Listener(self.path)
+        cb = self._cb()
+        cb._deliver('{"event": "progress"}')
+        self.assertTrue(_wait_for(lambda: len(listener.received) == 1))
+        self.assertTrue(cb._ever_connected)
+        listener.stop()
+        cb._close()
+        cb._deliver('{"event": "end"}')
+        self.assertEqual(cb._pending, ['{"event": "end"}'])
+        listener2 = _Listener(self.path)
+        self.addCleanup(listener2.stop)
+        cb._drain_pending()
+        self.assertEqual(cb._pending, [])
+        self.assertTrue(_wait_for(lambda: listener2.received == [{"event": "end"}]))
 
 
 if __name__ == "__main__":
