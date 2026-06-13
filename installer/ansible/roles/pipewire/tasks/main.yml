@@ -43,26 +43,27 @@
     conf_owner: "{{ target_user }}"
     conf_group: "{{ target_user }}"
 
-- name: Create user pipewire.conf.d directory
-  ansible.builtin.file:
-    path: "/home/{{ target_user }}/.config/pipewire/pipewire.conf.d"
-    state: directory
-    owner: "{{ target_user }}"
-    group: "{{ target_user }}"
-    mode: '0755'
-  become: "{{ become_for_target_user }}"
+- name: Snapcast discovery config
   when: install_snapclient
+  block:
+    - name: Create user pipewire.conf.d directory
+      ansible.builtin.file:
+        path: "/home/{{ target_user }}/.config/pipewire/pipewire.conf.d"
+        state: directory
+        owner: "{{ target_user }}"
+        group: "{{ target_user }}"
+        mode: '0755'
+      become: "{{ become_for_target_user }}"
 
-- name: Deploy snapcast-discover config
-  ansible.builtin.template:
-    src: snapcast-discover.conf.j2
-    dest: "/home/{{ target_user }}/.config/pipewire/pipewire.conf.d/snapcast-discover.conf"
-    owner: "{{ target_user }}"
-    group: "{{ target_user }}"
-    mode: '0644'
-  become: "{{ become_for_target_user }}"
-  notify: Restart pipewire-pulse
-  when: install_snapclient
+    - name: Deploy snapcast-discover config
+      ansible.builtin.template:
+        src: snapcast-discover.conf.j2
+        dest: "/home/{{ target_user }}/.config/pipewire/pipewire.conf.d/snapcast-discover.conf"
+        owner: "{{ target_user }}"
+        group: "{{ target_user }}"
+        mode: '0644'
+      become: "{{ become_for_target_user }}"
+      notify: Restart pipewire-pulse
 
 - name: Enable user PipeWire services
   ansible.builtin.include_tasks: "../../../tasks/systemd_enable_user.yml"
