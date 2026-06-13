@@ -16,6 +16,14 @@ power:
 
 {% include "_systemd_block.yml.j2" %}
 
+# Upgrade backend: reads odio-upgrade's report and drives its user units.
+# progressSocket defaults to $XDG_RUNTIME_DIR/odio-api/upgrade.sock.
+upgrade:
+  enabled: true
+  resultFile: /var/cache/odio/upgrades.json
+  checkUnit: odio-check-upgrade.service
+  upgradeUnit: odio-upgrade.service
+
 # Features
 zeroconf:
   enabled: true
