@@ -142,14 +142,15 @@ odio-upgrade                            # alias of `apply` — upgrade to the la
 odio-upgrade apply --version 2026.5.0   # target a specific release
 odio-upgrade apply --dry-run --force    # print what would be invoked, do nothing
 odio-upgrade apply --reinstall          # re-run every role in full (repair a broken install)
-odio-upgrade apply --progress           # emit ODIO_PROGRESS events for odio-api
+odio-upgrade apply --progress           # stream JSON progress events to odio-api
 ```
 
 `apply` fetches the target release's `manifest.json` and skips roles whose installed version already matches — only the roles that actually bumped re-run. On top of that, each role that does run skips its first-install scaffolding (config-directory creation, service enablement, version-gated migrations) since the prior state already records it. The amount of time saved scales with how few roles changed in the target release.
 
 `--reinstall` bypasses both skip layers: every selected role runs, and `read_state.yml` blanks the prior-state facts so each role re-applies its full first-install scaffold. Use it to repair an install whose config or services were removed out of band. It implies `--force`, so it also runs when no upgrade is reported.
 
-`--progress` enables the `odio_progress` callback, which prints one `ODIO_PROGRESS=<json>` line per step (a `begin` listing the planned roles, a `progress` event as each role starts, and an `end` with the changed count) to stdout, captured by journald. odio-api reads them back from the journal to drive a progress bar; the normal Ansible output is left intact. The `odio-upgrade.service` unit passes it for API-driven upgrades.
+
+`--progress` enables the `odio_progress` callback, which emits one event per step (a `begin` listing the planned roles, a `progress` event as each role starts, and an `end` with the changed count) two ways: an `ODIO_PROGRESS=<json>` line to stdout (captured by journald) and the same JSON, unprefixed, over the unix socket odio-api listens on (`$XDG_RUNTIME_DIR/odio-api/upgrade.sock`). The socket is the live channel odio-api relays to drive a progress bar; the normal Ansible output is left intact, and with no listener (a run outside odio-api) only stdout is written. Progress is auto-enabled when that socket exists (a real instance, even for a hand-run `odio-upgrade apply`), so the systemd/sudoers paths keep `--progress` explicit only because under `sudo` the socket isn't resolvable; pass `--no-progress` to suppress it. In CI there's no odio-api, so it stays off.
 
 `apply` refuses to target a release older than `state.odios`. If you really need to roll back, reflash from the SD image — the live install path doesn't carry the assets to step backwards safely.
 
