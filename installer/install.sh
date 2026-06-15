@@ -352,7 +352,6 @@ run_playbook() {
   "run_branding":           $(bool "$RUN_BRANDING"),
   "run_upgrade":            $(bool "$RUN_UPGRADE"),
   "odios_force_scaffold":   $(bool "${ODIOS_FORCE_SCAFFOLD:-N}"),
-  "odios_skip_odio_api_restart": $(bool "${ODIOS_SKIP_ODIO_API_RESTART:-N}"),
   "run_common":             $(bool "$RUN_COMMON")
 }
 EOF

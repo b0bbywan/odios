@@ -142,7 +142,6 @@ odio-upgrade                            # alias of `apply` — upgrade to the la
 odio-upgrade apply --version 2026.5.0   # target a specific release
 odio-upgrade apply --dry-run --force    # print what would be invoked, do nothing
 odio-upgrade apply --reinstall          # re-run every role in full (repair a broken install)
-odio-upgrade apply --skip-odio-api-restart  # don't restart odio-api during the run
 odio-upgrade apply --progress           # emit ODIO_PROGRESS events for odio-api
 ```
 
@@ -150,9 +149,7 @@ odio-upgrade apply --progress           # emit ODIO_PROGRESS events for odio-api
 
 `--reinstall` bypasses both skip layers: every selected role runs, and `read_state.yml` blanks the prior-state facts so each role re-applies its full first-install scaffold. Use it to repair an install whose config or services were removed out of band. It implies `--force`, so it also runs when no upgrade is reported.
 
-`--skip-odio-api-restart` suppresses both odio-api restart points (the end-of-run dependency restart and the role's config/package handler). It exists for upgrades triggered by odio-api itself, which would otherwise kill its own process mid-run; odio-api is expected to restart itself once the upgrade returns.
-
-`--progress` enables the `odio_progress` callback, which prints one `ODIO_PROGRESS=<json>` line per step (a `begin` listing the planned roles, a `progress` event as each role starts, and an `end` with the changed count) to stdout, captured by journald. odio-api reads them back from the journal to drive a progress bar; the normal Ansible output is left intact. The `odio-upgrade.service` unit passes it alongside `--skip-odio-api-restart` for API-driven upgrades.
+`--progress` enables the `odio_progress` callback, which prints one `ODIO_PROGRESS=<json>` line per step (a `begin` listing the planned roles, a `progress` event as each role starts, and an `end` with the changed count) to stdout, captured by journald. odio-api reads them back from the journal to drive a progress bar; the normal Ansible output is left intact. The `odio-upgrade.service` unit passes it for API-driven upgrades.
 
 `apply` refuses to target a release older than `state.odios`. If you really need to roll back, reflash from the SD image — the live install path doesn't carry the assets to step backwards safely.
 

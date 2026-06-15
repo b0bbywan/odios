@@ -15,4 +15,3 @@
   when:
     - install_mode == "live"
     - install_odio_api | bool
-    - not (odios_skip_odio_api_restart | default(false) | bool)
