@@ -9,6 +9,4 @@
     XDG_RUNTIME_DIR: "/run/user/{{ target_user_uid }}"
   become: "{{ become_for_target_user }}"
   become_user: "{{ target_user }}"
-  when:
-    - install_mode == "live"
-    - not (odios_skip_odio_api_restart | default(false) | bool)
+  when: install_mode == "live"

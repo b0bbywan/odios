@@ -8,9 +8,7 @@ Subcommands:
       /var/cache/odio/upgrades.json. Wired to a daily systemd user timer.
 
   odio-upgrade apply [--version VERSION] [--state PATH] [--dry-run]
-                     [--force] [--reinstall] [--skip-odio-api-restart]
-  odio-upgrade apply [--version VERSION] [--state PATH] [--dry-run] [--force]
-                     [--progress]
+                     [--force] [--reinstall] [--progress]
       Locate state.json (or rebuild from dpkg as a last resort), derive
       INSTALL_* env vars matching the previous install, fetch the target
       manifest to compute per-role RUN_* skips, then pipe install.sh from
@@ -477,7 +475,6 @@ class ApplyOptions:
     dry_run: bool = False
     force: bool = False
     reinstall: bool = False
-    skip_odio_api_restart: bool = False
     progress: bool = False
 
 
@@ -518,12 +515,6 @@ def cmd_apply(argv: list[str]) -> int:
              "first-install scaffold re-applied (implies --force)",
     )
     p.add_argument(
-        "--skip-odio-api-restart",
-        action="store_true",
-        help="don't restart odio-api during the run (for upgrades driven by "
-             "odio-api itself, which would otherwise kill its own process)",
-    )
-    p.add_argument(
         "--progress",
         action="store_true",
         help="set ODIOS_PROGRESS=Y so install.sh emits ODIO_PROGRESS events "
@@ -536,7 +527,6 @@ def cmd_apply(argv: list[str]) -> int:
         dry_run=args.dry_run,
         force=args.force,
         reinstall=args.reinstall,
-        skip_odio_api_restart=args.skip_odio_api_restart,
         progress=args.progress,
     ))
 
@@ -611,8 +601,6 @@ def _build_apply_env(
     }
     if opts.reinstall:
         env_overrides["ODIOS_FORCE_SCAFFOLD"] = "Y"
-    if opts.skip_odio_api_restart:
-        env_overrides["ODIOS_SKIP_ODIO_API_RESTART"] = "Y"
     if opts.progress:
         env_overrides["ODIOS_PROGRESS"] = "Y"
 

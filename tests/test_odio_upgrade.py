@@ -710,38 +710,6 @@ class BuildApplyEnvTests(unittest.TestCase):
         self.assertEqual(env["ODIOS_FORCE_SCAFFOLD"], "Y")
         self.assertIn("reinstall: running all roles", out.getvalue())
 
-    def test_skip_odio_api_restart_emits_env(self):
-        state = _state(roles={"mpd": "2026.5.0"}, odios="2026.5.0")
-        manifest: Manifest = {"odios": "2026.5.0", "roles": {"mpd": "2026.5.0"}}
-        with (
-            patch.object(ou, "fetch_manifest", return_value=manifest),
-            contextlib.redirect_stdout(io.StringIO()),
-        ):
-            env = ou._build_apply_env(
-                state,
-                "2026.5.0",
-                "alice",
-                "/nonexistent/upgrades.json",
-                ou.ApplyOptions(skip_odio_api_restart=True),
-            )
-        self.assertEqual(env["ODIOS_SKIP_ODIO_API_RESTART"], "Y")
-
-    def test_skip_odio_api_restart_absent_by_default(self):
-        state = _state(roles={"mpd": "2026.5.0"}, odios="2026.5.0")
-        manifest: Manifest = {"odios": "2026.5.0", "roles": {"mpd": "2026.5.0"}}
-        with (
-            patch.object(ou, "fetch_manifest", return_value=manifest),
-            contextlib.redirect_stdout(io.StringIO()),
-        ):
-            env = ou._build_apply_env(
-                state,
-                "2026.5.0",
-                "alice",
-                "/nonexistent/upgrades.json",
-                ou.ApplyOptions(),
-            )
-        self.assertNotIn("ODIOS_SKIP_ODIO_API_RESTART", env)
-
     def test_progress_emits_env(self):
         state = _state(roles={"mpd": "2026.5.0"}, odios="2026.5.0")
         manifest: Manifest = {"odios": "2026.5.0", "roles": {"mpd": "2026.5.0"}}
@@ -785,11 +753,6 @@ class CmdApplyArgsTests(unittest.TestCase):
         with patch.object(ou, "run_apply", return_value=0) as run:
             ou.cmd_apply([])
         self.assertFalse(run.call_args.args[0].reinstall)
-
-    def test_skip_odio_api_restart_flag_flows_into_apply_options(self):
-        with patch.object(ou, "run_apply", return_value=0) as run:
-            ou.cmd_apply(["--skip-odio-api-restart"])
-        self.assertTrue(run.call_args.args[0].skip_odio_api_restart)
 
     def test_progress_flag_flows_into_apply_options(self):
         with patch.object(ou, "run_apply", return_value=0) as run:
