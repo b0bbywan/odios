@@ -49,6 +49,16 @@
     mode: '0755'
   become: true
 
+- name: Deploy odio-upgrade sudoers rule
+  ansible.builtin.template:
+    src: odio-upgrade.sudoers.j2
+    dest: /etc/sudoers.d/010_odio-upgrade
+    owner: root
+    group: root
+    mode: '0440'
+    validate: visudo -cf %s
+  become: true
+
 - name: Deploy odio-upgrade systemd user units (system-wide)
   ansible.builtin.template:
     src: "{{ item }}.j2"
