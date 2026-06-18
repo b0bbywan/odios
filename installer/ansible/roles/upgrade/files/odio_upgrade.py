@@ -8,7 +8,7 @@ Subcommands:
       /var/cache/odio/upgrades.json. Wired to a daily systemd user timer.
 
   odio-upgrade apply [--version VERSION] [--state PATH] [--dry-run]
-                     [--force] [--reinstall] [--progress]
+                     [--force] [--reinstall] [--progress|--no-progress]
       Locate state.json (or rebuild from dpkg as a last resort), derive
       INSTALL_* env vars matching the previous install, fetch the target
       manifest to compute per-role RUN_* skips, then pipe install.sh from
@@ -149,6 +149,19 @@ def parse_version(v: str) -> tuple[int, ...]:
 
 def _invoking_user() -> str:
     return os.environ.get("USER") or pwd.getpwuid(os.getuid()).pw_name
+
+
+def _odio_api_listening() -> bool:
+    """True when odio-api's upgrade socket exists — i.e. a real instance, not CI.
+
+    Mirrors odio_progress._socket_path(); under sudo (uid 0) XDG_RUNTIME_DIR is
+    not the target_user's, so this returns False and the service path keeps its
+    explicit --progress.
+    """
+    runtime = os.environ.get("XDG_RUNTIME_DIR")
+    if not runtime:
+        return False
+    return os.path.exists(os.path.join(runtime, "odio-api", "upgrade.sock"))
 
 
 def _read_state_file(path: str) -> StateLegacy:
@@ -516,18 +529,28 @@ def cmd_apply(argv: list[str]) -> int:
     )
     p.add_argument(
         "--progress",
+        dest="progress",
         action="store_true",
+        default=None,
         help="set ODIOS_PROGRESS=Y so install.sh emits ODIO_PROGRESS events "
-             "(consumed by odio-api via journald)",
+             "(consumed by odio-api via journald). Default: auto-on when "
+             "odio-api's upgrade socket is present (a real instance, not CI)",
+    )
+    p.add_argument(
+        "--no-progress",
+        dest="progress",
+        action="store_false",
+        help="never emit progress events, even on an instance",
     )
     args = p.parse_args(argv)
+    progress = args.progress if args.progress is not None else _odio_api_listening()
     return run_apply(ApplyOptions(
         version=args.version,
         state=args.state,
         dry_run=args.dry_run,
         force=args.force,
         reinstall=args.reinstall,
-        progress=args.progress,
+        progress=progress,
     ))
 
 
