@@ -754,15 +754,58 @@ class CmdApplyArgsTests(unittest.TestCase):
             ou.cmd_apply([])
         self.assertFalse(run.call_args.args[0].reinstall)
 
-    def test_progress_flag_flows_into_apply_options(self):
-        with patch.object(ou, "run_apply", return_value=0) as run:
+    def test_progress_flag_forces_on(self):
+        # explicit --progress wins even with no odio-api socket
+        with (
+            patch.object(ou, "run_apply", return_value=0) as run,
+            patch.object(ou, "_odio_api_listening", return_value=False),
+        ):
             ou.cmd_apply(["--progress"])
         self.assertTrue(run.call_args.args[0].progress)
 
-    def test_progress_defaults_false(self):
-        with patch.object(ou, "run_apply", return_value=0) as run:
+    def test_no_progress_flag_forces_off(self):
+        # explicit --no-progress wins even on an instance
+        with (
+            patch.object(ou, "run_apply", return_value=0) as run,
+            patch.object(ou, "_odio_api_listening", return_value=True),
+        ):
+            ou.cmd_apply(["--no-progress"])
+        self.assertFalse(run.call_args.args[0].progress)
+
+    def test_progress_auto_on_when_odio_api_listening(self):
+        with (
+            patch.object(ou, "run_apply", return_value=0) as run,
+            patch.object(ou, "_odio_api_listening", return_value=True),
+        ):
+            ou.cmd_apply([])
+        self.assertTrue(run.call_args.args[0].progress)
+
+    def test_progress_auto_off_in_ci(self):
+        with (
+            patch.object(ou, "run_apply", return_value=0) as run,
+            patch.object(ou, "_odio_api_listening", return_value=False),
+        ):
             ou.cmd_apply([])
         self.assertFalse(run.call_args.args[0].progress)
+
+
+class OdioApiListeningTests(unittest.TestCase):
+    def test_true_when_socket_exists(self):
+        with tempfile.TemporaryDirectory() as d:
+            os.makedirs(os.path.join(d, "odio-api"))
+            open(os.path.join(d, "odio-api", "upgrade.sock"), "w").close()
+            with patch.dict(os.environ, {"XDG_RUNTIME_DIR": d}):
+                self.assertTrue(ou._odio_api_listening())
+
+    def test_false_when_socket_missing(self):
+        with tempfile.TemporaryDirectory() as d, patch.dict(
+            os.environ, {"XDG_RUNTIME_DIR": d}
+        ):
+            self.assertFalse(ou._odio_api_listening())
+
+    def test_false_when_runtime_dir_unset(self):
+        with patch.dict(os.environ, {}, clear=True):
+            self.assertFalse(ou._odio_api_listening())
 
 
 class ComputeRoleUpgradesTests(unittest.TestCase):
