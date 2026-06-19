@@ -12,7 +12,7 @@ upgrade_pinned_version: ""
 mpd_music_directory: "/media/USB"
 mpd_mympd_http_port: "8080"
 # Standard MPD user socket (matches the packaged mpd.socket unit's
-# ListenStream=%t/mpd/socket); consumed by mpDris2 and mpd_discplayer.
+# ListenStream=%t/mpd/socket); consumed by mpd2mpris and mpd_discplayer.
 mpd_socket_path: "/run/user/{{ target_user_uid }}/mpd/socket"
 
 # Core components (default: enabled)
