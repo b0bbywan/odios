@@ -1,4 +1,7 @@
   <p align="center">
+<!-- ALL-CONTRIBUTORS-BADGE:START - Do not remove or modify this section -->
+[![All Contributors](https://img.shields.io/badge/all_contributors-1-orange.svg?style=flat-square)](#contributors-)
+<!-- ALL-CONTRIBUTORS-BADGE:END -->
     <a href="https://odio.love">
       <img src="https://odio.love/logo.png" alt="odio" width="160" /> 
     </a>   
@@ -180,3 +183,25 @@ This project is licensed under the BSD 2-Clause License — see [LICENSE](LICENS
 The installer distribution (`odio-*.tar.gz`) includes [ansible-core](https://github.com/ansible/ansible), which is licensed under the GNU General Public License v3.0. A copy of that license is included in the archive under `licenses/ANSIBLE-LICENSE-GPLv3`.
 
 The odios playbooks and scripts are independent works that invoke ansible-core as an external tool and are not subject to the GPL.
+
+## Contributors ✨
+
+Thanks goes to these wonderful people ([emoji key](https://allcontributors.org/docs/en/emoji-key)):
+
+<!-- ALL-CONTRIBUTORS-LIST:START - Do not remove or modify this section -->
+<!-- prettier-ignore-start -->
+<!-- markdownlint-disable -->
+<table>
+  <tbody>
+    <tr>
+      <td align="center" valign="top" width="14.28%"><a href="https://odio.love"><img src="https://avatars.githubusercontent.com/u/9570397?v=4?s=100" width="100px;" alt="b0bbywan"/><br /><sub><b>b0bbywan</b></sub></a><br /><a href="https://github.com/b0bbywan/odios/issues?q=author%3Ab0bbywan" title="Bug reports">🐛</a> <a href="#blog-b0bbywan" title="Blogposts">📝</a> <a href="https://github.com/b0bbywan/odios/commits?author=b0bbywan" title="Code">💻</a> <a href="#content-b0bbywan" title="Content">🖋</a> <a href="#data-b0bbywan" title="Data">🔣</a> <a href="https://github.com/b0bbywan/odios/commits?author=b0bbywan" title="Documentation">📖</a> <a href="#design-b0bbywan" title="Design">🎨</a> <a href="#example-b0bbywan" title="Examples">💡</a> <a href="#ideas-b0bbywan" title="Ideas, Planning, & Feedback">🤔</a> <a href="#infra-b0bbywan" title="Infrastructure (Hosting, Build-Tools, etc)">🚇</a> <a href="#maintenance-b0bbywan" title="Maintenance">🚧</a> <a href="#platform-b0bbywan" title="Packaging/porting to new platform">📦</a> <a href="#projectManagement-b0bbywan" title="Project Management">📆</a> <a href="#question-b0bbywan" title="Answering Questions">💬</a> <a href="#research-b0bbywan" title="Research">🔬</a> <a href="https://github.com/b0bbywan/odios/pulls?q=is%3Apr+reviewed-by%3Ab0bbywan" title="Reviewed Pull Requests">👀</a> <a href="#security-b0bbywan" title="Security">🛡️</a> <a href="#tool-b0bbywan" title="Tools">🔧</a> <a href="https://github.com/b0bbywan/odios/commits?author=b0bbywan" title="Tests">⚠️</a> <a href="#tutorial-b0bbywan" title="Tutorials">✅</a></td>
+    </tr>
+  </tbody>
+</table>
+
+<!-- markdownlint-restore -->
+<!-- prettier-ignore-end -->
+
+<!-- ALL-CONTRIBUTORS-LIST:END -->
+
+This project follows the [all-contributors](https://github.com/all-contributors/all-contributors) specification. Contributions of any kind welcome!
