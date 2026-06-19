@@ -1,0 +1,45 @@
+{
+  "files": [
+    "README.md"
+  ],
+  "imageSize": 100,
+  "commit": false,
+  "commitType": "docs",
+  "commitConvention": "angular",
+  "contributors": [
+    {
+      "login": "b0bbywan",
+      "name": "b0bbywan",
+      "avatar_url": "https://avatars.githubusercontent.com/u/9570397?v=4",
+      "profile": "https://odio.love",
+      "contributions": [
+        "bug",
+        "blog",
+        "code",
+        "content",
+        "data",
+        "doc",
+        "design",
+        "example",
+        "ideas",
+        "infra",
+        "maintenance",
+        "platform",
+        "projectManagement",
+        "question",
+        "research",
+        "review",
+        "security",
+        "tool",
+        "test",
+        "tutorial"
+      ]
+    }
+  ],
+  "contributorsPerLine": 7,
+  "skipCi": true,
+  "repoType": "github",
+  "repoHost": "https://github.com",
+  "projectName": "odios",
+  "projectOwner": "b0bbywan"
+}
