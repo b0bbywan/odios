@@ -44,12 +44,19 @@ def _task(role_name: str | None) -> MagicMock:
     return t
 
 
-def _stats(changed: int = 0, failed: bool = False) -> MagicMock:
+def _stats(changed: int = 0, failed: bool = False, dark: bool = False) -> MagicMock:
     s = MagicMock()
     s.changed = {"localhost": changed} if changed else {}
     s.failures = {"localhost": 1} if failed else {}
-    s.dark = {}
+    s.dark = {"localhost": 1} if dark else {}
     return s
+
+
+def _result(task: str = "a task", **fields: str) -> MagicMock:
+    r = MagicMock()
+    r._task.get_name.return_value = task
+    r._result = dict(fields)
+    return r
 
 
 class _Base(unittest.TestCase):
@@ -188,6 +195,46 @@ class EndTests(_Base):
     def test_end_failure_sets_success_false(self):
         self.cb.v2_playbook_on_stats(_stats(changed=1, failed=True))
         self.assertFalse(self.events()[-1]["success"])
+
+    def test_success_has_no_error_or_step(self):
+        self.cb.v2_playbook_on_stats(_stats(changed=1, failed=False))
+        end = self.events()[-1]
+        self.assertNotIn("error", end)
+        self.assertNotIn("step", end)
+
+    def test_failure_carries_error_and_failing_step(self):
+        # Fail mid-role: end must report the role that failed, not finalize.
+        self.start(["common", "mpd"])
+        self.cb.v2_playbook_on_task_start(_task("mpd"), False)
+        self.cb.v2_runner_on_failed(_result("Install mpd", msg="boom"))
+        self.cb.v2_playbook_on_stats(_stats(failed=True))
+        end = self.events()[-1]
+        self.assertEqual(end["error"], "Install mpd: boom")
+        self.assertEqual(end["step"], "mpd")
+
+    def test_first_failure_kept_as_root_cause(self):
+        self.cb.v2_runner_on_failed(_result("first", msg="root"))
+        self.cb.v2_runner_on_failed(_result("second", msg="cascade"))
+        self.cb.v2_playbook_on_stats(_stats(failed=True))
+        self.assertEqual(self.events()[-1]["error"], "first: root")
+
+    def test_ignore_errors_not_captured(self):
+        self.cb.v2_runner_on_failed(_result("tolerated", msg="meh"),
+                                    ignore_errors=True)
+        self.cb.v2_playbook_on_stats(_stats(failed=True))
+        self.assertNotIn("error", self.events()[-1])
+
+    def test_unreachable_captured_and_reported_as_dark(self):
+        self.cb.v2_runner_on_unreachable(_result("ping", msg="host down"))
+        self.cb.v2_playbook_on_stats(_stats(dark=True))
+        end = self.events()[-1]
+        self.assertFalse(end["success"])
+        self.assertEqual(end["error"], "ping: host down")
+
+    def test_error_falls_back_to_stderr_then_exception(self):
+        self.cb.v2_runner_on_failed(_result("cmd", stderr="bad arg"))
+        self.cb.v2_playbook_on_stats(_stats(failed=True))
+        self.assertEqual(self.events()[-1]["error"], "cmd: bad arg")
 
 
 def _wait_for(pred, timeout: float = 3.0) -> bool:

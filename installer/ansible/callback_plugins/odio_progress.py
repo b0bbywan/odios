@@ -18,6 +18,8 @@ state, restart, health-check) so those phases aren't dead air.
   {"event": "begin",    "total": N, "roles": ["setup", .., "finalize"]}
   {"event": "progress", "percent": P, "current": i, "step": "mpd"}
   {"event": "end",      "success": true|false, "changed": N}
+On failure, `end` also carries `error` (root-cause message) and `step` (the
+step that was running when it failed).
 """
 from __future__ import annotations
 
@@ -73,10 +75,16 @@ class ProgressEvent(TypedDict):
     step: str
 
 
-class EndEvent(TypedDict):
+class _EndCore(TypedDict):
     event: Literal["end"]
     success: bool
     changed: int
+
+
+class EndEvent(_EndCore, total=False):
+    # error/step present only when success is False (py310: no NotRequired).
+    error: str
+    step: str
 
 
 Event = BeginEvent | ProgressEvent | EndEvent
@@ -94,6 +102,9 @@ class CallbackModule(CallbackBase):
         self._total: int = 0
         self._seen: set[str] = set()
         self._current: int = 0
+        self._step: str = ""
+        self._error: str | None = None
+        self._error_step: str = ""    # step at failure (frozen before finalize)
         self._finalize_done: bool = False
         # Socket I/O runs on a daemon thread so it never blocks the playbook:
         # _emit just enqueues; the worker owns _sock/_pending (no lock needed)
@@ -185,10 +196,27 @@ class CallbackModule(CallbackBase):
 
     def _progress(self, step: str) -> None:
         self._current += 1
+        self._step = step
         percent = round(100 * (self._current - 1) / self._total) if self._total else 0
         self._emit(ProgressEvent(
             event="progress", percent=percent, current=self._current, step=step,
         ))
+
+    def v2_runner_on_failed(self, result, ignore_errors=False):
+        if not ignore_errors:           # a tolerated failure isn't an error
+            self._capture_error(result)
+
+    def v2_runner_on_unreachable(self, result):
+        self._capture_error(result)
+
+    def _capture_error(self, result) -> None:
+        if self._error is not None:     # keep the first failure (root cause)
+            return
+        r = result._result or {}
+        task = result._task.get_name() if result._task else "?"
+        msg = r.get("msg") or r.get("stderr") or r.get("exception") or "failed"
+        self._error = f"{task}: {msg}".strip()
+        self._error_step = self._step
 
     def v2_playbook_on_play_start(self, play):
         # The roles that will actually run are exactly those whose run_<name>
@@ -238,5 +266,9 @@ class CallbackModule(CallbackBase):
             self._progress(FINALIZE)
         failed = bool(stats.failures or stats.dark)
         changed = sum(stats.changed.values())
-        self._emit(EndEvent(event="end", success=not failed, changed=changed))
+        end = EndEvent(event="end", success=not failed, changed=changed)
+        if failed and self._error:
+            end["error"] = self._error
+            end["step"] = self._error_step
+        self._emit(end)
         self._shutdown()
