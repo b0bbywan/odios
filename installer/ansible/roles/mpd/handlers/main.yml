@@ -11,9 +11,9 @@
   become_user: "{{ target_user }}"
   when: install_mode == "live"
 
-- name: Restart mpDris2
+- name: Restart mpd2mpris
   ansible.builtin.systemd:
-    name: mpDris2.service
+    name: mpd2mpris.service
     state: restarted
     scope: user
     daemon_reload: true

@@ -194,8 +194,8 @@
     wanted_by: sockets.target
   when: odios_role_pre_scaffold | bool
 
-- name: Install mpDris2 fork
-  ansible.builtin.include_tasks: mpdris2.yml
+- name: Install mpd2mpris
+  ansible.builtin.include_tasks: mpd2mpris.yml
 
 - name: Install myMPD web UI
   ansible.builtin.include_tasks: mympd.yml
