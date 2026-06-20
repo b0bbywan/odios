@@ -34,6 +34,19 @@
         "test",
         "tutorial"
       ]
+    },
+    {
+      "login": "pbattino",
+      "name": "Paolo Battino",
+      "avatar_url": "https://avatars.githubusercontent.com/u/13657236?v=4",
+      "profile": "https://github.com/pbattino",
+      "contributions": [
+        "bug",
+        "doc",
+        "example",
+        "ideas",
+        "research"
+      ]
     }
   ],
   "contributorsPerLine": 7,
