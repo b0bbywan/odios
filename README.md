@@ -1,5 +1,5 @@
 <!-- ALL-CONTRIBUTORS-BADGE:START - Do not remove or modify this section -->
-[![All Contributors](https://img.shields.io/badge/all_contributors-1-orange.svg?style=flat-square)](#contributors-)
+[![All Contributors](https://img.shields.io/badge/all_contributors-2-orange.svg?style=flat-square)](#contributors-)
 <!-- ALL-CONTRIBUTORS-BADGE:END -->
 
   <p align="center">
@@ -196,6 +196,7 @@ Thanks goes to these wonderful people ([emoji key](https://allcontributors.org/d
   <tbody>
     <tr>
       <td align="center" valign="top" width="14.28%"><a href="https://odio.love"><img src="https://avatars.githubusercontent.com/u/9570397?v=4?s=100" width="100px;" alt="b0bbywan"/><br /><sub><b>b0bbywan</b></sub></a><br /><a href="https://github.com/b0bbywan/odios/issues?q=author%3Ab0bbywan" title="Bug reports">🐛</a> <a href="#blog-b0bbywan" title="Blogposts">📝</a> <a href="https://github.com/b0bbywan/odios/commits?author=b0bbywan" title="Code">💻</a> <a href="#content-b0bbywan" title="Content">🖋</a> <a href="#data-b0bbywan" title="Data">🔣</a> <a href="https://github.com/b0bbywan/odios/commits?author=b0bbywan" title="Documentation">📖</a> <a href="#design-b0bbywan" title="Design">🎨</a> <a href="#example-b0bbywan" title="Examples">💡</a> <a href="#ideas-b0bbywan" title="Ideas, Planning, & Feedback">🤔</a> <a href="#infra-b0bbywan" title="Infrastructure (Hosting, Build-Tools, etc)">🚇</a> <a href="#maintenance-b0bbywan" title="Maintenance">🚧</a> <a href="#platform-b0bbywan" title="Packaging/porting to new platform">📦</a> <a href="#projectManagement-b0bbywan" title="Project Management">📆</a> <a href="#question-b0bbywan" title="Answering Questions">💬</a> <a href="#research-b0bbywan" title="Research">🔬</a> <a href="https://github.com/b0bbywan/odios/pulls?q=is%3Apr+reviewed-by%3Ab0bbywan" title="Reviewed Pull Requests">👀</a> <a href="#security-b0bbywan" title="Security">🛡️</a> <a href="#tool-b0bbywan" title="Tools">🔧</a> <a href="https://github.com/b0bbywan/odios/commits?author=b0bbywan" title="Tests">⚠️</a> <a href="#tutorial-b0bbywan" title="Tutorials">✅</a></td>
+      <td align="center" valign="top" width="14.28%"><a href="https://github.com/pbattino"><img src="https://avatars.githubusercontent.com/u/13657236?v=4?s=100" width="100px;" alt="Paolo Battino"/><br /><sub><b>Paolo Battino</b></sub></a><br /><a href="https://github.com/b0bbywan/odios/issues?q=author%3Apbattino" title="Bug reports">🐛</a> <a href="https://github.com/b0bbywan/odios/commits?author=pbattino" title="Documentation">📖</a> <a href="#example-pbattino" title="Examples">💡</a> <a href="#ideas-pbattino" title="Ideas, Planning, & Feedback">🤔</a> <a href="#research-pbattino" title="Research">🔬</a></td>
     </tr>
   </tbody>
 </table>
