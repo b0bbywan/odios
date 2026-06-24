@@ -1,4 +1,4 @@
 # Managed by odios — let {{ target_user }} apply upgrades unattended (odio-upgrade.service).
 # Keep XDG_RUNTIME_DIR so the odio_progress callback finds odio-api's upgrade.sock.
 Defaults:{{ target_user }} env_keep += "XDG_RUNTIME_DIR"
-{{ target_user }} ALL=(root) NOPASSWD: /usr/local/bin/odio-upgrade apply --progress{% if upgrade_pinned_version %} --version {{ upgrade_pinned_version }}{% endif %}
+{{ target_user }} ALL=(root) NOPASSWD: /usr/local/bin/odio-upgrade apply --progress
