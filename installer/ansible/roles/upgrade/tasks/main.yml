@@ -61,6 +61,7 @@
     - odio-check-upgrade.service
     - odio-check-upgrade.timer
     - odio-upgrade.service
+  notify: Reload user systemd
 
 - name: Enable odio-check-upgrade timer
   ansible.builtin.include_tasks: "../../../tasks/systemd_enable_user.yml"
