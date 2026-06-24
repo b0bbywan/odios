@@ -67,6 +67,15 @@
       "contributions": [
         "bug"
       ]
+    },
+    {
+      "login": "matsvitt",
+      "name": "Matthias Vitt",
+      "avatar_url": "https://avatars.githubusercontent.com/u/872892?v=4",
+      "profile": "https://github.com/matsvitt",
+      "contributions": [
+        "bug"
+      ]
     }
   ],
   "contributorsPerLine": 7,
