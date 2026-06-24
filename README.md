@@ -1,5 +1,5 @@
 <!-- ALL-CONTRIBUTORS-BADGE:START - Do not remove or modify this section -->
-[![All Contributors](https://img.shields.io/badge/all_contributors-8-orange.svg?style=flat-square)](#contributors-)
+[![All Contributors](https://img.shields.io/badge/all_contributors-13-orange.svg?style=flat-square)](#contributors-)
 <!-- ALL-CONTRIBUTORS-BADGE:END -->
 
   <p align="center">
@@ -204,6 +204,11 @@ Thanks goes to these wonderful people ([emoji key](https://allcontributors.org/d
     </tr>
     <tr>
       <td align="center" valign="top" width="14.28%"><a href="https://github.com/voterpublic"><img src="https://avatars.githubusercontent.com/u/112673643?v=4?s=100" width="100px;" alt="voterpublic"/><br /><sub><b>voterpublic</b></sub></a><br /><a href="#doc-voterpublic" title="Documentation">📖</a></td>
+      <td align="center" valign="top" width="14.28%"><a href="https://www.reddit.com/user/Pleasant-Mind-7122/"><img src="https://www.redditstatic.com/avatars/defaults/v2/avatar_default_0.png?s=100" width="100px;" alt="Pleasant-Mind-7122"/><br /><sub><b>Pleasant-Mind-7122</b></sub></a><br /><a href="#bug-Pleasant-Mind-7122" title="Bug reports">🐛</a> <a href="#ideas-Pleasant-Mind-7122" title="Ideas, Planning, & Feedback">🤔</a></td>
+      <td align="center" valign="top" width="14.28%"><a href="https://www.reddit.com/user/ThisLeedsGuy/"><img src="https://www.redditstatic.com/avatars/defaults/v2/avatar_default_0.png?s=100" width="100px;" alt="ThisLeedsGuy"/><br /><sub><b>ThisLeedsGuy</b></sub></a><br /><a href="#ideas-ThisLeedsGuy" title="Ideas, Planning, & Feedback">🤔</a></td>
+      <td align="center" valign="top" width="14.28%"><a href="https://www.reddit.com/user/Sterkenzz/"><img src="https://www.redditstatic.com/avatars/defaults/v2/avatar_default_6.png?s=100" width="100px;" alt="Sterkenzz"/><br /><sub><b>Sterkenzz</b></sub></a><br /><a href="#ideas-Sterkenzz" title="Ideas, Planning, & Feedback">🤔</a></td>
+      <td align="center" valign="top" width="14.28%"><a href="https://www.reddit.com/user/2wistd/"><img src="https://i.redd.it/snoovatar/avatars/fad32052-a795-4c51-85e1-2d1f4a476e98.png?s=100" width="100px;" alt="2wistd"/><br /><sub><b>2wistd</b></sub></a><br /><a href="#ideas-2wistd" title="Ideas, Planning, & Feedback">🤔</a></td>
+      <td align="center" valign="top" width="14.28%"><a href="https://github.com/vascoguita"><img src="https://avatars.githubusercontent.com/u/33404234?v=4?s=100" width="100px;" alt="vascoguita"/><br /><sub><b>vascoguita</b></sub></a><br /><a href="https://github.com/vascoguita/raspios-docker" title="Infrastructure (Hosting, Build-Tools, etc)">🚇</a></td>
     </tr>
   </tbody>
 </table>

@@ -104,6 +104,52 @@
       "contributions": [
         "doc"
       ]
+    },
+    {
+      "login": "Pleasant-Mind-7122",
+      "name": "Pleasant-Mind-7122",
+      "avatar_url": "https://www.redditstatic.com/avatars/defaults/v2/avatar_default_0.png",
+      "profile": "https://www.reddit.com/user/Pleasant-Mind-7122/",
+      "contributions": [
+        "bug",
+        "ideas"
+      ]
+    },
+    {
+      "login": "ThisLeedsGuy",
+      "name": "ThisLeedsGuy",
+      "avatar_url": "https://www.redditstatic.com/avatars/defaults/v2/avatar_default_0.png",
+      "profile": "https://www.reddit.com/user/ThisLeedsGuy/",
+      "contributions": [
+        "ideas"
+      ]
+    },
+    {
+      "login": "Sterkenzz",
+      "name": "Sterkenzz",
+      "avatar_url": "https://www.redditstatic.com/avatars/defaults/v2/avatar_default_6.png",
+      "profile": "https://www.reddit.com/user/Sterkenzz/",
+      "contributions": [
+        "ideas"
+      ]
+    },
+    {
+      "login": "2wistd",
+      "name": "2wistd",
+      "avatar_url": "https://i.redd.it/snoovatar/avatars/fad32052-a795-4c51-85e1-2d1f4a476e98.png",
+      "profile": "https://www.reddit.com/user/2wistd/",
+      "contributions": [
+        "ideas"
+      ]
+    },
+    {
+      "login": "vascoguita",
+      "name": "vascoguita",
+      "avatar_url": "https://avatars.githubusercontent.com/u/33404234?v=4",
+      "profile": "https://github.com/vascoguita",
+      "contributions": [
+        "infra"
+      ]
     }
   ],
   "contributorsPerLine": 7,
