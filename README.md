@@ -1,7 +1,3 @@
-<!-- ALL-CONTRIBUTORS-BADGE:START - Do not remove or modify this section -->
-[![All Contributors](https://img.shields.io/badge/all_contributors-13-orange.svg?style=flat-square)](#contributors-)
-<!-- ALL-CONTRIBUTORS-BADGE:END -->
-
   <p align="center">
     <a href="https://odio.love">
       <img src="https://odio.love/logo.png" alt="odio" width="160" /> 
@@ -14,6 +10,9 @@
     <a href="https://github.com/b0bbywan/odios/blob/main/LICENSE"><img src="https://img.shields.io/github/license/b0bbywan/odios" alt="License" /></a>   
     <a href="https://github.com/b0bbywan/odios/actions/workflows/release.yml"><img src="https://github.com/b0bbywan/odios/actions/workflows/release.yml/badge.svg" alt="Build" /></a>
     <a href="https://github.com/sponsors/b0bbywan"><img src="https://img.shields.io/github/sponsors/b0bbywan?label=Sponsor&logo=GitHub" alt="GitHub Sponsors" /></a>
+    <!-- ALL-CONTRIBUTORS-BADGE:START - Do not remove or modify this section -->
+    <a href="#contributors-"><img src="https://img.shields.io/badge/all_contributors-13-orange.svg?style=flat-square" alt="All Contributors" /></a>
+    <!-- ALL-CONTRIBUTORS-BADGE:END -->
   </p>
   <p align="center">
     <a href="https://docs.odio.love/guides/bluetooth/"><img src="https://img.shields.io/badge/Bluetooth-0082FC?logo=bluetooth&logoColor=white" alt="Bluetooth" /></a>
