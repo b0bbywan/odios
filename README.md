@@ -203,7 +203,7 @@ Thanks goes to these wonderful people ([emoji key](https://allcontributors.org/d
       <td align="center" valign="top" width="14.28%"><a href="https://github.com/Thomas-O"><img src="https://avatars.githubusercontent.com/u/6567035?v=4?s=100" width="100px;" alt="Thomas-O"/><br /><sub><b>Thomas-O</b></sub></a><br /><a href="#ideas-Thomas-O" title="Ideas, Planning, & Feedback">🤔</a></td>
     </tr>
     <tr>
-      <td align="center" valign="top" width="14.28%"><a href="https://github.com/voterpublic"><img src="https://avatars.githubusercontent.com/u/112673643?v=4?s=100" width="100px;" alt="voterpublic"/><br /><sub><b>voterpublic</b></sub></a><br /><a href="https://github.com/b0bbywan/odios/commits?author=voterpublic" title="Documentation">📖</a></td>
+      <td align="center" valign="top" width="14.28%"><a href="https://github.com/voterpublic"><img src="https://avatars.githubusercontent.com/u/112673643?v=4?s=100" width="100px;" alt="voterpublic"/><br /><sub><b>voterpublic</b></sub></a><br /><a href="#doc-voterpublic" title="Documentation">📖</a></td>
     </tr>
   </tbody>
 </table>
