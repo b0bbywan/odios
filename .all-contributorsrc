@@ -76,6 +76,16 @@
       "contributions": [
         "bug"
       ]
+    },
+    {
+      "login": "andrum993",
+      "name": "andrum993",
+      "avatar_url": "https://avatars.githubusercontent.com/u/137400510?v=4",
+      "profile": "https://github.com/andrum993",
+      "contributions": [
+        "bug",
+        "ideas"
+      ]
     }
   ],
   "contributorsPerLine": 7,
