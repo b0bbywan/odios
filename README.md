@@ -1,5 +1,5 @@
 <!-- ALL-CONTRIBUTORS-BADGE:START - Do not remove or modify this section -->
-[![All Contributors](https://img.shields.io/badge/all_contributors-4-orange.svg?style=flat-square)](#contributors-)
+[![All Contributors](https://img.shields.io/badge/all_contributors-5-orange.svg?style=flat-square)](#contributors-)
 <!-- ALL-CONTRIBUTORS-BADGE:END -->
 
   <p align="center">
@@ -198,6 +198,7 @@ Thanks goes to these wonderful people ([emoji key](https://allcontributors.org/d
       <td align="center" valign="top" width="14.28%"><a href="https://github.com/pbattino"><img src="https://avatars.githubusercontent.com/u/13657236?v=4?s=100" width="100px;" alt="Paolo Battino"/><br /><sub><b>Paolo Battino</b></sub></a><br /><a href="https://github.com/b0bbywan/odios/issues?q=author%3Apbattino" title="Bug reports">🐛</a> <a href="https://github.com/b0bbywan/odios/commits?author=pbattino" title="Documentation">📖</a> <a href="#example-pbattino" title="Examples">💡</a> <a href="#ideas-pbattino" title="Ideas, Planning, & Feedback">🤔</a> <a href="#research-pbattino" title="Research">🔬</a></td>
       <td align="center" valign="top" width="14.28%"><a href="https://github.com/sm0kingm4n"><img src="https://avatars.githubusercontent.com/u/17809362?v=4?s=100" width="100px;" alt="Frankie Bigslave"/><br /><sub><b>Frankie Bigslave</b></sub></a><br /><a href="#ideas-sm0kingm4n" title="Ideas, Planning, & Feedback">🤔</a> <a href="#research-sm0kingm4n" title="Research">🔬</a> <a href="#tutorial-sm0kingm4n" title="Tutorials">✅</a></td>
       <td align="center" valign="top" width="14.28%"><a href="http://kollnig.net"><img src="https://avatars.githubusercontent.com/u/5175206?v=4?s=100" width="100px;" alt="Konrad Kollnig"/><br /><sub><b>Konrad Kollnig</b></sub></a><br /><a href="https://github.com/b0bbywan/odios/issues?q=author%3Akasnder" title="Bug reports">🐛</a></td>
+      <td align="center" valign="top" width="14.28%"><a href="https://github.com/matsvitt"><img src="https://avatars.githubusercontent.com/u/872892?v=4?s=100" width="100px;" alt="Matthias Vitt"/><br /><sub><b>Matthias Vitt</b></sub></a><br /><a href="https://github.com/b0bbywan/odios/issues?q=author%3Amatsvitt" title="Bug reports">🐛</a></td>
     </tr>
   </tbody>
 </table>
