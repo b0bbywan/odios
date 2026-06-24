@@ -1,0 +1,12 @@
+---
+# Re-read updated unit files. User scope: a root daemon-reload won't reach the
+# target user's manager. Image mode has no running manager (units load at boot).
+- name: Reload user systemd
+  ansible.builtin.systemd:
+    daemon_reload: true
+    scope: user
+  environment:
+    XDG_RUNTIME_DIR: "/run/user/{{ target_user_uid }}"
+  become: "{{ become_for_target_user }}"
+  become_user: "{{ target_user }}"
+  when: install_mode == "live"
