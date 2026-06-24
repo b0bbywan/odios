@@ -7,8 +7,6 @@ odio_gpg: "https://apt.odio.love/key.gpg"
 gpg_file: "/usr/share/keyrings/odio.gpg"
 
 odio_version: "unknown"
-# Set to a pr-* tag (from ODIOS_VERSION) to pin the upgrade unit's target.
-upgrade_pinned_version: ""
 mpd_music_directory: "/media/USB"
 mpd_mympd_http_port: "8080"
 # Standard MPD user socket (matches the packaged mpd.socket unit's
