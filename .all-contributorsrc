@@ -86,6 +86,15 @@
         "bug",
         "ideas"
       ]
+    },
+    {
+      "login": "Thomas-O",
+      "name": "Thomas-O",
+      "avatar_url": "https://avatars.githubusercontent.com/u/6567035?v=4",
+      "profile": "https://github.com/Thomas-O",
+      "contributions": [
+        "ideas"
+      ]
     }
   ],
   "contributorsPerLine": 7,
