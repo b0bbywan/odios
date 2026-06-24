@@ -6,4 +6,4 @@ RefuseManualStop=yes
 
 [Service]
 Type=oneshot
-ExecStart=/usr/bin/sudo /usr/local/bin/odio-upgrade apply --progress{% if upgrade_pinned_version %} --version {{ upgrade_pinned_version }}{% endif %}
+ExecStart=/usr/bin/sudo /usr/local/bin/odio-upgrade apply --progress
