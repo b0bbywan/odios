@@ -58,6 +58,15 @@
         "research",
         "tutorial"
       ]
+    },
+    {
+      "login": "kasnder",
+      "name": "Konrad Kollnig",
+      "avatar_url": "https://avatars.githubusercontent.com/u/5175206?v=4",
+      "profile": "http://kollnig.net",
+      "contributions": [
+        "bug"
+      ]
     }
   ],
   "contributorsPerLine": 7,
