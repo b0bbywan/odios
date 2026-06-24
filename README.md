@@ -1,5 +1,5 @@
 <!-- ALL-CONTRIBUTORS-BADGE:START - Do not remove or modify this section -->
-[![All Contributors](https://img.shields.io/badge/all_contributors-7-orange.svg?style=flat-square)](#contributors-)
+[![All Contributors](https://img.shields.io/badge/all_contributors-8-orange.svg?style=flat-square)](#contributors-)
 <!-- ALL-CONTRIBUTORS-BADGE:END -->
 
   <p align="center">
@@ -201,6 +201,9 @@ Thanks goes to these wonderful people ([emoji key](https://allcontributors.org/d
       <td align="center" valign="top" width="14.28%"><a href="https://github.com/matsvitt"><img src="https://avatars.githubusercontent.com/u/872892?v=4?s=100" width="100px;" alt="Matthias Vitt"/><br /><sub><b>Matthias Vitt</b></sub></a><br /><a href="https://github.com/b0bbywan/odios/issues?q=author%3Amatsvitt" title="Bug reports">🐛</a></td>
       <td align="center" valign="top" width="14.28%"><a href="https://github.com/andrum993"><img src="https://avatars.githubusercontent.com/u/137400510?v=4?s=100" width="100px;" alt="andrum993"/><br /><sub><b>andrum993</b></sub></a><br /><a href="https://github.com/b0bbywan/odios/issues?q=author%3Aandrum993" title="Bug reports">🐛</a> <a href="#ideas-andrum993" title="Ideas, Planning, & Feedback">🤔</a></td>
       <td align="center" valign="top" width="14.28%"><a href="https://github.com/Thomas-O"><img src="https://avatars.githubusercontent.com/u/6567035?v=4?s=100" width="100px;" alt="Thomas-O"/><br /><sub><b>Thomas-O</b></sub></a><br /><a href="#ideas-Thomas-O" title="Ideas, Planning, & Feedback">🤔</a></td>
+    </tr>
+    <tr>
+      <td align="center" valign="top" width="14.28%"><a href="https://github.com/voterpublic"><img src="https://avatars.githubusercontent.com/u/112673643?v=4?s=100" width="100px;" alt="voterpublic"/><br /><sub><b>voterpublic</b></sub></a><br /><a href="#doc-voterpublic" title="Documentation">📖</a></td>
     </tr>
   </tbody>
 </table>
