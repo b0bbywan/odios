@@ -319,16 +319,11 @@ run_playbook() {
     [[ -n "${MPD_MUSIC_DIRECTORY}" ]] && optional_vars+="\"mpd_music_directory\": \"${MPD_MUSIC_DIRECTORY}\","
     [[ -n "${MPD_CONF_PATH}" ]]       && optional_vars+="\"mpd_conf_path\": \"${MPD_CONF_PATH}\","
 
-    # Pin the upgrade unit to a pr-* build so systemctl can target it.
-    local upgrade_pinned_version=""
-    [[ "${ODIOS_VERSION}" == pr-* ]] && upgrade_pinned_version="${ODIOS_VERSION}"
-
     local extra_vars
     extra_vars=$(cat <<EOF
 {
   ${optional_vars}
   "odio_version":           "$(cat "${WORK_DIR}/VERSION" 2>/dev/null || echo "unknown")",
-  "upgrade_pinned_version": "${upgrade_pinned_version}",
   "install_mode":           "${INSTALL_MODE}",
   "target_user":            "${TARGET_USER}",
   "install_pulseaudio":     $(bool "$INSTALL_PULSEAUDIO"),

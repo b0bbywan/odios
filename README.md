@@ -79,15 +79,16 @@ Most service run as **systemd user services** — no root daemons, full per-user
 |-----------|------|
 | [go-odio-api](https://github.com/b0bbywan/go-odio-api) | REST API + embedded UI, bridges systemd / PulseAudio / MPRIS / D-Bus / Bluetooth Speaker | user |
 | [go-mpd-discplayer](https://github.com/b0bbywan/go-mpd-discplayer) | Automatic CD/USB playback with metadata via MPD | user |
-| PulseAudio | Central audio server, routes all sources to the DAC output — other PCs running PulseAudio or PipeWire can stream to it over the network via TCP/Zeroconf (wired connections only) | user |
-| MPD | Music Player Daemon (network, CD/USB) | user |
-| [mpDris2](https://github.com/b0bbywan/mpDris2) (fork) | MPRIS bridge for MPD with CD cover art support | user |
+| [PulseAudio](https://www.freedesktop.org/wiki/Software/PulseAudio) | Central audio server, routes all sources to the DAC output — other PCs running PulseAudio or PipeWire can stream to it over the network via TCP/Zeroconf (wired connections only) | user |
+| [MPD](https://www.musicpd.org/) | Music Player Daemon (network, CD/USB) | user |
+| [mpd2mpris](https://github.com/b0bbywan/mpd2mpris) | MPRIS bridge for MPD with CUE and remote cover art support | user |
 | [myMPD](https://github.com/jcorporation/myMPD) | Web UI for MPD (default port 8080) | user |
 | Shairport Sync | AirPlay receiver | user |
 | [Spotifyd](https://github.com/Spotifyd/spotifyd) | Spotify Connect receiver | user |
-| Snapcast | Multi-room audio client | user |
-| upmpdcli | UPnP/DLNA renderer | user |
-| Bluetooth | A2DP sink with automatic pairing, plus audio output to Bluetooth speakers/headphones | system |
+| [Snapcast](https://github.com/snapcast/snapcast) | Multi-room audio client | user |
+| [Snapclientmpris](https://github.com/b0bbywan/snapclientmpris) | MPRIS bridge for snapclient | user |
+| [upmpdcli](https://www.lesbonscomptes.com/upmpdcli/) | UPnP/DLNA renderer | user |
+| [Bluetooth](https://bluez.github.io/) | A2DP sink with automatic pairing, plus audio output to Bluetooth speakers/headphones | system |
 
 ## Installation
 
@@ -170,10 +171,12 @@ odio-upgrade apply --progress   # emit structured progress events for odio-api
 
 ## Related projects
 
-- [odio-pwa](https://github.com/b0bbywan/odio-pwa) — Progressive Web App to control multiple odios nodes ([live](https://odio-pwa.vercel.app/))
-- [odio-ha](https://github.com/b0bbywan/odio-ha) — Full Home Assistant integration: odios nodes appear as native HA media players and can be mapped to official integrations to inherit their full capabilities
 - [go-odio-api](https://github.com/b0bbywan/go-odio-api) — REST API and embedded UI
+- [odio-ha](https://github.com/b0bbywan/odio-ha) — Full Home Assistant integration: odios nodes appear as native HA media players and can be mapped to official integrations to inherit their full capabilities
+- [odio-pwa](https://github.com/b0bbywan/odio-pwa) — Progressive Web App to control multiple odios nodes ([live](https://odio-pwa.vercel.app/))
 - [go-mpd-discplayer](https://github.com/b0bbywan/go-mpd-discplayer) — CD/USB player daemon
+- [mpd2mpris](https://github.com/b0bbywan/mpd2mpris) — MPRIS bridge for MPD with CUE and remote cover art support
+- [Snapclientmpris](https://github.com/b0bbywan/snapclientmpris) — MPRIS bridge for snapclient
 
 ## License
 

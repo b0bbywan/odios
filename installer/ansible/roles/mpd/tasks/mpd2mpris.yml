@@ -1,0 +1,74 @@
+---
+- name: Remove legacy mpDris2 install (upgrades predating the role scaffold)
+  when:
+    - ansible_role_name in odios_prior_roles
+    - odios_role_pre_scaffold | bool
+  block:
+    - name: Remove legacy mpDris2 binary from /usr/local/bin
+      ansible.builtin.file:
+        path: /usr/local/bin/mpDris2
+        state: absent
+      become: true
+
+    - name: Remove legacy mpDris2 systemd override directory
+      ansible.builtin.file:
+        path: "/usr/lib/systemd/user/mpDris2.service.d"
+        state: absent
+      become: true
+
+- name: Remove legacy mpDris2 install (renamed to mpd2mpris)
+  when:
+    - ansible_role_name in odios_prior_roles
+  block:
+    - name: Disable legacy mpDris2 service
+      ansible.builtin.include_tasks: "../../../tasks/systemd_disable_user.yml"
+      vars:
+        service_name: mpDris2.service
+
+    - name: Remove dependencies that are no longer required and purge their configuration files
+      ansible.builtin.apt:
+        name:
+          - mpdris2
+        state: absent
+        purge: true
+      become: true
+
+    - name: Remove legacy mpDris2 config dir
+      ansible.builtin.file:
+        path: "/home/{{ target_user }}/.config/mpDris2"
+        state: absent
+      become: "{{ become_for_target_user }}"
+
+- name: Install mpd2mpris v{{ mpd_mpd2mpris_apt_version }}
+  ansible.builtin.apt:
+    name:
+      - "mpd2mpris>={{ mpd_mpd2mpris_apt_version }}"
+      - python3-musicbrainzngs
+    state: present
+    install_recommends: false
+  become: true
+  notify: Restart mpd2mpris
+
+- name: Create mpd2mpris config directory
+  ansible.builtin.file:
+    path: "/home/{{ target_user }}/.config/mpd2mpris"
+    state: directory
+    owner: "{{ target_user }}"
+    group: "{{ target_user }}"
+    mode: '0700'
+  become: "{{ become_for_target_user }}"
+
+- name: Create mpd2mpris config file
+  ansible.builtin.template:
+    src: mpd2mpris.conf.j2
+    dest: "/home/{{ target_user }}/.config/mpd2mpris/mpd2mpris.conf"
+    owner: "{{ target_user }}"
+    group: "{{ target_user }}"
+    mode: '0600'
+  become: "{{ become_for_target_user }}"
+  notify: Restart mpd2mpris
+
+- name: Enable user mpd2mpris service
+  ansible.builtin.include_tasks: "../../../tasks/systemd_enable_user.yml"
+  vars:
+    service_name: mpd2mpris.service
