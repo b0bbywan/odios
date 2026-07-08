@@ -150,6 +150,15 @@
       "contributions": [
         "infra"
       ]
+    },
+    {
+      "login": "jarny",
+      "name": "Jarny",
+      "avatar_url": "https://community.home-assistant.io/letter_avatar/jarny/288/5_ffec4c539455c0ce498261b5ece9442b.png",
+      "profile": "https://community.home-assistant.io/u/jarny",
+      "contributions": [
+        "ideas"
+      ]
     }
   ],
   "contributorsPerLine": 7,

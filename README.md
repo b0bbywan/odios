@@ -11,7 +11,7 @@
     <a href="https://github.com/b0bbywan/odios/actions/workflows/release.yml"><img src="https://github.com/b0bbywan/odios/actions/workflows/release.yml/badge.svg" alt="Build" /></a>
     <a href="https://github.com/sponsors/b0bbywan"><img src="https://img.shields.io/github/sponsors/b0bbywan?label=Sponsor&logo=GitHub" alt="GitHub Sponsors" /></a>
     <!-- ALL-CONTRIBUTORS-BADGE:START - Do not remove or modify this section -->
-    <a href="#contributors-"><img src="https://img.shields.io/badge/all_contributors-13-orange.svg?style=flat-square" alt="All Contributors" /></a>
+    <a href="#contributors-"><img src="https://img.shields.io/badge/all_contributors-14-orange.svg?style=flat-square" alt="All Contributors" /></a>
     <!-- ALL-CONTRIBUTORS-BADGE:END -->
   </p>
   <p align="center">
@@ -208,6 +208,7 @@ Thanks goes to these wonderful people ([emoji key](https://allcontributors.org/d
       <td align="center" valign="top" width="14.28%"><a href="https://www.reddit.com/user/Sterkenzz/"><img src="https://www.redditstatic.com/avatars/defaults/v2/avatar_default_6.png?s=100" width="100px;" alt="Sterkenzz"/><br /><sub><b>Sterkenzz</b></sub></a><br /><a href="#ideas-Sterkenzz" title="Ideas, Planning, & Feedback">🤔</a></td>
       <td align="center" valign="top" width="14.28%"><a href="https://www.reddit.com/user/2wistd/"><img src="https://i.redd.it/snoovatar/avatars/fad32052-a795-4c51-85e1-2d1f4a476e98.png?s=100" width="100px;" alt="2wistd"/><br /><sub><b>2wistd</b></sub></a><br /><a href="#ideas-2wistd" title="Ideas, Planning, & Feedback">🤔</a></td>
       <td align="center" valign="top" width="14.28%"><a href="https://github.com/vascoguita"><img src="https://avatars.githubusercontent.com/u/33404234?v=4?s=100" width="100px;" alt="vascoguita"/><br /><sub><b>vascoguita</b></sub></a><br /><a href="https://github.com/vascoguita/raspios-docker" title="Infrastructure (Hosting, Build-Tools, etc)">🚇</a></td>
+      <td align="center" valign="top" width="14.28%"><a href="https://community.home-assistant.io/u/jarny"><img src="https://community.home-assistant.io/letter_avatar/jarny/288/5_ffec4c539455c0ce498261b5ece9442b.png?s=100" width="100px;" alt="Jarny"/><br /><sub><b>Jarny</b></sub></a><br /><a href="#ideas-jarny" title="Ideas, Planning, & Feedback">🤔</a></td>
     </tr>
   </tbody>
 </table>
