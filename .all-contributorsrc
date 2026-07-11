@@ -24,8 +24,10 @@
         "ideas",
         "infra",
         "maintenance",
+        "mentoring",
         "platform",
         "projectManagement",
+        "promotion",
         "question",
         "research",
         "review",
@@ -158,6 +160,18 @@
       "profile": "https://community.home-assistant.io/u/jarny",
       "contributions": [
         "ideas"
+      ]
+    },
+    {
+      "login": "antoinel",
+      "name": "Antoine L",
+      "avatar_url": "https://lh3.googleusercontent.com/cm/AGPWSu9Y0Wth5Z6rAhHitSuVanAcZq7uAD9EyOzd_GWZV6rsaaChKw7AzaZpwHwiCYyDwrZmKA=s40-p",
+      "profile": "",
+      "contributions": [
+        {
+          "type": "doc",
+          "url": "https://docs.odio.love/guides/tidal-qobuz/"
+        }
       ]
     }
   ],
