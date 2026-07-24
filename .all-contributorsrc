@@ -14,27 +14,87 @@
       "profile": "https://odio.love",
       "contributions": [
         "bug",
-        "blog",
-        "code",
-        "content",
-        "data",
-        "doc",
-        "design",
-        "example",
-        "ideas",
-        "infra",
-        "maintenance",
-        "mentoring",
-        "platform",
-        "projectManagement",
-        "promotion",
-        "question",
-        "research",
+        {
+          "type": "blog",
+          "url": "https://mathieu-requillart.medium.com/"
+        },
+        {
+          "type": "code",
+          "url": "https://github.com/search?q=author%3Ab0bbywan+user%3Ab0bbywan&type=commits"
+        },
+        {
+          "type": "content",
+          "url": "https://mathieu-requillart.medium.com/"
+        },
+        {
+          "type": "data",
+          "url": "https://github.com/search?q=repo%3Ab0bbywan%2Fgo-odio-api+test&type=commits"
+        },
+        {
+          "type": "doc",
+          "url": "https://docs.odio.love/"
+        },
+        {
+          "type": "design",
+          "url": "https://github.com/search?q=repo%3Ab0bbywan%2Fgo-odio-api+ui&type=commits"
+        },
+        {
+          "type": "example",
+          "url": "https://docs.odio.love/operations/extensions/"
+        },
+        {
+          "type": "ideas",
+          "url": "https://github.com/b0bbywan/odios/discussions"
+        },
+        {
+          "type": "infra",
+          "url": "https://docs.odio.love/community/ci-cd/"
+        },
+        {
+          "type": "maintenance",
+          "url": "https://github.com/b0bbywan/odios/releases"
+        },
+        {
+          "type": "mentoring",
+          "url": "https://github.com/b0bbywan/odios/discussions"
+        },
+        {
+          "type": "platform",
+          "url": "https://apt.odio.love/"
+        },
+        {
+          "type": "projectManagement",
+          "url": "https://github.com/b0bbywan/odios/releases"
+        },
+        {
+          "type": "promotion",
+          "url": "https://odio.love"
+        },
+        {
+          "type": "question",
+          "url": "https://github.com/b0bbywan/odios/discussions"
+        },
+        {
+          "type": "research",
+          "url": "https://mathieu-requillart.medium.com/"
+        },
         "review",
-        "security",
-        "tool",
-        "test",
-        "tutorial"
+        {
+          "type": "security",
+          "url": "https://github.com/search?q=user%3Ab0bbywan+security&type=commits"
+        },
+        {
+          "type": "tool",
+          "url": "https://github.com/b0bbywan/pyodio"
+        },
+        {
+          "type": "test",
+          "url": "https://github.com/b0bbywan/odios/tree/main/.github/workflows"
+        },
+        {
+          "type": "tutorial",
+          "url": "https://docs.odio.love/guides/use-cases/"
+        }
       ]
     },
     {
@@ -44,10 +104,22 @@
       "profile": "https://github.com/pbattino",
       "contributions": [
         "bug",
-        "doc",
-        "example",
-        "ideas",
-        "research"
+        {
+          "type": "doc",
+          "url": "https://github.com/b0bbywan/odio-docs/commits?author=pbattino"
+        },
+        {
+          "type": "example",
+          "url": "https://github.com/b0bbywan/odios/discussions?discussions_q=author%3Apbattino"
+        },
+        {
+          "type": "ideas",
+          "url": "https://github.com/b0bbywan/odios/discussions?discussions_q=author%3Apbattino"
+        },
+        {
+          "type": "research",
+          "url": "https://docs.odio.love/guides/webradios/"
+        }
       ]
     },
     {
@@ -56,9 +128,18 @@
       "avatar_url": "https://avatars.githubusercontent.com/u/17809362?v=4",
       "profile": "https://github.com/sm0kingm4n",
       "contributions": [
-        "ideas",
-        "research",
-        "tutorial"
+        {
+          "type": "ideas",
+          "url": "https://github.com/b0bbywan/odios/issues/38"
+        },
+        {
+          "type": "research",
+          "url": "https://github.com/b0bbywan/odios/issues/38"
+        },
+        {
+          "type": "tutorial",
+          "url": "https://docs.odio.love/operations/extensions/#example-squeezelite-with-lms"
+        }
       ]
     },
     {
@@ -85,8 +166,14 @@
       "avatar_url": "https://avatars.githubusercontent.com/u/137400510?v=4",
       "profile": "https://github.com/andrum993",
       "contributions": [
-        "bug",
-        "ideas"
+        {
+          "type": "bug",
+          "url": "https://github.com/b0bbywan/go-odio-api/issues/115"
+        },
+        {
+          "type": "ideas",
+          "url": "https://github.com/b0bbywan/go-odio-api/issues/114"
+        }
       ]
     },
     {
@@ -95,7 +182,10 @@
       "avatar_url": "https://avatars.githubusercontent.com/u/6567035?v=4",
       "profile": "https://github.com/Thomas-O",
       "contributions": [
-        "ideas"
+        {
+          "type": "ideas",
+          "url": "https://github.com/b0bbywan/odios/discussions/66"
+        }
       ]
     },
     {
@@ -104,7 +194,10 @@
       "avatar_url": "https://avatars.githubusercontent.com/u/112673643?v=4",
       "profile": "https://github.com/voterpublic",
       "contributions": [
-        "doc"
+        {
+          "type": "doc",
+          "url": "https://github.com/b0bbywan/odios/discussions/71"
+        }
       ]
     },
     {
@@ -113,8 +206,14 @@
       "avatar_url": "https://www.redditstatic.com/avatars/defaults/v2/avatar_default_0.png",
       "profile": "https://www.reddit.com/user/Pleasant-Mind-7122/",
       "contributions": [
-        "bug",
-        "ideas"
+        {
+          "type": "bug",
+          "url": "https://github.com/b0bbywan/odio.love/commit/3d7230bb6b7e780d85cc97aa2c632747d9171e39"
+        },
+        {
+          "type": "ideas",
+          "url": "https://github.com/b0bbywan/odio.love/commit/3d7230bb6b7e780d85cc97aa2c632747d9171e39"
+        }
       ]
     },
     {
@@ -123,7 +222,10 @@
       "avatar_url": "https://www.redditstatic.com/avatars/defaults/v2/avatar_default_0.png",
       "profile": "https://www.reddit.com/user/ThisLeedsGuy/",
       "contributions": [
-        "ideas"
+        {
+          "type": "ideas",
+          "url": "https://docs.odio.love/guides/mpd/#using-a-nas-library"
+        }
       ]
     },
     {
@@ -132,7 +234,10 @@
       "avatar_url": "https://www.redditstatic.com/avatars/defaults/v2/avatar_default_6.png",
       "profile": "https://www.reddit.com/user/Sterkenzz/",
       "contributions": [
-        "ideas"
+        {
+          "type": "research",
+          "url": "https://docs.odio.love/guides/use-case-htpc/#plex"
+        }
       ]
     },
     {
@@ -141,7 +246,10 @@
       "avatar_url": "https://i.redd.it/snoovatar/avatars/fad32052-a795-4c51-85e1-2d1f4a476e98.png",
       "profile": "https://www.reddit.com/user/2wistd/",
       "contributions": [
-        "ideas"
+        {
+          "type": "ideas",
+          "url": "https://docs.odio.love/guides/music-assistant/"
+        }
       ]
     },
     {
@@ -159,7 +267,10 @@
       "avatar_url": "https://community.home-assistant.io/letter_avatar/jarny/288/5_ffec4c539455c0ce498261b5ece9442b.png",
       "profile": "https://community.home-assistant.io/u/jarny",
       "contributions": [
-        "ideas"
+        {
+          "type": "ideas",
+          "url": "https://community.home-assistant.io/t/odio-free-audiophile-streamer-flash-images-full-documentation-and-looking-for-beta-testers/1003954/7"
+        }
       ]
     },
     {
@@ -171,6 +282,22 @@
         {
           "type": "doc",
           "url": "https://docs.odio.love/guides/tidal-qobuz/"
+        }
+      ]
+    },
+    {
+      "login": "studioalund",
+      "name": "studioalund",
+      "avatar_url": "https://avatars.githubusercontent.com/u/175333477?v=4",
+      "profile": "https://github.com/studioalund",
+      "contributions": [
+        {
+          "type": "bug",
+          "url": "https://github.com/b0bbywan/go-odio-api/issues/130"
+        },
+        {
+          "type": "research",
+          "url": "https://github.com/b0bbywan/go-odio-api/issues/130"
         }
       ]
     }
