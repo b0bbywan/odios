@@ -1,4 +1,4 @@
 ---
-mpd_version: "2026.7.0rc1"
+mpd_version: "2026.7.0rc2"
 mpd_mpd2mpris_apt_version: "0.13.0"
 mpd_mympd_apt_version: "25.3.0"
