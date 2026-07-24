@@ -32,6 +32,21 @@
         state: absent
         purge: true
       become: true
+      register: mpd_mpdris2_purge
+
+    # The purged unit keeps its BusName reserved until the manager re-reads unit
+    # files, which makes mpd2mpris.service refuse to load on the same bus name.
+    - name: Reload user manager after mpDris2 removal
+      ansible.builtin.systemd:
+        daemon_reload: true
+        scope: user
+      environment:
+        XDG_RUNTIME_DIR: "/run/user/{{ target_user_uid }}"
+      become: "{{ become_for_target_user }}"
+      become_user: "{{ target_user }}"
+      when:
+        - install_mode == "live"
+        - mpd_mpdris2_purge.changed
 
     - name: Remove legacy mpDris2 config dir
       ansible.builtin.file:
