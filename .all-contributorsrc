@@ -300,6 +300,26 @@
           "url": "https://github.com/b0bbywan/go-odio-api/issues/130"
         }
       ]
+    },
+    {
+      "login": "FletcherD",
+      "name": "Fletcher D",
+      "avatar_url": "https://avatars.githubusercontent.com/u/4236749?v=4",
+      "profile": "https://github.com/FletcherD",
+      "contributions": [
+        {
+          "type": "bug",
+          "url": "https://github.com/b0bbywan/odio-ha/pull/58"
+        },
+        {
+          "type": "code",
+          "url": "https://github.com/b0bbywan/odio-ha/pull/58"
+        },
+        {
+          "type": "test",
+          "url": "https://github.com/b0bbywan/odio-ha/pull/58"
+        }
+      ]
     }
   ],
   "contributorsPerLine": 7,
