@@ -11,7 +11,7 @@
     <a href="https://github.com/b0bbywan/odios/actions/workflows/release.yml"><img src="https://github.com/b0bbywan/odios/actions/workflows/release.yml/badge.svg" alt="Build" /></a>
     <a href="https://github.com/sponsors/b0bbywan"><img src="https://img.shields.io/github/sponsors/b0bbywan?label=Sponsor&logo=GitHub" alt="GitHub Sponsors" /></a>
     <!-- ALL-CONTRIBUTORS-BADGE:START - Do not remove or modify this section -->
-    <a href="#contributors-"><img src="https://img.shields.io/badge/all_contributors-17-orange.svg?style=flat-square" alt="All Contributors" /></a>
+    <a href="#contributors-"><img src="https://img.shields.io/badge/all_contributors-18-orange.svg?style=flat-square" alt="All Contributors" /></a>
     <!-- ALL-CONTRIBUTORS-BADGE:END -->
   </p>
   <p align="center">
@@ -217,6 +217,7 @@ Thanks goes to these wonderful people ([emoji key](https://allcontributors.org/d
       <td align="center" valign="top" width="14.28%"><img src="https://lh3.googleusercontent.com/cm/AGPWSu9Y0Wth5Z6rAhHitSuVanAcZq7uAD9EyOzd_GWZV6rsaaChKw7AzaZpwHwiCYyDwrZmKA=s40-p" width="100px;" alt="Antoine L"/><br /><sub><b>Antoine L</b></sub><br /><a href="https://docs.odio.love/guides/tidal-qobuz/" title="Documentation">📖</a></td>
       <td align="center" valign="top" width="14.28%"><a href="https://github.com/studioalund"><img src="https://avatars.githubusercontent.com/u/175333477?v=4?s=100" width="100px;" alt="studioalund"/><br /><sub><b>studioalund</b></sub></a><br /><a href="https://github.com/b0bbywan/go-odio-api/issues/130" title="Bug reports">🐛</a> <a href="https://github.com/b0bbywan/go-odio-api/issues/130" title="Research">🔬</a></td>
       <td align="center" valign="top" width="14.28%"><a href="https://github.com/FletcherD"><img src="https://avatars.githubusercontent.com/u/4236749?v=4?s=100" width="100px;" alt="Fletcher D"/><br /><sub><b>Fletcher D</b></sub></a><br /><a href="https://github.com/b0bbywan/odio-ha/pull/58" title="Bug reports">🐛</a> <a href="https://github.com/b0bbywan/odio-ha/pull/58" title="Code">💻</a> <a href="https://github.com/b0bbywan/odio-ha/pull/58" title="Tests">⚠️</a></td>
+      <td align="center" valign="top" width="14.28%"><a href="https://github.com/TomDakan"><img src="https://avatars.githubusercontent.com/u/26696359?v=4?s=100" width="100px;" alt="Tom"/><br /><sub><b>Tom</b></sub></a><br /><a href="https://github.com/b0bbywan/odios/discussions/82" title="Ideas, Planning, & Feedback">🤔</a></td>
     </tr>
   </tbody>
 </table>

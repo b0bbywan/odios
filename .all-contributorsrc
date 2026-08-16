@@ -331,6 +331,18 @@
           "url": "https://github.com/b0bbywan/odio-ha/pull/58"
         }
       ]
+    },
+    {
+      "login": "TomDakan",
+      "name": "Tom",
+      "avatar_url": "https://avatars.githubusercontent.com/u/26696359?v=4",
+      "profile": "https://github.com/TomDakan",
+      "contributions": [
+        {
+          "type": "ideas",
+          "url": "https://github.com/b0bbywan/odios/discussions/82"
+        }
+      ]
     }
   ],
   "contributorsPerLine": 7,
