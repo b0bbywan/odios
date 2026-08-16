@@ -148,7 +148,18 @@
       "avatar_url": "https://avatars.githubusercontent.com/u/5175206?v=4",
       "profile": "http://kollnig.net",
       "contributions": [
-        "bug"
+        {
+          "type": "bug",
+          "url": "https://github.com/search?q=author%3Akasnder+user%3Ab0bbywan+is%3Aissue&type=issues"
+        },
+        {
+          "type": "code",
+          "url": "https://github.com/b0bbywan/go-odio-api/pull/136"
+        },
+        {
+          "type": "financial",
+          "url": "https://github.com/sponsors/b0bbywan"
+        }
       ]
     },
     {
