@@ -39,7 +39,7 @@ jobs:
   build-baseline:
     runs-on: ${{ inputs.arch == 'arm64' && 'ubuntu-24.04-arm' || 'ubuntu-24.04' }}
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
 
       - name: Install dependencies (arm64)
         if: inputs.arch == 'arm64'

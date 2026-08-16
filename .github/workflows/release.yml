@@ -30,7 +30,7 @@ jobs:
       version: ${{ steps.meta.outputs.version }}
       is_release: ${{ steps.meta.outputs.is_release }}
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
 
@@ -100,13 +100,13 @@ jobs:
           echo "Archive contents:"
           tar tzf "${{ steps.meta.outputs.archive_name }}" | head -30
 
-      - uses: actions/upload-artifact@v6
+      - uses: actions/upload-artifact@v7
         with:
           name: playbooks-archive
           path: ${{ steps.meta.outputs.archive_name }}
           retention-days: 5
 
-      - uses: actions/upload-artifact@v6
+      - uses: actions/upload-artifact@v7
         with:
           name: manifest
           path: staging/manifest.json
@@ -117,18 +117,18 @@ jobs:
     if: needs.build.outputs.is_release == 'true'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
         with:
           sparse-checkout: |
             installer/install.sh
             installer/ansible/roles/upgrade/files/odio_upgrade.py
           sparse-checkout-cone-mode: false
 
-      - uses: actions/download-artifact@v7
+      - uses: actions/download-artifact@v8
         with:
           name: playbooks-archive
 
-      - uses: actions/download-artifact@v7
+      - uses: actions/download-artifact@v8
         with:
           name: manifest
 
@@ -154,18 +154,18 @@ jobs:
     if: needs.build.outputs.is_release == 'false' && github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
         with:
           sparse-checkout: |
             installer/install.sh
             installer/ansible/roles/upgrade/files/odio_upgrade.py
           sparse-checkout-cone-mode: false
 
-      - uses: actions/download-artifact@v7
+      - uses: actions/download-artifact@v8
         with:
           name: playbooks-archive
 
-      - uses: actions/download-artifact@v7
+      - uses: actions/download-artifact@v8
         with:
           name: manifest
 
@@ -192,7 +192,7 @@ jobs:
     outputs:
       image: ${{ steps.meta.outputs.image }}
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
 
       - name: Set image tag
         id: meta
@@ -240,7 +240,7 @@ jobs:
           - action: test-as-other-user
             rerun: rerun-as-other-user
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
 
       - name: Run playbook (${{ matrix.action }})
         run: ./tests/test.sh ${{ matrix.action }}
@@ -273,7 +273,7 @@ jobs:
             experimental: true
     continue-on-error: ${{ matrix.experimental == true }}
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
 
       - name: Set up QEMU
         if: matrix.qemu
@@ -301,7 +301,7 @@ jobs:
       matrix:
         mode: [install, install-root, install-as-other-user]
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
 
       - name: Resolve tag
         id: tag
@@ -425,7 +425,7 @@ jobs:
             baseline_variant: "-no-mpd-stack"
             test_action: upgrade-from-image-fetch
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
 
       - name: Log in to GHCR
         uses: docker/login-action@v4
@@ -471,7 +471,7 @@ jobs:
           - arch: arm64
             runner: ubuntu-24.04-arm
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
 
       - name: Install build dependencies
         run: |
@@ -503,21 +503,21 @@ jobs:
             output/odio-*.json
 
       - name: Upload per-arch manifest entry
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: manifest-${{ matrix.arch }}
           path: output/odio-*.json
 
       - name: Upload per-arch RPi-Imager manifest (pre-release only)
         if: needs.build.outputs.is_release != 'true'
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: rpi-imager-manifest-${{ matrix.arch }}
           path: odio.${{ matrix.arch }}.rpi-imager-manifest
 
       - name: Upload image as artifact
         if: always()
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: odio-${{ matrix.arch }}-${{ steps.tag.outputs.value }}
           path: output/odio-*.img.xz
@@ -541,7 +541,7 @@ jobs:
           fi
 
       - name: Download image artifacts
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@v8
         with:
           pattern: odio-*-${{ steps.tag.outputs.value }}
           path: images
@@ -549,7 +549,7 @@ jobs:
 
       - name: Download per-arch RPi-Imager manifests (pre-release only)
         if: needs.build.outputs.is_release != 'true'
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@v8
         with:
           pattern: rpi-imager-manifest-*
           path: rpi-manifests
@@ -573,13 +573,13 @@ jobs:
     steps:
       # Checkout MUST run before download-artifact: actions/checkout wipes the
       # working directory, which would nuke `entries/` if the order were reversed.
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
         with:
           sparse-checkout: scripts/build-rpi-manifests.py
           sparse-checkout-cone-mode: false
 
       - name: Download manifest entries
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@v8
         with:
           pattern: manifest-*
           path: entries
