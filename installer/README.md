@@ -107,6 +107,7 @@ curl -fsSL https://github.com/b0bbywan/odios/releases/latest/download/install.sh
 | `INSTALL_MYMPD`          | `Y`           | myMPD web UI (skipped if `INSTALL_MPD=N`) |
 | `INSTALL_MPD_DISCPLAYER` | `Y`           | CD/DVD support                       |
 | `INSTALL_SPOTIFYD`       | `Y`           | Spotify Connect                      |
+| `INSTALL_QBZD`           | `N`           | qbzd Qobuz Connect endpoint (alpha; credentials: run `qbzd setup`) |
 | `INSTALL_QOBUZ`          | `Y`           | upmpdcli Qobuz plugin (credentials: manual, see `upmpdcli.conf`) |
 | `INSTALL_TIDAL`          | `Y`           | upmpdcli Tidal plugin (credentials: manual, see `upmpdcli.conf`) |
 | `INSTALL_UPNPWEBRADIOS`  | `Y`           | upmpdcli web radio plugins (Radio Browser, Radio Paradise, …) |
