@@ -29,6 +29,8 @@ install_mpd_discplayer: true
 install_shairport_sync: true
 install_snapclient: true
 install_spotifyd: true
+# qbzd ships only in the testing suite — selecting it turns odio_testing_repo on.
+install_qbzd: false
 install_mympd: "{{ install_mpd }}"
 install_tidal: "{{ install_upmpdcli }}"
 install_qobuz: "{{ install_upmpdcli }}"
@@ -50,6 +52,7 @@ run_shairport_sync: "{{ install_shairport_sync }}"
 run_snapclient: "{{ install_snapclient }}"
 run_upmpdcli: "{{ install_upmpdcli }}"
 run_spotifyd: "{{ install_spotifyd }}"
+run_qbzd: "{{ install_qbzd }}"
 run_branding: "{{ install_branding }}"
 # common + upgrade have no install_X opt-in (always installed); these
 # defaults cover direct ansible-playbook / image-builder paths. install.sh
