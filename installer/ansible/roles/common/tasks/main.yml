@@ -36,6 +36,29 @@
         group: root
       become: true
 
+- name: Add odio testing apt source
+  ansible.builtin.template:
+    src: "{{ item.src }}"
+    dest: "{{ item.dest }}"
+    mode: '0644'
+    owner: root
+    group: root
+  become: true
+  loop:
+    - {src: odio-testing.sources.j2, dest: /etc/apt/sources.list.d/odio-testing.sources}
+    - {src: odio-testing.pref.j2, dest: /etc/apt/preferences.d/odio-testing}
+  when: odio_testing_repo | bool
+
+- name: Remove odio testing apt source
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: absent
+  become: true
+  loop:
+    - /etc/apt/sources.list.d/odio-testing.sources
+    - /etc/apt/preferences.d/odio-testing
+  when: not odio_testing_repo | bool
+
 # Single apt update for the whole run; later roles must not re-update (except upmpdcli's ppa).
 - name: Update apt cache
   ansible.builtin.apt:
