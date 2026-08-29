@@ -316,6 +316,13 @@ ansible_extra_flags() {
     [[ -n "${PLATFORM}" ]] && echo "-e target_user=odio -e install_mode=image" || true
 }
 
+# Direct playbook runs skip install.sh, which reads odio_version from the
+# build's VERSION file. Same git-describe as release.yml: the -N-g suffix is
+# what turns odio_testing_repo on, needed while odioctl is a pre-release.
+odio_version_flag() {
+    echo "-e odio_version=$(git describe --tags --long --always --match='[0-9][0-9][0-9][0-9].*')"
+}
+
 case "${ACTION}" in
   test)
     start_container
@@ -326,7 +333,7 @@ case "${ACTION}" in
     docker exec $(ansible_exec_user) $(mitogen_exec_env) "${CONTAINER_NAME}" \
       ansible-playbook -v -i inventory/localhost.yml \
         /opt/odios/ansible/playbook.yml \
-        $(ansible_extra_flags) \
+        $(ansible_extra_flags) $(odio_version_flag) \
         -e "mpd_discplayer_gnu_email=test@example.com" \
         "$@"
 
@@ -343,7 +350,7 @@ case "${ACTION}" in
     # shellcheck disable=SC2046
     docker exec $(ansible_exec_user) $(mitogen_exec_env) "${CONTAINER_NAME}" \
       ansible-playbook -i inventory/localhost.yml /opt/odios/ansible/playbook.yml \
-        $(ansible_extra_flags) \
+        $(ansible_extra_flags) $(odio_version_flag) \
         -e "mpd_discplayer_gnu_email=test@example.com" \
         "$@"
     ;;
@@ -355,6 +362,7 @@ case "${ACTION}" in
       ansible-playbook -i inventory/localhost.yml /opt/odios/ansible/playbook.yml \
         -e target_user=odio \
         -e install_mode=live \
+        $(odio_version_flag) \
         -e "mpd_discplayer_gnu_email=test@example.com" \
         "$@"
     ;;
@@ -401,6 +409,7 @@ case "${ACTION}" in
         /opt/odios/ansible/playbook.yml \
         -e target_user=odio \
         -e install_mode=live \
+        $(odio_version_flag) \
         -e "mpd_discplayer_gnu_email=test@example.com" \
         "$@"
 

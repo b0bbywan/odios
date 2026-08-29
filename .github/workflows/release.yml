@@ -241,6 +241,8 @@ jobs:
             rerun: rerun-as-other-user
     steps:
       - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
 
       - name: Run playbook (${{ matrix.action }})
         run: ./tests/test.sh ${{ matrix.action }}
@@ -274,6 +276,8 @@ jobs:
     continue-on-error: ${{ matrix.experimental == true }}
     steps:
       - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
 
       - name: Set up QEMU
         if: matrix.qemu
