@@ -30,6 +30,10 @@ systemd:
     - name: spotifyd.service
       url: "https://open.spotify.com"
 {% endif %}
+{% if install_qbzd %}
+    - name: qbzd.service
+      url: "https://play.qobuz.com/"
+{% endif %}
 {% if install_upmpdcli %}
     - name: upmpdcli.service
 {% endif %}

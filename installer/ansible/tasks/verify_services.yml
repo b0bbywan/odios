@@ -34,6 +34,7 @@
         + (['shairport-sync.service'] if install_shairport_sync | bool else [])
         + (['upmpdcli.service']       if install_upmpdcli       | bool else [])
         + (['spotifyd.service']       if install_spotifyd       | bool else [])
+        + (['qbzd.service']           if install_qbzd           | bool else [])
         + (['snapclient.service', 'snapclientmpris.service'] if install_snapclient | bool else [])
         + (['odio-api.service']       if install_odio_api       | bool else [])
       }}
