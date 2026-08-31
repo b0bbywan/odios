@@ -220,7 +220,7 @@ class CallbackModule(CallbackBase):
 
     def v2_playbook_on_play_start(self, play):
         # The roles that will actually run are exactly those whose run_<name>
-        # var is truthy (install.sh / odio-upgrade derive these). Order follows
+        # var is truthy (install.sh / odioctl derive these). Order follows
         # the playbook's role list, so index i/N is meaningful.
         try:
             variables = play.get_variable_manager().get_vars(play=play)

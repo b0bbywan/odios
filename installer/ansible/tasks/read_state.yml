@@ -42,19 +42,23 @@
         )
       }}
 
+# odioctl records an opt-in role enabled from the UI as roles[name] = ""
+# (requested, not installed yet): treat it as absent for the scaffold gates.
+- name: Prior role versions (introduced-in gate)
+  ansible.builtin.set_fact:
+    odios_prior_role_versions: >-
+      {{ _odios_existing_state.roles | default({}) | dict2items
+         | rejectattr('value', 'eq', '') | items2dict }}
+
 - name: List roles present in prior state (install-vs-upgrade gate)
   ansible.builtin.set_fact:
-    odios_prior_roles: "{{ (_odios_existing_state.roles | default({})).keys() | list }}"
+    odios_prior_roles: "{{ odios_prior_role_versions.keys() | list }}"
 
 - name: List features present in prior state (feature-vs-new gate)
   ansible.builtin.set_fact:
     odios_prior_features: "{{ _odios_existing_state.features | default([]) }}"
 
-- name: Prior role versions (introduced-in gate)
-  ansible.builtin.set_fact:
-    odios_prior_role_versions: "{{ _odios_existing_state.roles | default({}) }}"
-
-# odio-upgrade --reinstall sets this: blank the prior facts so every role runs
+# `odioctl upgrade apply --reinstall` sets this: blank the prior facts so every role runs
 # its first-install scaffold (and version-gated migrations) as if fresh.
 - name: Force full scaffold (reinstall)
   ansible.builtin.set_fact:
