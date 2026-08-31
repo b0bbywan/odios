@@ -1,9 +1,10 @@
 ---
-# Re-read updated unit files. User scope: a root daemon-reload won't reach the
-# target user's manager. Image mode has no running manager (units load at boot).
-- name: Reload user systemd
+# Enabling a socket doesn't bind it, so without this the web UI only answers
+# after a reboot. Image mode has no running manager (the unit binds at boot).
+- name: Start odioctl-web socket
   ansible.builtin.systemd:
-    daemon_reload: true
+    name: odioctl-web.socket
+    state: started
     scope: user
   environment:
     XDG_RUNTIME_DIR: "/run/user/{{ target_user_uid }}"

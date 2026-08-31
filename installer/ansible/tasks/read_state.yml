@@ -54,7 +54,7 @@
   ansible.builtin.set_fact:
     odios_prior_role_versions: "{{ _odios_existing_state.roles | default({}) }}"
 
-# odio-upgrade --reinstall sets this: blank the prior facts so every role runs
+# `odioctl upgrade apply --reinstall` sets this: blank the prior facts so every role runs
 # its first-install scaffold (and version-gated migrations) as if fresh.
 - name: Force full scaffold (reinstall)
   ansible.builtin.set_fact:

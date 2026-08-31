@@ -127,7 +127,7 @@ prompt_for_config() {
     INSTALL_UPNPWEBRADIOS="${INSTALL_UPNPWEBRADIOS:-$INSTALL_UPMPDCLI}"
     INSTALL_BRANDING="${INSTALL_BRANDING:-Y}"
 
-    # Smart-upgrade hint: odio-upgrade exports RUN_<role>=N for roles whose
+    # Smart-upgrade hint: odioctl exports RUN_<role>=N for roles whose
     # target version matches the installed version. Internal-only — fresh
     # installs never set these, so RUN_X collapses to INSTALL_X.
     RUN_PULSEAUDIO="${RUN_PULSEAUDIO:-$INSTALL_PULSEAUDIO}"
@@ -141,7 +141,7 @@ prompt_for_config() {
     RUN_SPOTIFYD="${RUN_SPOTIFYD:-$INSTALL_SPOTIFYD}"
     RUN_QBZD="${RUN_QBZD:-$INSTALL_QBZD}"
     RUN_BRANDING="${RUN_BRANDING:-$INSTALL_BRANDING}"
-    # `upgrade` has no INSTALL_X opt-in (always installed); odio-upgrade still
+    # `upgrade` has no INSTALL_X opt-in (always installed); odioctl still
     # exports RUN_UPGRADE=N when its role version is stable.
     RUN_UPGRADE="${RUN_UPGRADE:-Y}"
     # `common` adds the odio apt source and runs the single `apt update` for

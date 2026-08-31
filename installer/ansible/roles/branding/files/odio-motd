@@ -29,7 +29,7 @@ if data.get('upgrade_available'):
     [ -n "$summary" ] && printf '%s\n' "$summary"
 fi
 
-PWA_URL=$(/usr/local/bin/odio-upgrade pwa-url 2>/dev/null)
+PWA_URL=$(/usr/bin/odioctl pwa-url 2>/dev/null)
 [ -n "$PWA_URL" ] && printf '\n\033[1;32m📲 %s\033[0m\n' "$PWA_URL"
 
 OS_NAME="Linux"

@@ -47,9 +47,9 @@
         | difference(_odios_enabled_features)
       }}
 
-# /var/lib: state.json (root-only writes, group read). /var/cache:
-# upgrades.json (setgid + group-write so target_user can refresh via
-# `odio-upgrade check`). target_user joins `odio` in the common role.
+# Both setgid + group-write for `odio`: odioctl edits state.json and refreshes
+# upgrades.json as target_user, who joins `odio` in the common role. Enforced
+# every run, not just at creation: the modes are a contract with odioctl.
 # odio_version may be 'unknown' or a git-describe string (not pep440); the common
 # role version (always clean from vars/main.yml) is the release proxy.
 - name: Determine if odio state dirs need creating
@@ -64,9 +64,8 @@
     state: directory
     owner: root
     group: odio
-    mode: '2750'
+    mode: '2770'
   become: true
-  when: odios_create_state_dirs | bool
 
 - name: Ensure /var/cache/odio exists
   ansible.builtin.file:
@@ -76,7 +75,6 @@
     group: odio
     mode: '2775'
   become: true
-  when: odios_create_state_dirs | bool
 
 # _odios_existing_state is read in pre_tasks (tasks/read_state.yml).
 - name: Seed prior release history
@@ -133,7 +131,7 @@
     dest: /var/lib/odio/state.json
     owner: root
     group: odio
-    mode: '0640'
+    mode: '0660'
   become: true
 
 # 2b1 wrote state.json under /var/cache; drop the stale copy now that
@@ -146,7 +144,7 @@
   when: odios_create_state_dirs | bool
 
 - name: Refresh /var/cache/odio/upgrades.json
-  ansible.builtin.command: /usr/local/bin/odio-upgrade check
+  ansible.builtin.command: /usr/bin/odioctl upgrade check
   become: "{{ become_for_target_user }}"
   become_user: "{{ target_user }}"
   changed_when: false
