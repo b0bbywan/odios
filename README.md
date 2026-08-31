@@ -118,16 +118,18 @@ See [installer/README.md](installer/README.md) for full installation options, en
 
 ## Upgrading
 
-Each release installs `/usr/local/bin/odio-upgrade` with two subcommands: `check` runs daily via a systemd user timer and refreshes `/var/cache/odio/upgrades.json`; `apply` performs the upgrade.
+Each install ships [odioctl](https://github.com/b0bbywan/odioctl), which drives upgrades, component selection and the DAC overlay. `odioctl upgrade check` runs daily via a systemd user timer and refreshes `/var/cache/odio/upgrades.json`; `odioctl upgrade apply` performs the upgrade.
 
 ```bash
-odio-upgrade                    # alias of `apply` — upgrade to the latest reported version
-odio-upgrade apply --version 2026.5.0 # target a specific version
-odio-upgrade apply --reinstall  # re-run every role in full (repair a broken install)
-odio-upgrade apply --progress   # emit structured progress events for odio-api
+odioctl upgrade apply                     # upgrade to the latest reported version
+odioctl upgrade apply --version 2026.5.0  # target a specific version
+odioctl upgrade apply --reinstall         # re-run every role in full (repair a broken install)
+odioctl upgrade apply --progress          # emit structured progress events for odio-api
 ```
 
-`odio-upgrade` reads `/var/lib/odio/state.json` (or rebuilds from dpkg as a last resort) to preserve the feature selection and role opt-outs across upgrades. Run `odio-upgrade --dry-run --force` to see what would be invoked without running it. Use `--reinstall` to force every role through a full first-install pass (bypassing the smart-upgrade skips) when an install needs repairing. Use `--progress` to emit structured `ODIO_PROGRESS` JSON lines (one per role and phase) to stdout for odio-api to display, without altering the normal output.
+`odioctl` reads `/var/lib/odio/state.json` (or rebuilds from dpkg as a last resort) to preserve the feature selection and role opt-outs across upgrades. Run `odioctl upgrade apply --dry-run --force` to see what would be invoked without running it. Use `--reinstall` to force every role through a full first-install pass (bypassing the smart-upgrade skips) when an install needs repairing. Use `--progress` to emit structured `ODIO_PROGRESS` JSON lines (one per role and phase) to stdout for odio-api to display, without altering the normal output.
+
+`odioctl web` serves the same actions as a plain-HTML page on port 8021, socket-activated so it only starts on the first connection.
 
 ## Recommended clients
 
@@ -167,7 +169,7 @@ odio-upgrade apply --progress   # emit structured progress events for odio-api
 | **System philosophy** | Linux-native modular stack | Appliance-style distribution |
 | **Debian base** | Trixie (stable) | Bookworm (oldstable) |
 | **Installation** | Image flash (Pi) or `curl \| bash` (any Debian/Ubuntu) | Image flash |
-| **Upgrade** | `odio-upgrade` or reflash | OTA updates / Reflash between major versions |
+| **Upgrade** | `odioctl upgrade` or reflash | OTA updates / Reflash between major versions |
 
 ## Related projects
 

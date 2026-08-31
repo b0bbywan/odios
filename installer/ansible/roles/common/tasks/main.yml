@@ -91,6 +91,10 @@
       become: true
       when: target_user != ansible_user_id
 
+    # odioctl is also created by the odioctl package's postinst, but that runs
+    # in the upgrade role, after linger has started the user manager. Creating
+    # it here means a freshly created target_user's manager comes up already
+    # holding it, so the sudoers fragment applies without a re-login.
     - name: Ensure required groups exist
       ansible.builtin.group:
         name: "{{ item }}"
@@ -101,7 +105,10 @@
         - input
         - plugdev
         - odio
+        - odioctl
 
+    # `odio` carries state.json access; `odioctl` is what the package's sudoers
+    # fragment grants root to. Only target_user gets that one.
     - name: Ensure user in audio group
       ansible.builtin.user:
         name: "{{ target_user }}"
@@ -111,6 +118,7 @@
           - users
           - input
           - odio
+          - odioctl
           - plugdev
           - systemd-journal
       become: true
