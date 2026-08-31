@@ -338,6 +338,10 @@ jobs:
           #                   systemctl --user start odio-upgrade.service (tag)
           #   - 2026.4.2b2  : same — closest baseline, exercises the embedded
           #                   path one more release down
+          #   - 2026.7.0rc2 : last pre-odioctl release, and the only baseline
+          #                   carrying /etc/sudoers.d/010_odio-upgrade and a
+          #                   sudo-based odio-upgrade.service — what exercises
+          #                   the cleanup and the switch to the %odioctl group
           # `upgrade-from-image-fetch` curls the last published odio_upgrade.py
           # (2026.7.0rc2), applies the target with it, then re-applies through
           # the odioctl that upgrade installed — the real migration path off the
@@ -421,6 +425,20 @@ jobs:
             baseline_tag: "2026.4.2b2"
             baseline_variant: "-no-mpd-stack"
             test_action: upgrade-from-image-fetch
+          # Pre-odioctl baseline. `embedded` runs on every PR and covers the
+          # legacy sudoers/unit cleanup; `systemctl` is the only path that
+          # reaches odio-upgrade.service, hence sudo and the %odioctl group,
+          # and it self-skips until the published manifest names the target.
+          - platform: linux/amd64
+            runner: ubuntu-24.04
+            arch: amd64
+            baseline_tag: "2026.7.0rc2"
+            test_action: upgrade-from-image-embedded
+          - platform: linux/amd64
+            runner: ubuntu-24.04
+            arch: amd64
+            baseline_tag: "2026.7.0rc2"
+            test_action: upgrade-from-image-systemctl
     steps:
       - uses: actions/checkout@v7
 
