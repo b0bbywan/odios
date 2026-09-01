@@ -3,7 +3,13 @@
 
 # Network configuration
 bind: all
-port: 8018
+
+api:
+  enabled: true
+  port: 8018
+  ui:
+    enabled: true
+    admin: ":8021"
 
 # Logging
 logLevel: info
