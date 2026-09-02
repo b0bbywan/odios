@@ -1,2 +1,4 @@
 ---
-upgrade_version: "2026.7.0rc1"
+upgrade_version: "2026.9.0b1"
+# Pre-release: ships only in the testing suite (see odioctl_prerelease).
+upgrade_odioctl_apt_version: "0.2.0~beta.3"

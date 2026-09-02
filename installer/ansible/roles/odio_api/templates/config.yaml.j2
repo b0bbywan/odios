@@ -3,7 +3,13 @@
 
 # Network configuration
 bind: all
-port: 8018
+
+api:
+  enabled: true
+  port: 8018
+  ui:
+    enabled: true
+    admin: ":8021"
 
 # Logging
 logLevel: info
@@ -16,7 +22,7 @@ power:
 
 {% include "_systemd_block.yml.j2" %}
 
-# Upgrade backend: reads odio-upgrade's report and drives its user units.
+# Upgrade backend: reads odioctl's report and drives its user units.
 # progressSocket defaults to $XDG_RUNTIME_DIR/odio-api/upgrade.sock.
 upgrade:
   enabled: true

@@ -107,6 +107,7 @@ curl -fsSL https://github.com/b0bbywan/odios/releases/latest/download/install.sh
 | `INSTALL_MYMPD`          | `Y`           | myMPD web UI (skipped if `INSTALL_MPD=N`) |
 | `INSTALL_MPD_DISCPLAYER` | `Y`           | CD/DVD support                       |
 | `INSTALL_SPOTIFYD`       | `Y`           | Spotify Connect                      |
+| `INSTALL_QBZD`           | `N`           | qbzd Qobuz Connect endpoint (alpha; credentials: run `qbzd setup`) |
 | `INSTALL_QOBUZ`          | `Y`           | upmpdcli Qobuz plugin (credentials: manual, see `upmpdcli.conf`) |
 | `INSTALL_TIDAL`          | `Y`           | upmpdcli Tidal plugin (credentials: manual, see `upmpdcli.conf`) |
 | `INSTALL_UPNPWEBRADIOS`  | `Y`           | upmpdcli web radio plugins (Radio Browser, Radio Paradise, …) |
@@ -130,19 +131,25 @@ ODIOS_VERSION=pr-5 curl -fsSL https://github.com/b0bbywan/odios/releases/downloa
 
 ## Upgrading
 
-Each install ships `/usr/local/bin/odio-upgrade` with the following subcommands:
+Each install ships the [odioctl](https://github.com/b0bbywan/odioctl) package (`/usr/bin/odioctl`), installed by the `upgrade` role. Upgrade-related subcommands:
 
-- **`odio-upgrade check`** — compares the local state against the published manifest and refreshes `/var/cache/odio/upgrades.json`. Wired to a systemd user timer (daily, random delay) so the login banner / PWA can surface the result.
-- **`odio-upgrade apply`** — re-invokes `install.sh` for the target version with the `INSTALL_*` flags derived from the saved state. No argument = upgrade to whatever `upgrades.json` reports as latest.
-- **`odio-upgrade verify`** — reads `state.json` and runs schema sanity checks (used in CI / for inspecting an install; exits 0 valid, 1 invalid, 2 missing).
-- **`odio-upgrade pwa-url`** — prints `https://pwa.odio.love/#/i/<ip>` using the source IP of the default route (falls back to `https://pwa.odio.love` if no IP is detectable; handy for the SSH login banner).
+- **`odioctl upgrade check`** — compares the local state against the published manifest and refreshes `/var/cache/odio/upgrades.json`. Wired to a systemd user timer (daily, random delay) so the login banner / PWA can surface the result.
+- **`odioctl upgrade apply`** — re-invokes `install.sh` for the target version with the `INSTALL_*` flags derived from the saved state. No `--version` = upgrade to whatever `upgrades.json` reports as latest.
+- **`odioctl upgrade verify`** — reads `state.json` and runs schema sanity checks (used in CI / for inspecting an install; exits 0 valid, 1 invalid, 2 missing).
+- **`odioctl pwa-url`** — prints `https://pwa.odio.love/#/i/<ip>` using the source IP of the default route (falls back to `https://pwa.odio.love` if no IP is detectable; handy for the SSH login banner).
+
+`odioctl` also carries `components` (opt roles and features in or out of the next upgrade), `dac` (pick the Raspberry Pi overlay) and `web` (a plain-HTML page for all of the above, socket-activated on port 8021 by `odioctl-web.socket`).
+
+Its sudoers fragment grants passwordless root for exactly those argv to the `odioctl` group. That is deliberately not the `odio` group, which carries state.json access and also holds the installing user when it differs from `target_user`. Only `target_user` joins `odioctl`: `common` seeds it on a first install, before `loginctl enable-linger` starts the user manager, and the `upgrade` role backfills it on an existing one.
+
+`sudo` reads the group list of the calling process, so a `systemd --user` manager that was already running when the membership was added keeps the old one. That covers every migration, and a live install targeting the user who is already logged in: `odio-upgrade.service` will fail at `sudo` until that user's next login. Image builds and installs for a freshly created `target_user` are unaffected.
 
 ```bash
-odio-upgrade                            # alias of `apply` — upgrade to the latest published version
-odio-upgrade apply --version 2026.5.0   # target a specific release
-odio-upgrade apply --dry-run --force    # print what would be invoked, do nothing
-odio-upgrade apply --reinstall          # re-run every role in full (repair a broken install)
-odio-upgrade apply --progress           # stream JSON progress events to odio-api
+odioctl upgrade apply                        # upgrade to the latest published version
+odioctl upgrade apply --version 2026.5.0     # target a specific release
+odioctl upgrade apply --dry-run --force      # print what would be invoked, do nothing
+odioctl upgrade apply --reinstall            # re-run every role in full (repair a broken install)
+odioctl upgrade apply --progress             # stream JSON progress events to odio-api
 ```
 
 `apply` fetches the target release's `manifest.json` and skips roles whose installed version already matches — only the roles that actually bumped re-run. On top of that, each role that does run skips its first-install scaffolding (config-directory creation, service enablement, version-gated migrations) since the prior state already records it. The amount of time saved scales with how few roles changed in the target release.
@@ -150,21 +157,21 @@ odio-upgrade apply --progress           # stream JSON progress events to odio-ap
 `--reinstall` bypasses both skip layers: every selected role runs, and `read_state.yml` blanks the prior-state facts so each role re-applies its full first-install scaffold. Use it to repair an install whose config or services were removed out of band. It implies `--force`, so it also runs when no upgrade is reported.
 
 
-`--progress` enables the `odio_progress` callback, which emits one event per step (a `begin` listing the planned roles, a `progress` event as each role starts, and an `end` with the changed count) two ways: an `ODIO_PROGRESS=<json>` line to stdout (captured by journald) and the same JSON, unprefixed, over the unix socket odio-api listens on (`$XDG_RUNTIME_DIR/odio-api/upgrade.sock`). The socket is the live channel odio-api relays to drive a progress bar; the normal Ansible output is left intact, and with no listener (a run outside odio-api) only stdout is written. Progress is auto-enabled when that socket exists (a real instance, even for a hand-run `odio-upgrade apply`), so the systemd/sudoers paths keep `--progress` explicit only because under `sudo` the socket isn't resolvable; pass `--no-progress` to suppress it. In CI there's no odio-api, so it stays off.
+`--progress` enables the `odio_progress` callback, which emits one event per step (a `begin` listing the planned roles, a `progress` event as each role starts, and an `end` with the changed count) two ways: an `ODIO_PROGRESS=<json>` line to stdout (captured by journald) and the same JSON, unprefixed, over the unix socket odio-api listens on (`$XDG_RUNTIME_DIR/odio-api/upgrade.sock`). The socket is the live channel odio-api relays to drive a progress bar; the normal Ansible output is left intact, and with no listener (a run outside odio-api) only stdout is written. Progress is auto-enabled when that socket exists (a real instance, even for a hand-run `odioctl upgrade apply`), so the systemd/sudoers paths keep `--progress` explicit only because under `sudo` the socket isn't resolvable; pass `--no-progress` to suppress it. In CI there's no odio-api, so it stays off.
 
 `apply` refuses to target a release older than `state.odios`. If you really need to roll back, reflash from the SD image — the live install path doesn't carry the assets to step backwards safely.
 
 ### Bootstrapping from a release asset
 
-`odio_upgrade.py` is also published as a standalone asset on every release, so installs that predate it (≤ rc2, no helper in `/usr/local/bin`) can run it directly:
+Before odioctl, the upgrade helper was a script at `/usr/local/bin/odio-upgrade`, published as a standalone `odio_upgrade.py` asset up to 2026.7.0rc2. Installs with neither (≤ rc2) can still bootstrap from that last published copy:
 
 ```bash
-curl -fsSL https://github.com/b0bbywan/odios/releases/latest/download/odio_upgrade.py -o /tmp/odio-upgrade
+curl -fsSL https://github.com/b0bbywan/odios/releases/download/2026.7.0rc2/odio_upgrade.py -o /tmp/odio-upgrade
 chmod +x /tmp/odio-upgrade
 /tmp/odio-upgrade                 # reconstructs state from disk, then upgrades to latest
 ```
 
-The subsequent upgrade installs the helper, so this bootstrap is needed only once.
+The resulting upgrade installs the odioctl package and removes the old script, so this bootstrap is needed only once.
 
 ### How state is preserved
 
@@ -180,7 +187,7 @@ Upgrades honor the previous feature selection by reading `~/.cache/odio/state.js
 
 Only entries in `roles_excluded` / `features_excluded` map to `INSTALL_*=N`. Everything else — whether listed in `roles`/`features` or absent from both (new release, schema gap, malformed state.json) — maps to `INSTALL_*=Y`. Upgrades are pure opt-out: `install.sh`'s built-in defaults don't apply, only the explicit exclusions do.
 
-`odio-upgrade` transparently backfills the newer fields for installs that predate them (rc1/rc2 state, or pre-rc3 installs with no state at all), using filesystem / dpkg introspection. Run with `--dry-run` to inspect.
+`odioctl` transparently backfills the newer fields for installs that predate them (rc1/rc2 state, or pre-rc3 installs with no state at all), using filesystem / dpkg introspection. Run with `--dry-run` to inspect.
 
 #### `release_history`
 
@@ -201,7 +208,7 @@ checks `/var/lib/odio/state.json` (canonical), then
    irretrievably lost on this one upgrade — subsequent upgrades grow the
    history normally.
 
-Re-running the same install (e.g. `odio-upgrade --force` against the version
+Re-running the same install (e.g. `odioctl upgrade apply --force` against the version
 already installed) does *not* duplicate the entry: the dedup-consecutive rule
 keeps the history a record of *version transitions*, not invocations.
 
@@ -226,8 +233,8 @@ To keep a role or sub-flag off on the next upgrade, open `~/.cache/odio/state.js
 Then:
 
 ```bash
-odio-upgrade --dry-run --force   # verify the derived INSTALL_* flags
-odio-upgrade                      # apply
+odioctl upgrade apply --dry-run --force   # verify the derived INSTALL_* flags
+odioctl upgrade apply                     # apply
 ```
 
 Removing an entry from the list opts back in — the next upgrade sees it as unlisted and re-installs it.
@@ -273,7 +280,7 @@ installer/
     │   └── systemd_enable_system.yml   # Shared: enable + start a system service
     └── roles/
         ├── common/              # System prerequisites + linger
-        ├── upgrade/             # /usr/local/bin/odio-upgrade + systemd user timer (smart upgrade)
+        ├── upgrade/             # odioctl package + its systemd user timer / web socket
         ├── branding/            # odio-motd login banner (optional)
         ├── pulseaudio/          # PulseAudio + network streaming (wired only, PipeWire conflict handling)
         ├── pipewire/            # PipeWire + pipewire-pulse (experimental, not yet exposed)
@@ -310,7 +317,7 @@ This mode has not been extensively tested across MPD configurations. Feedback we
 Fast, no container needed. CI runs the same commands in `.github/workflows/checks.yml`.
 
 ```bash
-python3 -m unittest discover tests   # unit tests for odio-upgrade
+python3 -m unittest discover tests   # unit tests for the odio_progress callback
 ruff check                           # lint (config: pyproject.toml)
 mypy                                 # type-check (config: pyproject.toml)
 ```
@@ -364,7 +371,7 @@ mpc status
 Install one version in a fresh container, then upgrade it to another. First arg = the version to start from (acts as the existing odios install), second arg = the version to upgrade to:
 
 ```bash
-# install 2026.4.2b1, then run odio-upgrade to bring it to pr-X
+# install 2026.4.2b1, then upgrade it to pr-X
 ./tests/test.sh upgrade 2026.4.2b1 pr-X
 ```
 
@@ -374,8 +381,8 @@ The `test-upgrade` job in `release.yml` validates that an existing odios install
 
 The matrix exercises four paths against several baseline tags:
 
-- **`upgrade-from-image-fetch`** — curls `odio_upgrade.py` from the PR release first, then runs it (smart-upgrade exercised against the baseline's old runtime).
-- **`upgrade-from-image-embedded`** — runs the baseline's own `/usr/local/bin/odio-upgrade` (validates the in-place helper).
+- **`upgrade-from-image-fetch`** — curls the last published `odio_upgrade.py` (2026.7.0rc2), applies the target with it, then re-applies through the odioctl that upgrade installed (the real migration off the `/usr/local/bin` script).
+- **`upgrade-from-image-embedded`** — runs the baseline's own `/usr/local/bin/odio-upgrade` (validates the in-place helper on pre-odioctl baselines).
 - **`upgrade-from-image-systemctl`** — `systemctl --user start odio-upgrade.service` (real-release path, target driven by `odio.love/manifest.json`).
 - **`upgrade-from-image-fetch-as-other-user`** — same as `fetch`, but invoked by a non-`target_user` sudoer (member of `users` + `odio`). Validates that the group permissions on `/var/lib/odio/state.json` actually let a second admin trigger the upgrade.
 

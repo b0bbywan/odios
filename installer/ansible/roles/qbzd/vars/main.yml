@@ -1,0 +1,20 @@
+---
+qbzd_version: "2026.9.0b1"
+# Exact version, not a >= floor: qbzd ships only in the testing suite, pinned
+# at 50, where apt collapses the candidate to the installed version.
+qbzd_apt_version: "2.0.3~alpha.1+g353ed7ff"
+
+qbzd_http_port: "8182"
+qbzd_conf_path: "/home/{{ target_user }}/.config/qbzd/qbzd.toml"
+# Player settings applied via `qbzd settings set` (SQLite-backed, not a file).
+# Keys and accepted values come from `qbzd settings show`.
+qbzd_player_settings:
+  # qbzd ships quality_fallback_behavior=ask, which it rejects on write:
+  # "'ask' needs a UI the daemon doesn't have".
+  audio.allow_quality_fallback: "true"
+  audio.backend: pulse
+  audio.normalization_enabled: "false"
+  audio.quality_fallback_behavior: always_fallback
+  playback.mpris: "true"
+  qconnect.device_name: "{{ target_hostname }}"
+  qconnect.startup_mode: "on"

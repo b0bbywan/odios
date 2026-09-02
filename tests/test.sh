@@ -78,20 +78,32 @@ install_sh_url() {
     fi
 }
 
+# odio_upgrade.py was a release asset up to 2026.7.0rc2; the odioctl package
+# replaced it. Pinned there so the fetch path keeps exercising a pre-odioctl
+# runtime against the target, whatever the target is.
+LEGACY_ODIO_UPGRADE_TAG="2026.7.0rc2"
+
 odio_upgrade_url() {
+    echo "${GITHUB_RELEASE_BASE_URL}/download/${LEGACY_ODIO_UPGRADE_TAG}/odio_upgrade.py"
+}
+
+# Re-apply the same target through the odioctl the previous run installed:
+# proves the migration handed control over to the package.
+run_odioctl_upgrade() {
     local tag="$1"
-    if [[ "$tag" == "latest" ]]; then
-        echo "${GITHUB_RELEASE_BASE_URL}/latest/download/odio_upgrade.py"
-    else
-        echo "${GITHUB_RELEASE_BASE_URL}/download/${tag}/odio_upgrade.py"
-    fi
+    local install_mode="${2:-image}"
+    local exec_user="${3:-odio}"
+
+    echo "=== odioctl upgrade apply → run as ${exec_user} (target=${tag}, mode=${install_mode}) ==="
+    docker exec -u "${exec_user}" -e INSTALL_MODE="${install_mode}" "${CONTAINER_NAME}" \
+        /usr/bin/odioctl upgrade apply --version "${tag}" --force
 }
 
 run_odio_upgrade_fetch() {
     local tag="$1"
     local install_mode="${2:-image}"
     local url
-    url=$(odio_upgrade_url "$tag")
+    url=$(odio_upgrade_url)
 
     echo "=== curl odio-upgrade (${url}) → run as odio (target=${tag}, mode=${install_mode}) ==="
     docker exec -u odio -e INSTALL_MODE="${install_mode}" "${CONTAINER_NAME}" bash -c "
@@ -99,6 +111,7 @@ run_odio_upgrade_fetch() {
         chmod +x /tmp/odio-upgrade &&
         /tmp/odio-upgrade --version '${tag}' --force
     "
+    run_odioctl_upgrade "${tag}" "${install_mode}"
 }
 
 run_odio_upgrade_embedded() {
@@ -143,7 +156,7 @@ run_odio_upgrade_fetch_as_other_user() {
     local install_mode="${2:-image}"
     local user="bob"
     local url
-    url=$(odio_upgrade_url "$tag")
+    url=$(odio_upgrade_url)
 
     setup_other_user "${user}"
     echo "=== Adding ${user} to users + odio groups ==="
@@ -158,6 +171,7 @@ run_odio_upgrade_fetch_as_other_user() {
         chmod +x /tmp/odio-upgrade &&
         /tmp/odio-upgrade --version '${tag}' --force
     "
+    run_odioctl_upgrade "${tag}" "${install_mode}" "${user}"
 }
 
 # Validates that a non-target_user with NOPASSWD sudo can run install.sh
@@ -184,14 +198,11 @@ run_odio_upgrade_systemctl() {
     '
 }
 
+# Runs the odioctl the install/upgrade just put in place — a missing binary is
+# itself a failure of the run under test.
 assert_state_schema() {
     local target="$1"
-    # Pipe the PR's odio_upgrade.py via stdin: when an upgrade fails to
-    # replace /usr/local/bin/odio-upgrade (baseline binary lacks `verify`,
-    # or the upgrade itself errored), running it directly would obscure
-    # the real failure with "unrecognized arguments: verify".
-    docker exec -i -u odio "${CONTAINER_NAME}" python3 - verify --expected-version "$target" \
-        < installer/ansible/roles/upgrade/files/odio_upgrade.py
+    docker exec -u odio "${CONTAINER_NAME}" /usr/bin/odioctl upgrade verify --expected-version "$target"
 }
 
 # Assert the odio_progress callback fired on the captured upgrade output:
@@ -267,7 +278,7 @@ while [[ "${1:-}" == --* ]]; do
         echo "  test-as-other-user          - Run playbook directly as bob (live mode) → exercises become_for_target_user paths"
         echo "                                TAG examples: latest, pr-2, 2026.3.0"
         echo "  upgrade B T        - Upgrade from baseline tag B to target tag T (INSTALL_MODE=live)"
-        echo "  upgrade-from-image-fetch T     - Upgrade to T on REMOTE_IMAGE — curls odio-upgrade from the T release first"
+        echo "  upgrade-from-image-fetch T     - Upgrade to T on REMOTE_IMAGE via the last published odio-upgrade, then re-apply with odioctl"
         echo "  upgrade-from-image-embedded T  - Same, but uses the baseline's /usr/local/bin/odio-upgrade"
         echo "  upgrade-from-image-systemctl   - Same, but via systemctl --user start odio-upgrade.service"
         echo "                                   (target driven by odio.love/manifest.json — no arg)"
@@ -416,7 +427,7 @@ case "${ACTION}" in
     echo "=== [upgrade] Installing baseline ${BASELINE} (image mode) ==="
     run_install "${BASELINE}" odio
 
-    echo "=== [upgrade] Upgrading to ${TARGET} via odio-upgrade (image mode) ==="
+    echo "=== [upgrade] Upgrading to ${TARGET} via odio-upgrade then odioctl (image mode) ==="
     run_odio_upgrade_fetch "${TARGET}"
 
     echo "=== [upgrade] Asserting state.json reflects ${TARGET} ==="

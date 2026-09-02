@@ -109,6 +109,8 @@
       when: run_upmpdcli | bool
     - role: spotifyd
       when: run_spotifyd | bool
+    - role: qbzd
+      when: run_qbzd | bool
     - role: odio_api
       when: run_odio_api | bool
 
@@ -122,7 +124,7 @@
     - name: Verify services are running
       ansible.builtin.include_tasks: "tasks/verify_services.yml"
 
-    # Last — write_state.yml runs `odio-upgrade check` as target_user, which
+    # Last — write_state.yml runs `odioctl upgrade check` as target_user, which
     # ansible needs the per-user tmp dir for. Removing it earlier would just
     # cause ansible to recreate it (with a warning).
     - name: Remove ansible remote_tmp directory
@@ -153,6 +155,7 @@
           - "  {{ '✓' if install_upmpdcli else '✗' }} UPnP/DLNA renderer"
           - "  {{ '✓' if install_upnpwebradios else '✗' }} UPnP web radios"
           - "  {{ '✓' if install_spotifyd else '✗' }} Spotifyd (Spotify Connect)"
+          - "  {{ '✓' if install_qbzd else '✗' }} qbzd (Qobuz Connect) — run `qbzd setup` to log in"
           - "  {{ '✓' if install_mympd else '✗' }} myMPD (web UI)"
           - ""
           - "System should already be running !"

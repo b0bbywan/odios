@@ -1,84 +1,98 @@
 ---
-# odios_role_pre_scaffold: true on installs predating the current upgrade-role
-# layout (2026.5.0b1).
+# odios_role_pre_scaffold: true on installs predating the odioctl package
+# (2026.9.0b1), which shipped odio-upgrade as a local script with hand-written
+# units and sudoers. Also covers the older per-user layout (≤ 2026.5.0b1).
 - name: Resolve prior role version
   ansible.builtin.include_tasks: "../../../tasks/resolve_prior_version.yml"
   vars:
-    scaffold_version: '2026.5.0b1'
+    scaffold_version: '2026.9.0b1'
 
-- name: Clean up pre-current-layout upgrade artifacts
+- name: Clean up pre-odioctl upgrade artifacts
   when: odios_role_pre_scaffold | bool
   block:
-    - name: Remove legacy per-user upgrade scripts
+    - name: Remove legacy per-user upgrade scripts and units
       ansible.builtin.file:
-        path: "/home/{{ target_user }}/.local/bin/{{ item }}"
+        path: "/home/{{ target_user }}/{{ item }}"
         state: absent
       become: "{{ become_for_target_user }}"
       loop:
-        - odio-check-upgrade
-        - odio-upgrade
+        - .local/bin/odio-check-upgrade
+        - .local/bin/odio-upgrade
+        - .config/systemd/user/odio-check-upgrade.service
+        - .config/systemd/user/odio-check-upgrade.timer
+        - .config/systemd/user/odio-upgrade.service
+        - .config/systemd/user/default.target.wants/odio-check-upgrade.timer
+        # Stale enable symlink pointing at the removed /etc/systemd/user copy.
+        - .config/systemd/user/timers.target.wants/odio-check-upgrade.timer
 
-    - name: Remove legacy per-user upgrade unit files
+    # /etc/systemd/user shadows the deb's /usr/lib/systemd/user units, so these
+    # must go or the box keeps calling the deleted /usr/local/bin/odio-upgrade.
+    - name: Remove legacy system-wide upgrade artifacts
       ansible.builtin.file:
-        path: "/home/{{ target_user }}/.config/systemd/user/{{ item }}"
-        state: absent
-      become: "{{ become_for_target_user }}"
-      loop:
-        - odio-check-upgrade.service
-        - odio-check-upgrade.timer
-        - odio-upgrade.service
-
-    - name: Remove legacy timer wants symlink
-      ansible.builtin.file:
-        path: "/home/{{ target_user }}/.config/systemd/user/default.target.wants/odio-check-upgrade.timer"
-        state: absent
-      become: "{{ become_for_target_user }}"
-
-    - name: Remove legacy odio-check-upgrade script
-      ansible.builtin.file:
-        path: /usr/local/bin/odio-check-upgrade
+        path: "{{ item }}"
         state: absent
       become: true
+      register: upgrade_legacy_cleanup
+      loop:
+        - /usr/local/bin/odio-check-upgrade
+        - /usr/local/bin/odio-upgrade
+        - /etc/sudoers.d/010_odio-upgrade
+        - /etc/systemd/user/odio-check-upgrade.service
+        - /etc/systemd/user/odio-check-upgrade.timer
+        - /etc/systemd/user/odio-upgrade.service
 
-- name: Install odio-upgrade script
-  ansible.builtin.copy:
-    src: odio_upgrade.py
-    dest: /usr/local/bin/odio-upgrade
-    owner: root
-    group: root
-    mode: '0755'
+# Ships /usr/bin/odioctl, the user units and /etc/sudoers.d/odioctl. Units are
+# not auto-enabled by the postinst, which does create the empty `odioctl` group.
+- name: Install odioctl v{{ upgrade_odioctl_apt_version }}
+  ansible.builtin.apt:
+    name: "odioctl={{ upgrade_odioctl_apt_version }}"
+    state: present
   become: true
+  register: upgrade_odioctl_apt
+  notify: Start odioctl-web socket
 
-- name: Deploy odio-upgrade sudoers rule
-  ansible.builtin.template:
-    src: odio-upgrade.sudoers.j2
-    dest: /etc/sudoers.d/010_odio-upgrade
-    owner: root
-    group: root
-    mode: '0440'
-    validate: visudo -cf %s
+# Migration path: common seeds this group on first install, before linger
+# starts the user manager, but its first-install block never re-runs on an
+# existing box. A manager already up keeps its old group list, so here the
+# membership only takes effect on target_user's next login.
+- name: Add target user to the odioctl group
+  ansible.builtin.user:
+    name: "{{ target_user }}"
+    append: true
+    groups: [odioctl]
   become: true
+  when: odios_role_pre_scaffold | bool
 
-- name: Deploy odio-upgrade systemd user units (system-wide)
-  ansible.builtin.template:
-    src: "{{ item }}.j2"
-    dest: "/etc/systemd/user/{{ item }}"
-    owner: root
-    group: root
-    mode: '0644'
-  become: true
-  loop:
-    - odio-check-upgrade.service
-    - odio-check-upgrade.timer
-    - odio-upgrade.service
-  notify: Reload user systemd
+# User scope: a root daemon-reload won't reach the target user's manager, which
+# still holds the removed /etc/systemd/user copies. Image mode has no running
+# manager (units load at boot).
+- name: Reload user systemd
+  ansible.builtin.systemd:
+    daemon_reload: true
+    scope: user
+  environment:
+    XDG_RUNTIME_DIR: "/run/user/{{ target_user_uid }}"
+  become: "{{ become_for_target_user }}"
+  become_user: "{{ target_user }}"
+  when:
+    - install_mode == "live"
+    - upgrade_odioctl_apt.changed or upgrade_legacy_cleanup.changed | default(false)
 
 - name: Enable odio-check-upgrade timer
   ansible.builtin.include_tasks: "../../../tasks/systemd_enable_user.yml"
   vars:
     service_name: odio-check-upgrade.timer
-    service_unit_path: /etc/systemd/user/odio-check-upgrade.timer
     wanted_by: timers.target
+  when: odios_role_pre_scaffold | bool
+
+# The socket holds :8021 from boot and pulls odioctl-web.service in on the
+# first connection; the service itself has no [Install]. Enabling does not bind
+# the port, so the apt task notifies a handler to start it.
+- name: Enable odioctl-web socket
+  ansible.builtin.include_tasks: "../../../tasks/systemd_enable_user.yml"
+  vars:
+    service_name: odioctl-web.socket
+    wanted_by: sockets.target
   when: odios_role_pre_scaffold | bool
 
 - name: Install unattended-upgrades (image mode)

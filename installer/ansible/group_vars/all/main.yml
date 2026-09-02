@@ -5,6 +5,16 @@ target_hostname: "{{ ansible_hostname }}"
 target_user: "{{ ansible_user_id }}"
 odio_gpg: "https://apt.odio.love/key.gpg"
 gpg_file: "/usr/share/keyrings/odio.gpg"
+# odioctl ships only in the testing suite while it is a pre-release, and the
+# upgrade role (which installs it) is always installed. Drop this term once
+# odioctl 0.1.0 is published to stable.
+odioctl_prerelease: true
+# Pre-release channel, pinned at priority 50: never pulled by apt upgrade,
+# installable on demand with `apt install <pkg>/testing`. On by default for
+# pr-* builds, whose odio_version is a git-describe (2026.9.0b1-20-g7c1f6c4).
+odio_testing_repo: "{{ install_qbzd | bool
+  or odioctl_prerelease | bool
+  or odio_version is search('-[0-9]+-g[0-9a-f]+$') }}"
 
 odio_version: "unknown"
 mpd_music_directory: "/media/USB"
@@ -25,6 +35,8 @@ install_mpd_discplayer: true
 install_shairport_sync: true
 install_snapclient: true
 install_spotifyd: true
+# qbzd ships only in the testing suite — selecting it turns odio_testing_repo on.
+install_qbzd: false
 install_mympd: "{{ install_mpd }}"
 install_tidal: "{{ install_upmpdcli }}"
 install_qobuz: "{{ install_upmpdcli }}"
@@ -35,7 +47,7 @@ install_branding: true
 
 # Smart-upgrade gate: defaults to install_X so fresh installs and
 # direct ansible-playbook / image-builder paths run every selected role.
-# odio-upgrade overrides individual run_X to false when the target manifest
+# odioctl overrides individual run_X to false when the target manifest
 # matches the installed role version (skipping unchanged roles).
 run_pulseaudio: "{{ install_pulseaudio }}"
 run_bluetooth: "{{ install_bluetooth }}"
@@ -46,10 +58,11 @@ run_shairport_sync: "{{ install_shairport_sync }}"
 run_snapclient: "{{ install_snapclient }}"
 run_upmpdcli: "{{ install_upmpdcli }}"
 run_spotifyd: "{{ install_spotifyd }}"
+run_qbzd: "{{ install_qbzd }}"
 run_branding: "{{ install_branding }}"
 # common + upgrade have no install_X opt-in (always installed); these
 # defaults cover direct ansible-playbook / image-builder paths. install.sh
-# overrides RUN_COMMON to Y unconditionally; odio-upgrade may emit
+# overrides RUN_COMMON to Y unconditionally; odioctl may emit
 # RUN_UPGRADE=N when its role version is stable.
 run_common: true
 run_upgrade: true

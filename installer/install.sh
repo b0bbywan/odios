@@ -81,6 +81,7 @@ ask_config() {
     read -rp "Install Snapcast client? [Y/n]: "            INSTALL_SNAPCLIENT
     read -rp "Install UPnP/DLNA renderer? [Y/n]: "         INSTALL_UPMPDCLI
     read -rp "Install Spotifyd (Spotify Connect)? [Y/n]: " INSTALL_SPOTIFYD
+    read -rp "Install qbzd (Qobuz Connect)? [y/N]: "       INSTALL_QBZD
     read -rp "Install branding (odio-motd login banner, hushlogin)? [Y/n]: " INSTALL_BRANDING
 
     if [[ "${INSTALL_UPMPDCLI:-Y}" != "n" && "${INSTALL_UPMPDCLI:-Y}" != "N" ]]; then
@@ -122,10 +123,11 @@ prompt_for_config() {
     INSTALL_TIDAL="${INSTALL_TIDAL:-$INSTALL_UPMPDCLI}"
     INSTALL_QOBUZ="${INSTALL_QOBUZ:-$INSTALL_UPMPDCLI}"
     INSTALL_SPOTIFYD="${INSTALL_SPOTIFYD:-Y}"
+    INSTALL_QBZD="${INSTALL_QBZD:-N}"
     INSTALL_UPNPWEBRADIOS="${INSTALL_UPNPWEBRADIOS:-$INSTALL_UPMPDCLI}"
     INSTALL_BRANDING="${INSTALL_BRANDING:-Y}"
 
-    # Smart-upgrade hint: odio-upgrade exports RUN_<role>=N for roles whose
+    # Smart-upgrade hint: odioctl exports RUN_<role>=N for roles whose
     # target version matches the installed version. Internal-only — fresh
     # installs never set these, so RUN_X collapses to INSTALL_X.
     RUN_PULSEAUDIO="${RUN_PULSEAUDIO:-$INSTALL_PULSEAUDIO}"
@@ -137,8 +139,9 @@ prompt_for_config() {
     RUN_SNAPCLIENT="${RUN_SNAPCLIENT:-$INSTALL_SNAPCLIENT}"
     RUN_UPMPDCLI="${RUN_UPMPDCLI:-$INSTALL_UPMPDCLI}"
     RUN_SPOTIFYD="${RUN_SPOTIFYD:-$INSTALL_SPOTIFYD}"
+    RUN_QBZD="${RUN_QBZD:-$INSTALL_QBZD}"
     RUN_BRANDING="${RUN_BRANDING:-$INSTALL_BRANDING}"
-    # `upgrade` has no INSTALL_X opt-in (always installed); odio-upgrade still
+    # `upgrade` has no INSTALL_X opt-in (always installed); odioctl still
     # exports RUN_UPGRADE=N when its role version is stable.
     RUN_UPGRADE="${RUN_UPGRADE:-Y}"
     # `common` adds the odio apt source and runs the single `apt update` for
@@ -331,6 +334,7 @@ run_playbook() {
   "install_mpd":            $(bool "$INSTALL_MPD"),
   "install_odio_api":       $(bool "$INSTALL_ODIO_API"),
   "install_spotifyd":       $(bool "$INSTALL_SPOTIFYD"),
+  "install_qbzd":           $(bool "$INSTALL_QBZD"),
   "install_shairport_sync": $(bool "$INSTALL_SHAIRPORT_SYNC"),
   "install_snapclient":     $(bool "$INSTALL_SNAPCLIENT"),
   "install_upmpdcli":       $(bool "$INSTALL_UPMPDCLI"),
@@ -345,6 +349,7 @@ run_playbook() {
   "run_mpd":                $(bool "$RUN_MPD"),
   "run_odio_api":           $(bool "$RUN_ODIO_API"),
   "run_spotifyd":           $(bool "$RUN_SPOTIFYD"),
+  "run_qbzd":               $(bool "$RUN_QBZD"),
   "run_shairport_sync":     $(bool "$RUN_SHAIRPORT_SYNC"),
   "run_snapclient":         $(bool "$RUN_SNAPCLIENT"),
   "run_upmpdcli":           $(bool "$RUN_UPMPDCLI"),
