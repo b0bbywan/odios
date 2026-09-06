@@ -343,6 +343,22 @@
           "url": "https://github.com/b0bbywan/odios/discussions/82"
         }
       ]
+    },
+    {
+      "login": "PMaynard",
+      "name": "Pete",
+      "avatar_url": "https://avatars.githubusercontent.com/u/1450006?v=4",
+      "profile": "https://petermaynard.co.uk",
+      "contributions": [
+        {
+          "type": "bug",
+          "url": "https://github.com/b0bbywan/odio-docs/issues/100"
+        },
+        {
+          "type": "financial",
+          "url": "https://github.com/sponsors/b0bbywan"
+        }
+      ]
     }
   ],
   "contributorsPerLine": 7,
