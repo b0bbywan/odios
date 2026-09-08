@@ -359,6 +359,22 @@
           "url": "https://github.com/sponsors/b0bbywan"
         }
       ]
+    },
+    {
+      "login": "langmario",
+      "name": "Mario Lang",
+      "avatar_url": "https://avatars.githubusercontent.com/u/38465801?v=4",
+      "profile": "https://github.com/langmario",
+      "contributions": [
+        {
+          "type": "ideas",
+          "url": "https://github.com/b0bbywan/odios/discussions/86"
+        },
+        {
+          "type": "doc",
+          "url": "https://docs.odio.love/operations/how-it-works/#mono-output"
+        }
+      ]
     }
   ],
   "contributorsPerLine": 7,
