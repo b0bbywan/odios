@@ -2,7 +2,7 @@
 # odios-firstboot-network.sh — Network-dependent post cloud-init fixups
 # Runs once after network-online + avahi-daemon are up. Discovers the
 # snapcast server via snapclientmpris and injects the snapweb URL into
-# odio-api's config so the UI can link to it.
+# odio-api's config so the UI can link to it, then runs the first upgrade check.
 set -euo pipefail
 
 MARKER="/var/lib/odios/firstboot-network-done"
@@ -46,6 +46,17 @@ else
             systemctl --user restart odio-api.service || true
     fi
 fi
+
+# ─── Refresh /var/cache/odio/upgrades.json ──────────────────────────────────
+# The playbook skips `odioctl upgrade check` in image mode (a build-time report
+# would be stale). Go through the user unit so /etc/default/odioctl is honoured
+# and the file lands with odioctl's own permissions; odio-api's watcher picks
+# it up. A miss (no connectivity yet) just leaves it to the daily timer.
+
+echo "odios-firstboot-network: refreshing upgrades.json..."
+runuser -u "$ODIOS_USER" -- env XDG_RUNTIME_DIR="/run/user/$(id -u "$ODIOS_USER")" \
+    systemctl --user start --wait odio-check-upgrade.service \
+    || echo "odios-firstboot-network: upgrade check failed, the daily timer will retry"
 
 mkdir -p "$(dirname "$MARKER")"
 touch "$MARKER"
