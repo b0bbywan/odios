@@ -124,8 +124,8 @@
     - name: Verify services are running
       ansible.builtin.include_tasks: "tasks/verify_services.yml"
 
-    # Last — write_state.yml runs `odioctl upgrade check` as target_user, which
-    # ansible needs the per-user tmp dir for. Removing it earlier would just
+    # Last — write_state.yml starts odio-check-upgrade.service as target_user,
+    # which ansible needs the per-user tmp dir for. Removing it earlier would just
     # cause ansible to recreate it (with a warning).
     - name: Remove ansible remote_tmp directory
       ansible.builtin.file:
