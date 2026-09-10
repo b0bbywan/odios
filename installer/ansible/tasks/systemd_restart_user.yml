@@ -1,0 +1,31 @@
+---
+# Restart a systemd user service only if it's already active. Used after a
+# package upgrade so a running instance picks up the new binary; a stopped
+# (or socket-activated, not yet triggered) one is left alone.
+# Variables:
+#   service_name: name of the service (e.g. odioctl-web.service)
+
+- name: Check user service active state - {{ service_name }}
+  ansible.builtin.systemd_service:
+    name: "{{ service_name }}"
+    scope: user
+  environment:
+    XDG_RUNTIME_DIR: "/run/user/{{ target_user_uid }}"
+  become: "{{ become_for_target_user }}"
+  become_user: "{{ target_user }}"
+  register: _restart_user_check
+  failed_when: false
+  when: install_mode == "live"
+
+- name: Restart user service - live
+  ansible.builtin.systemd_service:
+    name: "{{ service_name }}"
+    state: restarted
+    scope: user
+  environment:
+    XDG_RUNTIME_DIR: "/run/user/{{ target_user_uid }}"
+  become: "{{ become_for_target_user }}"
+  become_user: "{{ target_user }}"
+  when:
+    - install_mode == "live"
+    - _restart_user_check.status.ActiveState | default('') == 'active'
