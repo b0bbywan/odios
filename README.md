@@ -43,7 +43,7 @@
 
 # Open-source audiophile distribution for Debian/Ubuntu and Raspberry Pi with native Home Assistant integration.
 
-odios turns a €35 Raspberry Pi into what commercial streamers sell for €300–500: Bluetooth A2DP (in & out), AirPlay, Snapcast multi-room, UPnP/DLNA, CD playback with metadata — all in one box, controlled from a web app, no account or subscription required. Other PCs running PulseAudio or PipeWire can also stream directly to it over the network, making it a true whole-home audio sink.
+odios turns a €35 Raspberry Pi into what commercial streamers sell for €300–500: Bluetooth A2DP (in & out), AirPlay, Spotify Connect, Qobuz Connect, Snapcast multi-room, UPnP/DLNA, CD playback with metadata — all in one box, controlled from a web app and managed from a settings page, no SSH, account or subscription required. Other PCs running PulseAudio or PipeWire can also stream directly to it over the network, making it a true whole-home audio sink.
 
 Built on modern foundations: everything runs as unprivileged systemd user services (no root daemons), orchestrated through a unified REST API written in Go. Battle-tested on a Raspberry Pi B+ (armv6l) for over 6 years without reinstall.
 
@@ -64,20 +64,26 @@ Full Home Assistant integration included — odios nodes appear as native media 
 │                                                     │
 └──────┬──────────┬──────────┬──────────┬─────────────┘
        │          │          │          │
-   PulseAudio   MPD    Shairport    Snapcast
-   (network)          Sync         client
-   Bluetooth    MPD   (AirPlay)    upmpdcli
-   (A2DP)       Disc             (UPnP/DLNA)
-               Player
+   PulseAudio  MPD       Shairport  Snapcast
+   (network)             Sync       client
+   Bluetooth   MPD       (AirPlay)  upmpdcli
+   (A2DP)      Disc      Spotifyd   (UPnP/DLNA)
+               Player    qbzd
+                         (Qobuz Connect)
+
+┌─────────────────────────────────────────────────────┐
+│             odioctl (settings, :8021)               │  ← upgrades, components, DAC, sign-ins
+└─────────────────────────────────────────────────────┘
 ```
 
 Most service run as **systemd user services** — no root daemons, full per-user isolation.
 
 ## Components
 
-| Component | Role |
-|-----------|------|
+| Component | Role | Session |
+|-----------|------|---------|
 | [go-odio-api](https://github.com/b0bbywan/go-odio-api) | REST API + embedded UI, bridges systemd / PulseAudio / MPRIS (incl. TrackList queue) / D-Bus / Bluetooth Speaker | user |
+| [odioctl](https://github.com/b0bbywan/odioctl) | Settings page (port 8021) and CLI: upgrades, optional components, DAC overlay, Tidal / Qobuz Connect sign-in, reboot | user |
 | [go-mpd-discplayer](https://github.com/b0bbywan/go-mpd-discplayer) | Automatic CD/USB playback with metadata via MPD | user |
 | [PulseAudio](https://www.freedesktop.org/wiki/Software/PulseAudio) | Central audio server, routes all sources to the DAC output — other PCs running PulseAudio or PipeWire can stream to it over the network via TCP/Zeroconf (wired connections only) | user |
 | [MPD](https://www.musicpd.org/) | Music Player Daemon (network, CD/USB) | user |
@@ -85,9 +91,10 @@ Most service run as **systemd user services** — no root daemons, full per-user
 | [myMPD](https://github.com/jcorporation/myMPD) | Web UI for MPD (default port 8080) | user |
 | Shairport Sync | AirPlay receiver | user |
 | [Spotifyd](https://github.com/Spotifyd/spotifyd) | Spotify Connect receiver | user |
+| [qbzd](https://github.com/vicrodh/qbz) | Qobuz Connect endpoint — optional, off by default, experimental | user |
 | [Snapcast](https://github.com/snapcast/snapcast) | Multi-room audio client | user |
 | [Snapclientmpris](https://github.com/b0bbywan/snapclientmpris) | MPRIS bridge for snapclient | user |
-| [upmpdcli](https://www.lesbonscomptes.com/upmpdcli/) | UPnP/DLNA renderer | user |
+| [upmpdcli](https://www.lesbonscomptes.com/upmpdcli/) | UPnP/DLNA renderer, with Qobuz, Tidal and web-radio plugins | user |
 | [Bluetooth](https://bluez.github.io/) | A2DP sink with automatic pairing, plus audio output to Bluetooth speakers/headphones | system |
 
 ## Installation
@@ -112,13 +119,25 @@ See [image-builder/README.md](image-builder/README.md) for details and manual fl
 curl -fsSL https://github.com/b0bbywan/odios/releases/latest/download/install.sh | bash
 ```
 
-The installer works on both fresh and existing systems (idempotent, safe to re-run). It prompts for a target user — if the user doesn't exist it is created automatically. Installing for an existing user is supported: config files are backed up before any modification.
+The installer works on both fresh and existing systems (idempotent, safe to re-run). It prompts for a target user — if the user doesn't exist it is created automatically. Installing for an existing user is supported: config files are backed up before any modification. Optional components such as Qobuz Connect are offered as prompts, and can still be added or dropped later from the [settings page](#settings-page).
 
 See [installer/README.md](installer/README.md) for full installation options, environment variables, and testing.
 
+## Settings page
+
+Every box serves a settings page at `http://<your-box>:8021`, also linked from the odio dashboard header. No SSH, no config file to edit:
+
+- **Upgrades** — shows when a new release is available and applies it, then reports when it is done
+- **Components** — add or drop services on a box already in use (e.g. Qobuz Connect); new optional services ship this way
+- **Tidal & Qobuz Connect sign-in** — the page hands you the sign-in link, you open it, and the service is connected
+- **DAC** — pick the sound card overlay on a Raspberry Pi
+- **Reboot** the box
+
+The page updates itself as things happen, no reload. It is served by `odioctl web`, socket-activated so it only starts on the first connection.
+
 ## Upgrading
 
-Each install ships [odioctl](https://github.com/b0bbywan/odioctl), which drives upgrades, component selection and the DAC overlay. `odioctl upgrade check` runs daily via a systemd user timer and refreshes `/var/cache/odio/upgrades.json`; `odioctl upgrade apply` performs the upgrade.
+Each install ships [odioctl](https://github.com/b0bbywan/odioctl), the tool behind the settings page. Upgrades show up in the settings page, the odio web UI and Home Assistant, and apply from there. `odioctl upgrade check` runs daily via a systemd user timer and refreshes `/var/cache/odio/upgrades.json`; `odioctl upgrade apply` performs the upgrade.
 
 ```bash
 odioctl upgrade apply                     # upgrade to the latest reported version
@@ -129,7 +148,9 @@ odioctl upgrade apply --progress          # emit structured progress events for 
 
 `odioctl` reads `/var/lib/odio/state.json` (or rebuilds from dpkg as a last resort) to preserve the feature selection and role opt-outs across upgrades. Run `odioctl upgrade apply --dry-run --force` to see what would be invoked without running it. Use `--reinstall` to force every role through a full first-install pass (bypassing the smart-upgrade skips) when an install needs repairing. Use `--progress` to emit structured `ODIO_PROGRESS` JSON lines (one per role and phase) to stdout for odio-api to display, without altering the normal output.
 
-`odioctl web` serves the same actions as a plain-HTML page on port 8021, socket-activated so it only starts on the first connection.
+`odioctl components` and `odioctl dac` do from the shell what the settings page does for components and the DAC overlay.
+
+Upgrading from 2026.7.0rc2 or earlier: the command on those boxes is still `odio-upgrade apply`; once 2026.9.0b1 is applied it becomes `odioctl upgrade apply`.
 
 ## Recommended clients
 
@@ -154,7 +175,7 @@ odioctl upgrade apply --progress          # emit structured progress events for 
 | **Bluetooth output (speakers/headphones)** | ✅ Included | ⚠️ Community plugin only |
 | **AirPlay** | ✅ Included | ✅ Free plugin |
 | **Spotify Connect** | ✅ Included | ✅ Free plugin |
-| **Qobuz** | ✅ Included (via upmpdcli) | 💰 Premium only |
+| **Qobuz** | ✅ Included (via upmpdcli), plus optional Qobuz Connect (qbzd, experimental) | 💰 Premium only |
 | **Tidal / Tidal Connect** | ✅ Included (via upmpdcli) | 💰 Premium only |
 | **UPnP/DLNA** | ✅ Included | ✅ Included |
 | **Web radios** | ✅ Included (upmpdcli + myMPD) | ✅ Included |
@@ -169,16 +190,18 @@ odioctl upgrade apply --progress          # emit structured progress events for 
 | **System philosophy** | Linux-native modular stack | Appliance-style distribution |
 | **Debian base** | Trixie (stable) | Bookworm (oldstable) |
 | **Installation** | Image flash (Pi) or `curl \| bash` (any Debian/Ubuntu) | Image flash |
-| **Upgrade** | `odioctl upgrade` or reflash | OTA updates / Reflash between major versions |
+| **Upgrade** | One click from the settings page / HA, `odioctl upgrade`, or reflash | OTA updates / Reflash between major versions |
 
 ## Related projects
 
 - [go-odio-api](https://github.com/b0bbywan/go-odio-api) — REST API and embedded UI
+- [odioctl](https://github.com/b0bbywan/odioctl) — Settings page and CLI for upgrades, components, DAC and streaming sign-ins
 - [odio-ha](https://github.com/b0bbywan/odio-ha) — Full Home Assistant integration: odios nodes appear as native HA media players and can be mapped to official integrations to inherit their full capabilities
 - [odio-pwa](https://github.com/b0bbywan/odio-pwa) — Progressive Web App to control multiple odios nodes ([live](https://odio-pwa.vercel.app/))
 - [go-mpd-discplayer](https://github.com/b0bbywan/go-mpd-discplayer) — CD/USB player daemon
 - [mpd2mpris](https://github.com/b0bbywan/mpd2mpris) — MPRIS bridge for MPD with CUE and remote cover art support
 - [Snapclientmpris](https://github.com/b0bbywan/snapclientmpris) — MPRIS bridge for snapclient
+- [qbz](https://github.com/vicrodh/qbz) — upstream of qbzd, the Qobuz Connect daemon
 
 ## License
 
