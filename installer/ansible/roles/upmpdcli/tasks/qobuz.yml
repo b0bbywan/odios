@@ -6,3 +6,12 @@
     install_recommends: false
   become: true
   when: "'qobuz' not in odios_prior_features"
+
+- name: Configure qobuz user
+  ansible.builtin.lineinfile:
+    path: "/home/{{ target_user }}/.config/upmpdcli/upmpdcli.conf"
+    regexp: '^#?qobuzuser\s*='
+    line: "qobuzuser = bugsbunny"
+  become: "{{ become_for_target_user }}"
+  become_user: "{{ target_user }}"
+  notify: Restart upmpdcli
