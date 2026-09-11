@@ -456,6 +456,13 @@ jobs:
             arch: amd64
             baseline_tag: "2026.9.0b1"
             test_action: upgrade-from-image-systemctl
+          # Component enabled on an odio already at the target: the apply that
+          # installs qbzd must re-run odio_api so its service list follows.
+          - platform: linux/amd64
+            runner: ubuntu-24.04
+            arch: amd64
+            baseline_tag: "2026.9.0b1"
+            test_action: upgrade-from-image-enable-qbzd
     steps:
       - uses: actions/checkout@v7
 

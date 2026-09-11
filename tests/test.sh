@@ -209,6 +209,34 @@ run_odio_upgrade_systemctl() {
     '
 }
 
+# Enable qbzd once every role is at the target: the apply that installs it must
+# also run odio_api (no RUN_ODIO_API=N), whose config.yaml lists the services.
+run_enable_qbzd() {
+    local tag="$1"
+    local config=/home/odio/.config/odio-api/config.yaml
+
+    run_odioctl_upgrade "${tag}"
+    if docker exec "${CONTAINER_NAME}" grep -q 'qbzd\.service' "${config}"; then
+        echo "ERROR: qbzd.service already in ${config} before enabling it" >&2
+        exit 1
+    fi
+
+    echo "=== odioctl components enable qbzd, then check + apply (target=${tag}) ==="
+    docker exec -u odio -e INSTALL_MODE=image "${CONTAINER_NAME}" bash -c '
+        set -e
+        /usr/bin/odioctl components enable qbzd
+        rc=0; /usr/bin/odioctl upgrade check --version "$1" || rc=$?
+        [[ $rc == 1 ]] || { echo "ERROR: check exited $rc, expected 1 (qbzd pending)" >&2; exit 1; }
+        /usr/bin/odioctl upgrade apply
+    ' _ "${tag}"
+
+    if ! docker exec "${CONTAINER_NAME}" grep -q 'qbzd\.service' "${config}"; then
+        echo "ERROR: qbzd.service missing from ${config} after the upgrade" >&2
+        exit 1
+    fi
+    echo "=== qbzd.service listed in ${config} ==="
+}
+
 # Runs the odioctl the install/upgrade just put in place — a missing binary is
 # itself a failure of the run under test.
 assert_state_schema() {
@@ -296,6 +324,8 @@ while [[ "${1:-}" == --* ]]; do
         echo "                                   (odioctl baselines: T pinned in /etc/default/odioctl;"
         echo "                                    older ones: skipped unless odio.love/manifest.json names T)"
         echo "  upgrade-from-image-progress T  - Same (embedded, live) but with --progress → assert odio_progress events"
+        echo "  upgrade-from-image-enable-qbzd T - Upgrade to T with the baseline's odioctl, enable qbzd, check + apply"
+        echo "                                     → assert qbzd.service lands in odio-api's config.yaml"
         exit 0
         ;;
     esac
@@ -303,7 +333,7 @@ while [[ "${1:-}" == --* ]]; do
 done
 
 case "${1:-}" in
-  shell|rerun|rerun-as-other-user|clean|install|install-root|install-as-other-user|test|test-as-other-user|upgrade|upgrade-from-image-fetch|upgrade-from-image-embedded|upgrade-from-image-odioctl|upgrade-from-image-systemctl|upgrade-from-image-fetch-as-other-user|upgrade-from-image-progress)
+  shell|rerun|rerun-as-other-user|clean|install|install-root|install-as-other-user|test|test-as-other-user|upgrade|upgrade-from-image-fetch|upgrade-from-image-embedded|upgrade-from-image-odioctl|upgrade-from-image-systemctl|upgrade-from-image-fetch-as-other-user|upgrade-from-image-progress|upgrade-from-image-enable-qbzd)
     ACTION="$1"
     shift
     ;;
@@ -457,7 +487,7 @@ case "${ACTION}" in
     echo "=== Done ==="
     ;;
 
-  upgrade-from-image-fetch|upgrade-from-image-embedded|upgrade-from-image-odioctl|upgrade-from-image-systemctl|upgrade-from-image-fetch-as-other-user|upgrade-from-image-progress)
+  upgrade-from-image-fetch|upgrade-from-image-embedded|upgrade-from-image-odioctl|upgrade-from-image-systemctl|upgrade-from-image-fetch-as-other-user|upgrade-from-image-progress|upgrade-from-image-enable-qbzd)
     TARGET="${1:?target tag required (e.g. pr-42 or 2026.4.1rc2)}"
 
     # The whole point of upgrade-from-image-* is to test the upgrade code path on
@@ -503,6 +533,7 @@ EOF
       upgrade-from-image-systemctl)          run_odio_upgrade_systemctl          "${TARGET}" ;;
       upgrade-from-image-fetch-as-other-user) run_odio_upgrade_fetch_as_other_user "${TARGET}" ;;
       upgrade-from-image-progress)            run_odio_upgrade_progress           "${TARGET}" ;;
+      upgrade-from-image-enable-qbzd)         run_enable_qbzd                     "${TARGET}" ;;
     esac
 
     echo "=== [${ACTION}] Asserting state.json reflects ${TARGET} ==="
