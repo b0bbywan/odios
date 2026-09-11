@@ -201,7 +201,6 @@ Upgrading from 2026.7.0rc2 or earlier: the command on those boxes is still `odio
 - [go-mpd-discplayer](https://github.com/b0bbywan/go-mpd-discplayer) — CD/USB player daemon
 - [mpd2mpris](https://github.com/b0bbywan/mpd2mpris) — MPRIS bridge for MPD with CUE and remote cover art support
 - [Snapclientmpris](https://github.com/b0bbywan/snapclientmpris) — MPRIS bridge for snapclient
-- [qbz](https://github.com/vicrodh/qbz) — upstream of qbzd, the Qobuz Connect daemon
 
 ## License
 
