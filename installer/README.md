@@ -384,7 +384,8 @@ The matrix exercises four paths against several baseline tags:
 
 - **`upgrade-from-image-fetch`** — curls the last published `odio_upgrade.py` (2026.7.0rc2), applies the target with it, then re-applies through the odioctl that upgrade installed (the real migration off the `/usr/local/bin` script).
 - **`upgrade-from-image-embedded`** — runs the baseline's own `/usr/local/bin/odio-upgrade` (validates the in-place helper on pre-odioctl baselines).
-- **`upgrade-from-image-systemctl`** — `systemctl --user start odio-upgrade.service` (real-release path, target driven by `odio.love/manifest.json`).
+- **`upgrade-from-image-odioctl`**: runs the baseline's own `/usr/bin/odioctl upgrade apply` (odioctl baselines, 2026.9.0b1 onward).
+- **`upgrade-from-image-systemctl`**: `systemctl --user start odio-upgrade.service` (real-release path). On odioctl baselines the target is pinned with `ODIOCTL_ODIOS_VERSION` in `/etc/default/odioctl`; older baselines follow `odio.love/manifest.json` and skip until it names the target.
 - **`upgrade-from-image-fetch-as-other-user`** — same as `fetch`, but invoked by a non-`target_user` sudoer (member of `users` + `odio`). Validates that the group permissions on `/var/lib/odio/state.json` actually let a second admin trigger the upgrade.
 
 Baseline tags + runners are listed inline in `release.yml`'s matrix (no repo variable). Each entry consumes `ghcr.io/b0bbywan/odios/test-baseline:<TAG>-<arch>`.
