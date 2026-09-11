@@ -1,3 +1,8 @@
 ---
-upgrade_version: "2026.9.0b1"
-upgrade_odioctl_apt_version: "0.2.2"
+upgrade_version: "2026.9.0b2"
+upgrade_odioctl_apt_version: "0.3.1"
+upgrade_description: "odioctl and the upgrade check timer"
+upgrade_group: "System"
+upgrade_services:
+  - odio-check-upgrade.timer
+  - odioctl-web.socket
