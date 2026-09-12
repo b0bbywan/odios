@@ -346,6 +346,7 @@ jobs:
           #                   carrying /etc/sudoers.d/010_odio-upgrade and a
           #                   sudo-based odio-upgrade.service — what exercises
           #                   the cleanup and the switch to the %odioctl group
+          #   - 2026.9.0b1  : first odioctl release → odioctl-to-odioctl upgrade
           # `upgrade-from-image-fetch` curls the last published odio_upgrade.py
           # (2026.7.0rc2), applies the target with it, then re-applies through
           # the odioctl that upgrade installed — the real migration path off the
@@ -443,6 +444,25 @@ jobs:
             arch: amd64
             baseline_tag: "2026.7.0rc2"
             test_action: upgrade-from-image-systemctl
+          # odioctl baseline: `odioctl` runs the baseline's own odioctl apply;
+          # `systemctl` pins the target via /etc/default/odioctl, so both run on every PR.
+          - platform: linux/amd64
+            runner: ubuntu-24.04
+            arch: amd64
+            baseline_tag: "2026.9.0b1"
+            test_action: upgrade-from-image-odioctl
+          - platform: linux/amd64
+            runner: ubuntu-24.04
+            arch: amd64
+            baseline_tag: "2026.9.0b1"
+            test_action: upgrade-from-image-systemctl
+          # Component enabled on an odio already at the target: the apply that
+          # installs qbzd must re-run odio_api so its service list follows.
+          - platform: linux/amd64
+            runner: ubuntu-24.04
+            arch: amd64
+            baseline_tag: "2026.9.0b1"
+            test_action: upgrade-from-image-enable-qbzd
     steps:
       - uses: actions/checkout@v7
 
