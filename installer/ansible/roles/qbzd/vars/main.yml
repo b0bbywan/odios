@@ -1,8 +1,8 @@
 ---
-qbzd_version: "2026.9.0b1"
+qbzd_version: "2026.9.0b2"
 # Exact version, not a >= floor: qbzd ships only in the testing suite, pinned
 # at 50, where apt collapses the candidate to the installed version.
-qbzd_apt_version: "2.1.0"
+qbzd_apt_version: "2.1.1"
 
 qbzd_http_port: "8182"
 qbzd_conf_path: "/home/{{ target_user }}/.config/qbzd/qbzd.toml"
