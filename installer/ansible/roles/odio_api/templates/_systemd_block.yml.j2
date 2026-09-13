@@ -37,3 +37,6 @@ systemd:
 {% if install_upmpdcli %}
     - name: upmpdcli.service
 {% endif %}
+{% if install_display %}
+    - name: odio-screen.service
+{% endif %}

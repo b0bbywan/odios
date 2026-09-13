@@ -111,6 +111,8 @@
       when: run_spotifyd | bool
     - role: qbzd
       when: run_qbzd | bool
+    - role: display
+      when: run_display | bool
     - role: odio_api
       when: run_odio_api | bool
 
@@ -148,6 +150,7 @@
           - "  {{ '✓' if install_pulseaudio else '✗' }} PulseAudio with network streaming"
           - "  {{ '✓' if install_bluetooth else '✗' }} Bluetooth audio (A2DP sink)"
           - "  {{ '✓' if install_mpd else '✗' }} MPD (Music Player Daemon)"
+          - "  {{ '✓' if install_mympd else '✗' }} myMPD (web UI)"
           - "  {{ '✓' if install_odio_api else '✗' }} Odio API (REST control interface)"
           - "  {{ '✓' if install_mpd_discplayer else '✗' }} MPD disc player"
           - "  {{ '✓' if install_shairport_sync else '✗' }} Shairport Sync (AirPlay)"
@@ -156,7 +159,7 @@
           - "  {{ '✓' if install_upnpwebradios else '✗' }} UPnP web radios"
           - "  {{ '✓' if install_spotifyd else '✗' }} Spotifyd (Spotify Connect)"
           - "  {{ '✓' if install_qbzd else '✗' }} qbzd (Qobuz Connect) — run `qbzd setup` to log in"
-          - "  {{ '✓' if install_mympd else '✗' }} myMPD (web UI)"
+          - "  {{ '✓' if install_display else '✗' }} Kiosk browser"
           - ""
           - "System should already be running !"
           - "Visit http://{{ ansible_default_ipv4.address | default('localhost') }}:8018/ui"
