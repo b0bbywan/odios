@@ -41,6 +41,12 @@ EOF
 
 # ─── Config prompts ───────────────────────────────────────────────────────────
 
+# fbrowser-kiosk ships amd64/arm64 only. dpkg's architecture, not uname's: a
+# 32-bit userland may run on an arm64 kernel.
+display_supported() {
+    [[ "$(dpkg --print-architecture 2>/dev/null)" =~ ^(amd64|arm64)$ ]]
+}
+
 ask_config() {
     echo -e "${BLUE}Configuration${NC}"
     echo ""
@@ -82,6 +88,9 @@ ask_config() {
     read -rp "Install UPnP/DLNA renderer? [Y/n]: "         INSTALL_UPMPDCLI
     read -rp "Install Spotifyd (Spotify Connect)? [Y/n]: " INSTALL_SPOTIFYD
     read -rp "Install qbzd (Qobuz Connect)? [y/N]: "       INSTALL_QBZD
+    if display_supported; then
+        read -rp "Install display (fbrowser-kiosk)? [y/N]: " INSTALL_DISPLAY
+    fi
     read -rp "Install branding (odio-motd login banner, hushlogin)? [Y/n]: " INSTALL_BRANDING
 
     if [[ "${INSTALL_UPMPDCLI:-Y}" != "n" && "${INSTALL_UPMPDCLI:-Y}" != "N" ]]; then
@@ -124,6 +133,11 @@ prompt_for_config() {
     INSTALL_QOBUZ="${INSTALL_QOBUZ:-$INSTALL_UPMPDCLI}"
     INSTALL_SPOTIFYD="${INSTALL_SPOTIFYD:-Y}"
     INSTALL_QBZD="${INSTALL_QBZD:-N}"
+    INSTALL_DISPLAY="${INSTALL_DISPLAY:-N}"
+    if [[ $(bool "$INSTALL_DISPLAY") == "true" ]] && ! display_supported; then
+        echo -e "${YELLOW}⚠ display is not available on $(dpkg --print-architecture), skipping it.${NC}"
+        INSTALL_DISPLAY=N
+    fi
     INSTALL_UPNPWEBRADIOS="${INSTALL_UPNPWEBRADIOS:-$INSTALL_UPMPDCLI}"
     INSTALL_BRANDING="${INSTALL_BRANDING:-Y}"
 
@@ -140,6 +154,7 @@ prompt_for_config() {
     RUN_UPMPDCLI="${RUN_UPMPDCLI:-$INSTALL_UPMPDCLI}"
     RUN_SPOTIFYD="${RUN_SPOTIFYD:-$INSTALL_SPOTIFYD}"
     RUN_QBZD="${RUN_QBZD:-$INSTALL_QBZD}"
+    RUN_DISPLAY="${RUN_DISPLAY:-$INSTALL_DISPLAY}"
     RUN_BRANDING="${RUN_BRANDING:-$INSTALL_BRANDING}"
     # `upgrade` has no INSTALL_X opt-in (always installed); odioctl still
     # exports RUN_UPGRADE=N when its role version is stable.
@@ -335,6 +350,7 @@ run_playbook() {
   "install_odio_api":       $(bool "$INSTALL_ODIO_API"),
   "install_spotifyd":       $(bool "$INSTALL_SPOTIFYD"),
   "install_qbzd":           $(bool "$INSTALL_QBZD"),
+  "install_display":        $(bool "$INSTALL_DISPLAY"),
   "install_shairport_sync": $(bool "$INSTALL_SHAIRPORT_SYNC"),
   "install_snapclient":     $(bool "$INSTALL_SNAPCLIENT"),
   "install_upmpdcli":       $(bool "$INSTALL_UPMPDCLI"),
@@ -350,6 +366,7 @@ run_playbook() {
   "run_odio_api":           $(bool "$RUN_ODIO_API"),
   "run_spotifyd":           $(bool "$RUN_SPOTIFYD"),
   "run_qbzd":               $(bool "$RUN_QBZD"),
+  "run_display":            $(bool "$RUN_DISPLAY"),
   "run_shairport_sync":     $(bool "$RUN_SHAIRPORT_SYNC"),
   "run_snapclient":         $(bool "$RUN_SNAPCLIENT"),
   "run_upmpdcli":           $(bool "$RUN_UPMPDCLI"),

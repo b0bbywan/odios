@@ -1,0 +1,71 @@
+---
+# install.sh never selects display elsewhere; this covers direct playbook runs.
+- name: Read dpkg architecture
+  ansible.builtin.command: dpkg --print-architecture
+  register: display_dpkg_arch
+  changed_when: false
+
+- name: Assert display is available on this architecture
+  ansible.builtin.assert:
+    that: display_dpkg_arch.stdout in display_archs
+    fail_msg: "display needs {{ display_archs | join(' or ') }}, this system is {{ display_dpkg_arch.stdout }}"
+    quiet: true
+
+# A user manager already up keeps its old group list: on a live install the
+# membership only takes effect on target_user's next login (or reboot).
+- name: Ensure user in display groups
+  ansible.builtin.user:
+    name: "{{ target_user }}"
+    append: true
+    groups:
+      - tty
+      - video
+  become: true
+
+- name: Install fbrowser-kiosk
+  ansible.builtin.apt:
+    name:
+      - "fbrowser-kiosk={{ display_apt_version }}"
+    state: present
+    install_recommends: false
+  become: true
+  register: display_apt
+  notify: Restart odio-screen
+
+# The package ships odio-screen.service; image mode has no running manager.
+- name: Reload user systemd
+  ansible.builtin.systemd:
+    daemon_reload: true
+    scope: user
+  environment:
+    XDG_RUNTIME_DIR: "/run/user/{{ target_user_uid }}"
+  become: "{{ become_for_target_user }}"
+  become_user: "{{ target_user }}"
+  when:
+    - install_mode == "live"
+    - display_apt.changed
+  register: display_apt
+
+- name: Create fbrowser config directory
+  ansible.builtin.file:
+    path: "/home/{{ target_user }}/.config/fbrowser-kiosk"
+    state: directory
+    owner: "{{ target_user }}"
+    group: "{{ target_user }}"
+    mode: '0700'
+  become: "{{ become_for_target_user }}"
+
+- name: Configure fbrowser
+  ansible.builtin.copy:
+    src: config
+    dest: "/home/{{ target_user }}/.config/fbrowser-kiosk/config"
+    owner: "{{ target_user }}"
+    group: "{{ target_user }}"
+    mode: '0600'
+  become: "{{ become_for_target_user }}"
+  notify: Restart odio-screen
+
+- name: Enable user odio-screen service
+  ansible.builtin.include_tasks: "../../../tasks/systemd_enable_user.yml"
+  vars:
+    service_name: odio-screen.service

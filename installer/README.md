@@ -17,6 +17,7 @@ Ansible-based "curl | bash" installer to set up a complete audio/multimedia syst
 - **myMPD** - Web UI for MPD (default port 8080, override with `MPD_MYMPD_HTTP_PORT`) — also exposes web radio playback
 - **UPnP/DLNA** - Renderer for UPnP application control, with optional Qobuz, Tidal, and web-radio plugins (Tidal signs in from the settings page on port 8021; Qobuz credentials are set manually in `~/.config/upmpdcli/upmpdcli.conf`).
 - **qbzd** - Qobuz Connect endpoint (experimental, off by default; signs in from the settings page or `qbzd setup`)
+- **Display** - Kiosk browser on an attached screen (`fbrowser-kiosk`, `odio-screen.service`; experimental, off by default, amd64/arm64 only)
 - **MPD DiscPlayer** - CD/USB support for MPD
 - **Branding** - odio login banner (`odio-motd`, `.hushlogin`, `.profile` hook)
 
@@ -109,6 +110,7 @@ curl -fsSL https://github.com/b0bbywan/odios/releases/latest/download/install.sh
 | `INSTALL_MPD_DISCPLAYER` | `Y`           | CD/DVD support                       |
 | `INSTALL_SPOTIFYD`       | `Y`           | Spotify Connect                      |
 | `INSTALL_QBZD`           | `N`           | qbzd Qobuz Connect endpoint (experimental; sign in from the settings page or `qbzd setup`) |
+| `INSTALL_DISPLAY`        | `N`           | Kiosk browser on an attached screen (`fbrowser-kiosk`, experimental, amd64/arm64 only) |
 | `INSTALL_QOBUZ`          | `Y`           | upmpdcli Qobuz plugin (credentials: manual, see `upmpdcli.conf`) |
 | `INSTALL_TIDAL`          | `Y`           | upmpdcli Tidal plugin (sign in from the settings page)       |
 | `INSTALL_UPNPWEBRADIOS`  | `Y`           | upmpdcli web radio plugins (Radio Browser, Radio Paradise, …) |
