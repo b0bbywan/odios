@@ -1,2 +1,6 @@
 ---
 upmpdcli_version: "2026.9.0b2"
+upmpdcli_description: "UPnP / OpenHome renderer"
+upmpdcli_group: "Streaming"
+upmpdcli_services:
+  - upmpdcli.service
