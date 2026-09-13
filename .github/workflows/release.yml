@@ -88,8 +88,8 @@ jobs:
           # Stamp version
           echo "${{ steps.meta.outputs.version }}" > staging/VERSION
 
-          # Build per-release role manifest
-          ./scripts/build-manifest.py \
+          # Build per-release role manifest (PyYAML comes with vendored ansible-core)
+          PYTHONPATH=staging/vendor ./scripts/build-manifest.py \
             "${{ steps.meta.outputs.version }}" \
             staging/ansible/roles \
             staging/manifest.json
