@@ -1,6 +1,10 @@
 ---
 qbzd_version: "2026.9.0b2"
 qbzd_apt_version: "2.1.2"
+qbzd_description: "Qobuz Connect endpoint (experimental)"
+qbzd_group: "Streaming"
+qbzd_services:
+  - qbzd.service
 
 qbzd_http_port: "8182"
 qbzd_conf_path: "/home/{{ target_user }}/.config/qbzd/qbzd.toml"

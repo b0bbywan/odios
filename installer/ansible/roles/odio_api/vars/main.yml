@@ -1,3 +1,7 @@
 ---
 odio_api_version: "2026.9.0b2"
 odio_api_apt_version: "0.17.3"
+odio_api_description: "Remote control API and web dashboard"
+odio_api_group: "System"
+odio_api_services:
+  - odio-api.service
