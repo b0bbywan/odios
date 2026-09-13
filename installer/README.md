@@ -17,6 +17,7 @@ Ansible-based "curl | bash" installer to set up a complete audio/multimedia syst
 - **myMPD** - Web UI for MPD (default port 8080, override with `MPD_MYMPD_HTTP_PORT`) — also exposes web radio playback
 - **UPnP/DLNA** - Renderer for UPnP application control, with optional Qobuz, Tidal, and web-radio plugins (Tidal signs in from the settings page on port 8021; Qobuz credentials are set manually in `~/.config/upmpdcli/upmpdcli.conf`).
 - **qbzd** - Qobuz Connect endpoint (experimental, off by default; signs in from the settings page or `qbzd setup`)
+- **Display** - Kiosk browser on an attached screen (`fbrowser-kiosk`, `odio-screen.service`; experimental, off by default, amd64/arm64 only)
 - **MPD DiscPlayer** - CD/USB support for MPD
 - **Branding** - odio login banner (`odio-motd`, `.hushlogin`, `.profile` hook)
 
@@ -109,6 +110,7 @@ curl -fsSL https://github.com/b0bbywan/odios/releases/latest/download/install.sh
 | `INSTALL_MPD_DISCPLAYER` | `Y`           | CD/DVD support                       |
 | `INSTALL_SPOTIFYD`       | `Y`           | Spotify Connect                      |
 | `INSTALL_QBZD`           | `N`           | qbzd Qobuz Connect endpoint (experimental; sign in from the settings page or `qbzd setup`) |
+| `INSTALL_DISPLAY`        | `N`           | Kiosk browser on an attached screen (`fbrowser-kiosk`, experimental, amd64/arm64 only) |
 | `INSTALL_QOBUZ`          | `Y`           | upmpdcli Qobuz plugin (credentials: manual, see `upmpdcli.conf`) |
 | `INSTALL_TIDAL`          | `Y`           | upmpdcli Tidal plugin (sign in from the settings page)       |
 | `INSTALL_UPNPWEBRADIOS`  | `Y`           | upmpdcli web radio plugins (Radio Browser, Radio Paradise, …) |
@@ -384,7 +386,9 @@ The matrix exercises four paths against several baseline tags:
 
 - **`upgrade-from-image-fetch`** — curls the last published `odio_upgrade.py` (2026.7.0rc2), applies the target with it, then re-applies through the odioctl that upgrade installed (the real migration off the `/usr/local/bin` script).
 - **`upgrade-from-image-embedded`** — runs the baseline's own `/usr/local/bin/odio-upgrade` (validates the in-place helper on pre-odioctl baselines).
-- **`upgrade-from-image-systemctl`** — `systemctl --user start odio-upgrade.service` (real-release path, target driven by `odio.love/manifest.json`).
+- **`upgrade-from-image-odioctl`**: runs the baseline's own `/usr/bin/odioctl upgrade apply` (odioctl baselines, 2026.9.0b1 onward).
+- **`upgrade-from-image-systemctl`**: `systemctl --user start odio-upgrade.service` (real-release path). On odioctl baselines the target is pinned with `ODIOCTL_ODIOS_VERSION` in `/etc/default/odioctl`; older baselines follow `odio.love/manifest.json` and skip until it names the target.
+- **`upgrade-from-image-enable-qbzd`**: upgrades to the target with the baseline's odioctl, then `odioctl components enable qbzd`, `upgrade check` and `upgrade apply`. Asserts that `qbzd.service` lands in odio-api's `config.yaml`: the apply that installs a component must also re-run `odio_api`, even when every role is already at the target.
 - **`upgrade-from-image-fetch-as-other-user`** — same as `fetch`, but invoked by a non-`target_user` sudoer (member of `users` + `odio`). Validates that the group permissions on `/var/lib/odio/state.json` actually let a second admin trigger the upgrade.
 
 Baseline tags + runners are listed inline in `release.yml`'s matrix (no repo variable). Each entry consumes `ghcr.io/b0bbywan/odios/test-baseline:<TAG>-<arch>`.

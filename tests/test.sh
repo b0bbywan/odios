@@ -189,13 +189,52 @@ run_install_as_other_user() {
 # `odio-upgrade check`, then `systemctl --user start odio-upgrade.service`
 # runs the unit (no --version arg). Only valid when the published manifest
 # already points at TAG (post-release tag pushes).
+baseline_has_odioctl() {
+    docker exec "${CONTAINER_NAME}" test -x /usr/bin/odioctl
+}
+
 run_odio_upgrade_systemctl() {
-    local install_mode="${1:-live}"
+    local tag="$1"
+    local install_mode="${2:-live}"
+
+    # odioctl's check unit reads /etc/default/odioctl; apply then takes the tag from upgrades.json.
+    if baseline_has_odioctl; then
+        echo "=== Pinning ODIOCTL_ODIOS_VERSION=${tag} in /etc/default/odioctl ==="
+        docker exec "${CONTAINER_NAME}" bash -c "echo 'ODIOCTL_ODIOS_VERSION=${tag}' > /etc/default/odioctl"
+    fi
 
     echo "=== odio-upgrade check + systemctl --user start odio-upgrade.service (mode=${install_mode}) ==="
     docker exec -u odio -e INSTALL_MODE="${install_mode}" "${CONTAINER_NAME}" bash -c "${USER_SYSTEMD_PRELUDE}"'
         systemctl --user start --wait odio-check-upgrade.service || systemctl --user start --wait odio-upgrade.service
     '
+}
+
+# Enable qbzd once every role is at the target: the apply that installs it must
+# also run odio_api (no RUN_ODIO_API=N), whose config.yaml lists the services.
+run_enable_qbzd() {
+    local tag="$1"
+    local config=/home/odio/.config/odio-api/config.yaml
+
+    run_odioctl_upgrade "${tag}"
+    if docker exec "${CONTAINER_NAME}" grep -q 'qbzd\.service' "${config}"; then
+        echo "ERROR: qbzd.service already in ${config} before enabling it" >&2
+        exit 1
+    fi
+
+    echo "=== odioctl components enable qbzd, then check + apply (target=${tag}) ==="
+    docker exec -u odio -e INSTALL_MODE=image "${CONTAINER_NAME}" bash -c '
+        set -e
+        /usr/bin/odioctl components enable qbzd
+        rc=0; /usr/bin/odioctl upgrade check --version "$1" || rc=$?
+        [[ $rc == 1 ]] || { echo "ERROR: check exited $rc, expected 1 (qbzd pending)" >&2; exit 1; }
+        /usr/bin/odioctl upgrade apply
+    ' _ "${tag}"
+
+    if ! docker exec "${CONTAINER_NAME}" grep -q 'qbzd\.service' "${config}"; then
+        echo "ERROR: qbzd.service missing from ${config} after the upgrade" >&2
+        exit 1
+    fi
+    echo "=== qbzd.service listed in ${config} ==="
 }
 
 # Runs the odioctl the install/upgrade just put in place — a missing binary is
@@ -280,9 +319,13 @@ while [[ "${1:-}" == --* ]]; do
         echo "  upgrade B T        - Upgrade from baseline tag B to target tag T (INSTALL_MODE=live)"
         echo "  upgrade-from-image-fetch T     - Upgrade to T on REMOTE_IMAGE via the last published odio-upgrade, then re-apply with odioctl"
         echo "  upgrade-from-image-embedded T  - Same, but uses the baseline's /usr/local/bin/odio-upgrade"
-        echo "  upgrade-from-image-systemctl   - Same, but via systemctl --user start odio-upgrade.service"
-        echo "                                   (target driven by odio.love/manifest.json — no arg)"
+        echo "  upgrade-from-image-odioctl T   - Same, but uses the baseline's /usr/bin/odioctl"
+        echo "  upgrade-from-image-systemctl T - Same, but via systemctl --user start odio-upgrade.service"
+        echo "                                   (odioctl baselines: T pinned in /etc/default/odioctl;"
+        echo "                                    older ones: skipped unless odio.love/manifest.json names T)"
         echo "  upgrade-from-image-progress T  - Same (embedded, live) but with --progress → assert odio_progress events"
+        echo "  upgrade-from-image-enable-qbzd T - Upgrade to T with the baseline's odioctl, enable qbzd, check + apply"
+        echo "                                     → assert qbzd.service lands in odio-api's config.yaml"
         exit 0
         ;;
     esac
@@ -290,7 +333,7 @@ while [[ "${1:-}" == --* ]]; do
 done
 
 case "${1:-}" in
-  shell|rerun|rerun-as-other-user|clean|install|install-root|install-as-other-user|test|test-as-other-user|upgrade|upgrade-from-image-fetch|upgrade-from-image-embedded|upgrade-from-image-systemctl|upgrade-from-image-fetch-as-other-user|upgrade-from-image-progress)
+  shell|rerun|rerun-as-other-user|clean|install|install-root|install-as-other-user|test|test-as-other-user|upgrade|upgrade-from-image-fetch|upgrade-from-image-embedded|upgrade-from-image-odioctl|upgrade-from-image-systemctl|upgrade-from-image-fetch-as-other-user|upgrade-from-image-progress|upgrade-from-image-enable-qbzd)
     ACTION="$1"
     shift
     ;;
@@ -444,21 +487,8 @@ case "${ACTION}" in
     echo "=== Done ==="
     ;;
 
-  upgrade-from-image-fetch|upgrade-from-image-embedded|upgrade-from-image-systemctl|upgrade-from-image-fetch-as-other-user|upgrade-from-image-progress)
+  upgrade-from-image-fetch|upgrade-from-image-embedded|upgrade-from-image-odioctl|upgrade-from-image-systemctl|upgrade-from-image-fetch-as-other-user|upgrade-from-image-progress|upgrade-from-image-enable-qbzd)
     TARGET="${1:?target tag required (e.g. pr-42 or 2026.4.1rc2)}"
-
-    # systemctl path drives the upgrade target via odio.love/manifest.json,
-    # so it can only validate after CI's publish-manifest job has caught up.
-    # Skip cleanly when the published `latest` doesn't match TARGET — the
-    # alternative is asserting against whatever was promoted last and
-    # falsely failing on every fresh tag.
-    if [[ "${ACTION}" == "upgrade-from-image-systemctl" ]]; then
-        published_latest=$(curl -fsSL https://odio.love/manifest.json | jq -r '.odios' 2>/dev/null || echo "")
-        if [[ "${published_latest}" != "${TARGET}" ]]; then
-            echo "=== [${ACTION}] SKIPPED — odio.love reports latest=${published_latest:-?}, target=${TARGET} (re-run after CI publish-manifest) ==="
-            exit 0
-        fi
-    fi
 
     # The whole point of upgrade-from-image-* is to test the upgrade code path on
     # a pre-provisioned baseline. Falling back to a fresh Dockerfile.test build
@@ -485,13 +515,25 @@ EOF
 
     start_container
 
+    # Pre-odioctl units can't be pinned to TARGET: they follow odio.love/manifest.json,
+    # so skip until CI's publish-manifest has promoted TARGET rather than falsely fail.
+    if [[ "${ACTION}" == "upgrade-from-image-systemctl" ]] && ! baseline_has_odioctl; then
+        published_latest=$(curl -fsSL https://odio.love/manifest.json | jq -r '.odios' 2>/dev/null || echo "")
+        if [[ "${published_latest}" != "${TARGET}" ]]; then
+            echo "=== [${ACTION}] SKIPPED — odio.love reports latest=${published_latest:-?}, target=${TARGET} (re-run after CI publish-manifest) ==="
+            exit 0
+        fi
+    fi
+
     echo "=== [${ACTION}] Upgrading to ${TARGET} ==="
     case "${ACTION}" in
       upgrade-from-image-fetch)              run_odio_upgrade_fetch              "${TARGET}" ;;
       upgrade-from-image-embedded)           run_odio_upgrade_embedded           "${TARGET}" ;;
-      upgrade-from-image-systemctl)          run_odio_upgrade_systemctl                       ;;
+      upgrade-from-image-odioctl)            run_odioctl_upgrade                 "${TARGET}" ;;
+      upgrade-from-image-systemctl)          run_odio_upgrade_systemctl          "${TARGET}" ;;
       upgrade-from-image-fetch-as-other-user) run_odio_upgrade_fetch_as_other_user "${TARGET}" ;;
       upgrade-from-image-progress)            run_odio_upgrade_progress           "${TARGET}" ;;
+      upgrade-from-image-enable-qbzd)         run_enable_qbzd                     "${TARGET}" ;;
     esac
 
     echo "=== [${ACTION}] Asserting state.json reflects ${TARGET} ==="

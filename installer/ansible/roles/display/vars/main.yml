@@ -1,0 +1,11 @@
+---
+display_version: "2026.9.0b2"
+display_apt_version: "1.0.0+git20260210.4213a69"
+display_description: "Kiosk browser on an attached screen (experimental)"
+display_group: "System"
+display_services:
+  - odio-screen.service
+# fbrowser-kiosk is built for these dpkg architectures only.
+display_archs:
+  - amd64
+  - arm64
