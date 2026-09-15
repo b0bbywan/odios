@@ -72,6 +72,24 @@
   become_user: "{{ target_user }}"
   notify: Restart shairport-sync
 
+- name: Configure shairport-sync dbus service bus
+  ansible.builtin.lineinfile:
+    path: "/home/{{ target_user }}/.config/shairport-sync/shairport-sync.conf"
+    regexp: '^\s*//?\s*dbus_service_bus\s*='
+    line: '	dbus_service_bus = "session";'
+  become: "{{ become_for_target_user }}"
+  become_user: "{{ target_user }}"
+  notify: Restart shairport-sync
+
+- name: Configure shairport-sync mpris service bus
+  ansible.builtin.lineinfile:
+    path: "/home/{{ target_user }}/.config/shairport-sync/shairport-sync.conf"
+    regexp: '^\s*//?\s*mpris_service_bus\s*='
+    line: '	mpris_service_bus = "session";'
+  become: "{{ become_for_target_user }}"
+  become_user: "{{ target_user }}"
+  notify: Restart shairport-sync
+
 - name: Remove legacy shairport-sync pulseaudio TCP server setting
   ansible.builtin.lineinfile:
     path: "/home/{{ target_user }}/.config/shairport-sync/shairport-sync.conf"
@@ -100,33 +118,6 @@
     conf_owner: "{{ target_user }}"
     conf_group: "{{ target_user }}"
     conf_mode: '0600'
-
-- name: Shairport-sync dbus policy (first install)
-  when: ansible_role_name not in odios_prior_roles
-  block:
-    - name: Configure dbus policy for shairport-sync
-      ansible.builtin.blockinfile:
-        path: /usr/share/dbus-1/system.d/shairport-sync-dbus-policy.conf
-        marker: "<!-- {mark} ANSIBLE MANAGED BLOCK -->"
-        insertafter: '<busconfig>'
-        block: |
-            <policy user="{{ target_user }}">
-              <allow own="org.gnome.ShairportSync"/>
-            </policy>
-      become: true
-      notify: Reload dbus
-
-    - name: Configure dbus policy for shairport-sync MPRIS
-      ansible.builtin.blockinfile:
-        path: /usr/share/dbus-1/system.d/shairport-sync-mpris-policy.conf
-        marker: "<!-- {mark} ANSIBLE MANAGED BLOCK -->"
-        insertafter: '<busconfig>'
-        block: |
-            <policy user="{{ target_user }}">
-              <allow own="org.mpris.MediaPlayer2.ShairportSync"/>
-            </policy>
-      become: true
-      notify: Reload dbus
 
 - name: Deploy shairport-sync user service
   ansible.builtin.copy:
