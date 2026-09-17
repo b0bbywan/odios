@@ -1,4 +1,16 @@
 ---
-mpd_version: "2026.7.0rc2"
+mpd_version: "2026.9.0b3"
 mpd_mpd2mpris_apt_version: "0.13.0"
-mpd_mympd_apt_version: "25.3.0"
+mpd_mympd_apt_version: "26.0.0"
+mpd_description: "Music Player Daemon for USB, CD and network libraries"
+mpd_group: "Playback"
+mpd_services:
+  - mpd.socket
+  - mpd.service
+  - mpd2mpris.service
+
+# MPD output plugin per audioserver: the native pipewire plugin when running
+# PipeWire, libpulse otherwise.
+mpd_audioserver_output:
+  pulseaudio: { type: "pulse", name: "pulseaudio" }
+  pipewire: { type: "pipewire", name: "pipewire" }

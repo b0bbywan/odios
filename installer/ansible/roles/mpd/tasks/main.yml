@@ -127,14 +127,26 @@
   become_user: "{{ target_user }}"
   notify: Restart mpd
 
-- name: MPD config - pulseaudio output
+# Pre-audioserver installs pinned the output block to a "pulseaudio" marker;
+# drop it so the audioserver-keyed block below is the only output.
+- name: MPD config - remove legacy pulseaudio output block
   ansible.builtin.blockinfile:
     path: "/home/{{ target_user }}/.config/mpd/mpd.conf"
     marker: "# {mark} ANSIBLE MANAGED BLOCK - output pulseaudio"
+    state: absent
+  become: "{{ become_for_target_user }}"
+  become_user: "{{ target_user }}"
+  notify: Restart mpd
+  when: ansible_role_name in odios_prior_roles
+
+- name: MPD config - audioserver output
+  ansible.builtin.blockinfile:
+    path: "/home/{{ target_user }}/.config/mpd/mpd.conf"
+    marker: "# {mark} ANSIBLE MANAGED BLOCK - output audioserver"
     block: |
       audio_output {
-          type        "pulse"
-          name        "pulseaudio"
+          type        "{{ mpd_audioserver_output[audioserver].type }}"
+          name        "{{ mpd_audioserver_output[audioserver].name }}"
       }
   become: "{{ become_for_target_user }}"
   become_user: "{{ target_user }}"
