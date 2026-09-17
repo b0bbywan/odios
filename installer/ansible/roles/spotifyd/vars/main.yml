@@ -1,3 +1,13 @@
 ---
-spotifyd_version: "2026.6.0b1"
+spotifyd_version: "2026.9.0b3"
 spotifyd_apt_version: "0.4.4"
+spotifyd_description: "Spotify Connect endpoint"
+spotifyd_group: "Streaming"
+spotifyd_services:
+  - spotifyd.service
+
+# librespot backends are alsa/pulseaudio/rodio/pipe — no native pipewire, so
+# PipeWire is driven through its pulse compatibility layer.
+spotifyd_audioserver_backend:
+  pulseaudio: "pulseaudio"
+  pipewire: "pulseaudio"

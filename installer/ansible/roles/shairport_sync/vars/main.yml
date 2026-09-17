@@ -1,2 +1,12 @@
 ---
-shairport_sync_version: "2026.6.0b1"
+shairport_sync_version: "2026.9.0b3"
+shairport_sync_description: "AirPlay receiver"
+shairport_sync_group: "Streaming"
+shairport_sync_services:
+  - shairport-sync.service
+
+# Upstream has a "pw" backend, but Debian's build omits it (`shairport-sync -h`
+# lists alsa/pa/jack), so PipeWire is driven through pipewire-pulse.
+shairport_sync_audioserver_backend:
+  pulseaudio: "pa"
+  pipewire: "pa"

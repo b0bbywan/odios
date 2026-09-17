@@ -1,2 +1,11 @@
 ---
-bluetooth_version: "2026.5.0b1"
+bluetooth_version: "2026.9.0b3"
+bluetooth_description: "Bluetooth A2DP sink and pairing agent"
+bluetooth_group: "Audio"
+bluetooth_services:
+  - bluetooth.service
+
+# A2DP codec support: a pulseaudio module vs pipewire's own SPA plugin.
+bluetooth_audioserver_package:
+  pulseaudio: "pulseaudio-module-bluetooth"
+  pipewire: "libspa-0.2-bluetooth"
