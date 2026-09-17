@@ -5,7 +5,7 @@ Ansible-based "curl | bash" installer to set up a complete audio/multimedia syst
 ## Components
 
 ### Core
-- **PulseAudio** - Audio server with network streaming (TCP + Zeroconf, wired only)
+- **Audio server** - PulseAudio (default) or PipeWire, with network streaming (TCP + Zeroconf, wired only). Selected with `AUDIOSERVER`; each consumer role maps it to that software's own backend name.
 - **Bluetooth Audio** - Authentication agent and automatic connection
 - **MPD** - Music Player Daemon with USB, CD/DVD and network support
 - **Odio API** - REST control interface
@@ -99,7 +99,8 @@ curl -fsSL https://github.com/b0bbywan/odios/releases/latest/download/install.sh
 | `MPD_MUSIC_DIRECTORY`    | `/media/USB`  | MPD music library path               |
 | `MPD_MYMPD_HTTP_PORT`    | `8080`        | myMPD HTTP listen port               |
 | `MPD_CONF_PATH`          | *(detected)*  | Path to external mpd.conf (when `INSTALL_MPD=n` + `INSTALL_MPD_DISCPLAYER=y`) ⚠ experimental |
-| `INSTALL_PULSEAUDIO`     | `Y`           | PulseAudio + network streaming (wired only) |
+| `AUDIOSERVER`            | `pulseaudio`  | Audio server: `pulseaudio` or `pipewire` ⚠ pipewire experimental |
+| `INSTALL_AUDIOSERVER`    | `Y`           | Audio server + network streaming (wired only) |
 | `INSTALL_BLUETOOTH`      | `Y`           | Bluetooth A2DP sink                  |
 | `INSTALL_MPD`            | `Y`           | Music Player Daemon                  |
 | `INSTALL_ODIO_API`       | `Y`           | REST control API                     |
@@ -279,14 +280,16 @@ installer/
     │   ├── backup_conf_before.yml      # Shared: snapshot config before changes
     │   ├── backup_conf_after.yml       # Shared: promote/discard backup after changes
     │   ├── systemd_enable_user.yml     # Shared: enable a user service (live + image_build)
+    │   ├── systemd_unmask_user.yml     # Shared: unmask a user service
+    │   ├── audioserver_takeover.yml    # Shared: unmask the selected audioserver, mask the other
     │   ├── systemd_disable_system.yml  # Shared: disable + stop a system service
     │   └── systemd_enable_system.yml   # Shared: enable + start a system service
     └── roles/
         ├── common/              # System prerequisites + linger
         ├── upgrade/             # odioctl package + its systemd user timer / web socket
         ├── branding/            # odio-motd login banner (optional)
-        ├── pulseaudio/          # PulseAudio + network streaming (wired only, PipeWire conflict handling)
-        ├── pipewire/            # PipeWire + pipewire-pulse (experimental, not yet exposed)
+        ├── pulseaudio/          # PulseAudio + network streaming (AUDIOSERVER=pulseaudio, default)
+        ├── pipewire/            # PipeWire + pipewire-pulse (AUDIOSERVER=pipewire, experimental)
         ├── bluetooth/           # Bluetooth audio (A2DP)
         ├── mpd/                 # Music Player Daemon (incl. myMPD web UI sub-feature)
         ├── odio_api/            # REST control API
@@ -362,7 +365,7 @@ The `--build` flag works with all actions:
 ### Service verification
 
 ```bash
-systemctl --user status pulseaudio pulse-tcp mpd
+systemctl --user status pulseaudio pulse-tcp mpd   # AUDIOSERVER=pipewire: pipewire pipewire-pulse wireplumber mpd
 
 pactl list modules | grep -E "tcp|zeroconf"
 
