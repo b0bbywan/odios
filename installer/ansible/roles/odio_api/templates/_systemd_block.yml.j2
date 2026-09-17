@@ -5,8 +5,8 @@ systemd:
     - name: bluetooth.service
 {% endif %}
   user:
-{% if install_pulseaudio %}
-    - name: pulseaudio.service
+{% if install_audioserver %}
+    - name: {{ odio_api_audioserver_unit[audioserver] }}
 {% endif %}
 {% if install_mpd or install_mpd_discplayer %}
     - name: mpd.service

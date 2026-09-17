@@ -1,3 +1,14 @@
 ---
-snapclient_version: "2026.6.0b1"
+snapclient_version: "2026.9.0b3"
 snapclient_snapclientmpris_version: "1.2.0"
+snapclient_description: "Snapcast multi-room client"
+snapclient_group: "Streaming"
+snapclient_services:
+  - snapclient.service
+  - snapclientmpris.service
+
+# snapclient players are alsa/pulse/file only — PipeWire is driven through its
+# pulse compatibility layer.
+snapclient_audioserver_player:
+  pulseaudio: "pulse"
+  pipewire: "pulse"
