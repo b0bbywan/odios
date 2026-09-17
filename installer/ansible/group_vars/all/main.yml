@@ -11,6 +11,11 @@ gpg_file: "/usr/share/keyrings/odio.gpg"
 odio_testing_repo: "{{ odio_version is search('-[0-9]+-g[0-9a-f]+$') }}"
 
 odio_version: "unknown"
+
+# Audio server backend: pulseaudio | pipewire. Each consumer role maps it to
+# that software's own spelling via a <role>_audioserver_* var in vars/main.yml.
+audioserver: "pulseaudio"
+
 mpd_music_directory: "/media/USB"
 mpd_mympd_http_port: "8080"
 # Standard MPD user socket (matches the packaged mpd.socket unit's
