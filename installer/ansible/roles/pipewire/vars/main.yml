@@ -2,6 +2,7 @@
 pipewire_version: "2026.9.0b3"
 # odioctl has no notion of the audioserver choice yet, so it would list this
 # as a second Audio component tickable alongside pulseaudio.
+pipewire_catalog: false
 pipewire_opt_in: true
 pipewire_description: "PipeWire server with network streaming (experimental)"
 pipewire_group: "Audio"

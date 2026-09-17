@@ -4,8 +4,9 @@
 Usage: build-manifest.py <odios_version> <roles_dir> <output_path>
 
 `catalog` describes the roles that carry <role>_description/_group/_services for
-odioctl; opt_in says the role is off unless asked for, and archs, only when
-<role>_archs is set, lists the dpkg architectures it installs on.
+odioctl, unless <role>_catalog is false; opt_in says the role is off unless
+asked for, and archs, only when <role>_archs is set, lists the dpkg
+architectures it installs on.
 """
 import json
 import os
@@ -49,7 +50,11 @@ def main() -> int:
         if f"{role}_version" not in role_vars:
             continue
         roles[role] = str(role_vars[f"{role}_version"])
-        if any(f"{role}_{k}" in role_vars for k in CATALOG_KEYS):
+        # A role can carry catalog metadata before odioctl can model it;
+        # <role>_catalog: false holds it back until then.
+        if role_vars.get(f"{role}_catalog", True) and any(
+            f"{role}_{k}" in role_vars for k in CATALOG_KEYS
+        ):
             catalog[role] = {
                 "description": role_vars.get(f"{role}_description", ""),
                 "group": role_vars.get(f"{role}_group", ""),
