@@ -1,0 +1,24 @@
+---
+# Unmask a systemd user service (inverse of systemd_mask_user.yml).
+# In image_build mode, uses global scope (no user session needed).
+# Variables:
+#   service_name: name of the service (e.g. pipewire.service)
+
+- name: Unmask user service - live
+  ansible.builtin.systemd:
+    name: "{{ service_name }}"
+    masked: false
+    scope: user
+  environment:
+    XDG_RUNTIME_DIR: "/run/user/{{ target_user_uid }}"
+  become: "{{ become_for_target_user }}"
+  become_user: "{{ target_user }}"
+  when: install_mode == "live"
+
+- name: Unmask user service - image build
+  ansible.builtin.systemd:
+    name: "{{ service_name }}"
+    masked: false
+    scope: global
+  become: true
+  when: install_mode == "image"
