@@ -85,7 +85,7 @@ Most service run as **systemd user services** — no root daemons, full per-user
 | [go-odio-api](https://github.com/b0bbywan/go-odio-api) | REST API + embedded UI, bridges systemd / PulseAudio / MPRIS (incl. TrackList queue) / D-Bus / Bluetooth Speaker | user |
 | [odioctl](https://github.com/b0bbywan/odioctl) | Settings page (port 8021) and CLI: upgrades, optional components, DAC overlay, Tidal / Qobuz Connect sign-in, reboot | user |
 | [go-mpd-discplayer](https://github.com/b0bbywan/go-mpd-discplayer) | Automatic CD/USB playback with metadata via MPD | user |
-| [PulseAudio](https://www.freedesktop.org/wiki/Software/PulseAudio) | Central audio server, routes all sources to the DAC output — other PCs running PulseAudio or PipeWire can stream to it over the network via TCP/Zeroconf (wired connections only) | user |
+| [PulseAudio](https://www.freedesktop.org/wiki/Software/PulseAudio) *(or [PipeWire](https://pipewire.org/), `AUDIOSERVER=pipewire`, experimental)* | Central audio server, routes all sources to the DAC output — other PCs running PulseAudio or PipeWire can stream to it over the network via TCP/Zeroconf (wired connections only) | user |
 | [MPD](https://www.musicpd.org/) | Music Player Daemon (network, CD/USB) | user |
 | [mpd2mpris](https://github.com/b0bbywan/mpd2mpris) | MPRIS bridge for MPD with CUE and remote cover art support | user |
 | [myMPD](https://github.com/jcorporation/myMPD) | Web UI for MPD (default port 8080) | user |
