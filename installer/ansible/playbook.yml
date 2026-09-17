@@ -23,6 +23,11 @@
         msg: "install_mode must be 'live' or 'image', got: '{{ install_mode }}'"
       when: install_mode not in ["live", "image"]
 
+    - name: Ensure audioserver is valid
+      ansible.builtin.fail:
+        msg: "audioserver must be 'pulseaudio' or 'pipewire', got: '{{ audioserver }}'"
+      when: audioserver not in ["pulseaudio", "pipewire"]
+
     - name: Ensure target user is not root
       ansible.builtin.fail:
         msg: "target_user must not be root"
@@ -95,6 +100,8 @@
       when: run_branding | bool
     - role: pulseaudio
       when: run_pulseaudio | bool
+    - role: pipewire
+      when: run_pipewire | bool
     - role: bluetooth
       when: run_bluetooth | bool
     - role: mpd
@@ -147,7 +154,7 @@
           - "User: {{ target_user }}"
           - ""
           - "Services installed:"
-          - "  {{ '✓' if install_pulseaudio else '✗' }} PulseAudio with network streaming"
+          - "  {{ '✓' if install_audioserver else '✗' }} {{ 'PipeWire' if audioserver == 'pipewire' else 'PulseAudio' }} with network streaming"
           - "  {{ '✓' if install_bluetooth else '✗' }} Bluetooth audio (A2DP sink)"
           - "  {{ '✓' if install_mpd else '✗' }} MPD (Music Player Daemon)"
           - "  {{ '✓' if install_mympd else '✗' }} myMPD (web UI)"

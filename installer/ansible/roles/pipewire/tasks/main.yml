@@ -9,6 +9,7 @@
     install_recommends: false
   become: true
   notify: Restart pipewire-pulse
+  when: ansible_role_name not in odios_prior_roles
 
 - name: Create user pipewire config directory
   ansible.builtin.file:
@@ -65,16 +66,18 @@
       become: "{{ become_for_target_user }}"
       notify: Restart pipewire-pulse
 
+# Unmask pipewire, mask pulseaudio — runs every time, so `audioserver`
+# flipping to pipewire on an existing install actually takes effect.
+- name: Take the audio session over from PulseAudio
+  ansible.builtin.include_tasks: "../../../tasks/audioserver_takeover.yml"
+  vars:
+    audioserver_services: "{{ pipewire_services }}"
+    audioserver_other: pulseaudio
+
 - name: Enable user PipeWire services
   ansible.builtin.include_tasks: "../../../tasks/systemd_enable_user.yml"
   vars:
-    service_name: "{{ item.name }}"
-    wanted_by: "{{ item.wanted_by | default('default.target') }}"
-  loop:
-    # Sockets ship with [Install] WantedBy=sockets.target — image-mode would
-    # otherwise symlink into default.target.wants/ (cf systemd_enable_user.yml).
-    - { name: pipewire.socket, wanted_by: sockets.target }
-    - { name: pipewire.service }
-    - { name: pipewire-pulse.socket, wanted_by: sockets.target }
-    - { name: pipewire-pulse.service }
-    - { name: wireplumber.service }
+    service_name: "{{ item }}"
+    wanted_by: "{{ pipewire_wanted_by[item] | default('default.target') }}"
+  loop: "{{ pipewire_services }}"
+  when: ansible_role_name not in odios_prior_roles
