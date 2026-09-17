@@ -54,6 +54,7 @@ export GITHUB_REPO="b0bbywan/odios"
 
 # Ansible variables passed during provisioning
 # shellcheck disable=SC2034  # sourced by build.sh, arrays can't be exported
+# Add "audioserver=pipewire" to build a PipeWire image instead of PulseAudio.
 ANSIBLE_EXTRA_VARS=(
     "target_user=${ODIOS_USER}"
     "target_hostname=odio"
