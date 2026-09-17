@@ -70,7 +70,8 @@ if [[ ${#bumped[@]} -gt 0 ]]; then
 fi
 
 # Catalog fields (build-manifest.py) on every modified role odioctl lists: opt-in
-# roles (install_<role> in group_vars) and infra ones; pipewire must stay out.
+# roles (install_<role> in group_vars) and infra ones. Both audioserver roles
+# qualify since `audioserver` derives install_pulseaudio / install_pipewire.
 # groups mirrors odioctl's components.Groups, which ignores any other value.
 if [[ ${#touched[@]} -gt 0 ]]; then
   groups="Audio Playback Streaming System"

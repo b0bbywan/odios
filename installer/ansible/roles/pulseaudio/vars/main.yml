@@ -1,5 +1,6 @@
 ---
 pulseaudio_version: "2026.9.0b3"
+pulseaudio_opt_in: false
 pulseaudio_description: "PulseAudio server with network streaming"
 pulseaudio_group: "Audio"
 pulseaudio_services:
