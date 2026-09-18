@@ -12,6 +12,7 @@
 set -euo pipefail
 
 base="${1:-$(git describe --tags --abbrev=0 --match='[0-9][0-9][0-9][0-9].*' HEAD)}"
+merge_base=$(git merge-base "$base" HEAD)
 roles_dir="installer/ansible/roles"
 drift=()
 bumped=()
@@ -25,7 +26,10 @@ for d in "$roles_dir"/*/; do
   vars_file="${d}vars/main.yml"
   [[ -f "$vars_file" ]] || continue
 
-  if git diff --quiet "$base"...HEAD -- "$d" ":(exclude)${vars_file}"; then
+  # vars/main.yml counts too, minus its own version line.
+  if git diff --quiet "$base"...HEAD -- "$d" ":(exclude)${vars_file}" \
+    && cmp -s <(git show "$merge_base:$vars_file" 2>/dev/null | grep -v "^${role}_version:") \
+              <(git show "HEAD:$vars_file" | grep -v "^${role}_version:"); then
     continue
   fi
   touched+=("$role")
