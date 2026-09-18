@@ -19,6 +19,7 @@
 - name: Remove legacy mpDris2 install (renamed to mpd2mpris)
   when:
     - ansible_role_name in odios_prior_roles
+    - odios_prior_role_versions['mpd'] is version('2026.7.0rc1', '<', version_type='pep440')
   block:
     - name: Disable legacy mpDris2 service
       ansible.builtin.include_tasks: "../../../tasks/systemd_disable_user.yml"
