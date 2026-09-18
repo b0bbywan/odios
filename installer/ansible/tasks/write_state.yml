@@ -47,59 +47,6 @@
         | difference(_odios_enabled_features)
       }}
 
-# Both setgid + group-write for `odio`: odioctl edits state.json and refreshes
-# upgrades.json as target_user, who joins `odio` in the common role. Enforced
-# every run, not just at creation: the modes are a contract with odioctl.
-# odio_version may be 'unknown' or a git-describe string (not pep440); the common
-# role version (always clean from vars/main.yml) is the release proxy.
-- name: Determine if odio state dirs need creating
-  ansible.builtin.set_fact:
-    odios_create_state_dirs: >-
-      {{ (odios_prior_role_versions['common'] | default('0'))
-         is version('2026.5.0b1', '<', version_type='pep440') }}
-
-- name: Ensure /var/lib/odio exists
-  ansible.builtin.file:
-    path: /var/lib/odio
-    state: directory
-    owner: root
-    group: odio
-    mode: '2770'
-  become: true
-
-- name: Ensure /var/cache/odio exists
-  ansible.builtin.file:
-    path: /var/cache/odio
-    state: directory
-    owner: root
-    group: odio
-    mode: '2775'
-  become: true
-
-# _odios_existing_state is read in pre_tasks (tasks/read_state.yml).
-- name: Seed prior release history
-  ansible.builtin.set_fact:
-    _odios_prior_history: >-
-      {{
-        _odios_existing_state.release_history
-        if _odios_existing_state.release_history is defined
-        else (
-          [_odios_existing_state.odios]
-          if _odios_existing_state.odios is defined
-          else []
-        )
-      }}
-
-- name: Append current version to release history (dedup consecutive)
-  ansible.builtin.set_fact:
-    _odios_release_history: >-
-      {{
-        _odios_prior_history
-        if (_odios_prior_history | length > 0
-            and _odios_prior_history[-1] == odio_version)
-        else _odios_prior_history + [odio_version]
-      }}
-
 # Refresh every installed role's version from vars/main.yml. RUN_X=N
 # roles weren't re-installed but target == prior, so writing target is
 # a no-op. Downgrades (`--force --version=<older>`) write a stale
@@ -113,35 +60,27 @@
       }}
   loop: "{{ _odios_installed_roles }}"
 
-- name: Assemble state.json payload
+- name: Assemble odios run payload
   ansible.builtin.set_fact:
-    _odios_state:
+    _odios_run:
       odios: "{{ odio_version }}"
       install_mode: "{{ install_mode }}"
       target_user: "{{ target_user }}"
+      audioserver: "{{ audioserver }}"
+      mpd_music_directory: "{{ mpd_music_directory }}"
+      mpd_conf_path: "{{ '' if install_mpd | bool else (mpd_conf_path | default('')) }}"
       roles: "{{ _odios_merged_role_versions }}"
       roles_excluded: "{{ _odios_excluded_roles }}"
       features: "{{ _odios_enabled_features }}"
       features_excluded: "{{ _odios_excluded_features }}"
-      release_history: "{{ _odios_release_history }}"
 
-- name: Write /var/lib/odio/state.json
-  ansible.builtin.copy:
-    content: "{{ _odios_state | to_nice_json }}\n"
-    dest: /var/lib/odio/state.json
-    owner: root
-    group: odio
-    mode: '0660'
+# odioctl owns state.json: dirs (postinst), release_history, validation.
+- name: Record state.json
+  ansible.builtin.command: odioctl state record
+  args:
+    stdin: "{{ _odios_run | to_json }}"
   become: true
-
-# 2b1 wrote state.json under /var/cache; drop the stale copy now that
-# /var/lib is canonical.
-- name: Remove 2b1 /var/cache/odio/state.json after migration
-  ansible.builtin.file:
-    path: /var/cache/odio/state.json
-    state: absent
-  become: true
-  when: odios_create_state_dirs | bool
+  changed_when: true
 
 # Live only: clears the stale "upgrade available" the previous report still
 # carries. Images get a fresh report from odios-firstboot-network instead.

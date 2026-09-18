@@ -1,5 +1,5 @@
 ---
-# Sets _odios_existing_state (reused by write_state.yml) and odios_prior_roles.
+# Sets odios_prior_roles, odios_prior_role_versions and odios_prior_features.
 - name: Read existing state.json (canonical /var/lib path)
   ansible.builtin.slurp:
     src: /var/lib/odio/state.json
