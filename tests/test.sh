@@ -260,6 +260,54 @@ assert_progress() {
     echo "=== odio_progress OK (begin/setup/.../finalize/end) ==="
 }
 
+# Asserts an audioserver=pipewire run landed: pipewire's units enabled and
+# pulseaudio's not (masked when it was there, absent on a fresh install), and
+# every per-role backend resolved to the name pipewire answers to.
+assert_pipewire() {
+    echo "=== Asserting audioserver=pipewire ==="
+    docker exec -u odio "${CONTAINER_NAME}" bash -c "${USER_SYSTEMD_PRELUDE}"'
+        set -e
+        fail() { echo "ERROR: $*" >&2; exit 1; }
+        state() { systemctl --user is-enabled "$1" 2>/dev/null || true; }
+
+        for unit in pipewire.socket pipewire.service pipewire-pulse.socket \
+                    pipewire-pulse.service wireplumber.service; do
+            st=$(state "$unit")
+            [[ "$st" == enabled ]] || fail "$unit is [$st], want enabled"
+        done
+        for unit in pulseaudio.service pulse-tcp.service; do
+            st=$(state "$unit")
+            [[ "$st" != enabled ]] || fail "$unit is still enabled"
+        done
+
+        conf=$HOME/.config/mpd/mpd.conf
+        grep -q "BLOCK - output audioserver" "$conf" \
+            || fail "mpd.conf has no audioserver output block"
+        if grep -q "BLOCK - output pulseaudio" "$conf"; then
+            fail "mpd.conf still carries the legacy pulseaudio output block"
+        fi
+        grep -q pipewire "$conf" || fail "mpd.conf output is not pipewire"
+
+        conf=$HOME/.config/shairport-sync/shairport-sync.conf
+        grep -q "output_backend = \"pa\";" "$conf" \
+            || fail "shairport-sync output_backend is not pa"
+
+        grep -q -- "--player pulse" /usr/lib/systemd/user/snapclient.service \
+            || fail "snapclient no longer reaches pipewire through pulse"
+
+        python3 <<\PYSTATE
+import json, sys
+roles = json.load(open("/var/lib/odio/state.json"))["roles"]
+if "pipewire" not in roles:
+    sys.exit("pipewire missing from state.json roles: %s" % sorted(roles))
+if "pulseaudio" in roles:
+    sys.exit("pulseaudio still in state.json roles: %s" % sorted(roles))
+print("state.json roles OK, pipewire", roles["pipewire"])
+PYSTATE
+    '
+    echo "=== audioserver=pipewire OK ==="
+}
+
 # Live embedded upgrade with --progress, capturing stdout to assert the callback fired.
 run_odio_upgrade_progress() {
     local tag="$1"
@@ -315,6 +363,8 @@ while [[ "${1:-}" == --* ]]; do
         echo "  install [TAG]               - Test install.sh as user odio (sudo)"
         echo "  install-root [TAG]          - Test install.sh as root, TARGET_USER=odio"
         echo "  install-as-other-user [TAG] - Test install.sh as bob (NOPASSWD sudoer), TARGET_USER=odio"
+        echo "  test-pipewire      - Start + run the playbook with audioserver=pipewire, then assert the result"
+        echo "  rerun-pipewire     - Re-run it without restart (idempotence + same assertions)"
         echo "  test-as-other-user          - Run playbook directly as bob (live mode) → exercises become_for_target_user paths"
         echo "                                TAG examples: latest, pr-2, 2026.3.0"
         echo "  upgrade B T        - Upgrade from baseline tag B to target tag T (INSTALL_MODE=live)"
@@ -334,7 +384,7 @@ while [[ "${1:-}" == --* ]]; do
 done
 
 case "${1:-}" in
-  shell|rerun|rerun-as-other-user|clean|install|install-root|install-as-other-user|test|test-as-other-user|upgrade|upgrade-from-image-fetch|upgrade-from-image-embedded|upgrade-from-image-odioctl|upgrade-from-image-systemctl|upgrade-from-image-fetch-as-other-user|upgrade-from-image-progress|upgrade-from-image-enable-qbzd)
+  shell|rerun|rerun-as-other-user|clean|install|install-root|install-as-other-user|test|test-as-other-user|test-pipewire|rerun-pipewire|upgrade|upgrade-from-image-fetch|upgrade-from-image-embedded|upgrade-from-image-odioctl|upgrade-from-image-systemctl|upgrade-from-image-fetch-as-other-user|upgrade-from-image-progress|upgrade-from-image-enable-qbzd)
     ACTION="$1"
     shift
     ;;
@@ -378,19 +428,25 @@ odio_version_flag() {
     echo "-e odio_version=$(git describe --tags --long --always --match='[0-9][0-9][0-9][0-9].*')"
 }
 
+# The direct-playbook run shared by the test/rerun actions; extra args land
+# on the ansible-playbook command line.
+run_playbook() {
+    # shellcheck disable=SC2046
+    docker exec $(ansible_exec_user) $(mitogen_exec_env) "${CONTAINER_NAME}" \
+      ansible-playbook -i inventory/localhost.yml \
+        /opt/odios/ansible/playbook.yml \
+        $(ansible_extra_flags) $(odio_version_flag) \
+        -e "mpd_discplayer_gnu_email=test@example.com" \
+        "$@"
+}
+
 case "${ACTION}" in
   test)
     start_container
     install_ansible
 
     echo "=== Running playbook ==="
-    # shellcheck disable=SC2046
-    docker exec $(ansible_exec_user) $(mitogen_exec_env) "${CONTAINER_NAME}" \
-      ansible-playbook -v -i inventory/localhost.yml \
-        /opt/odios/ansible/playbook.yml \
-        $(ansible_extra_flags) $(odio_version_flag) \
-        -e "mpd_discplayer_gnu_email=test@example.com" \
-        "$@"
+    run_playbook -v "$@"
 
     echo "=== Done ==="
     ;;
@@ -402,12 +458,24 @@ case "${ACTION}" in
 
   rerun)
     echo "=== Re-running playbook ==="
-    # shellcheck disable=SC2046
-    docker exec $(ansible_exec_user) $(mitogen_exec_env) "${CONTAINER_NAME}" \
-      ansible-playbook -i inventory/localhost.yml /opt/odios/ansible/playbook.yml \
-        $(ansible_extra_flags) $(odio_version_flag) \
-        -e "mpd_discplayer_gnu_email=test@example.com" \
-        "$@"
+    run_playbook "$@"
+    ;;
+
+  test-pipewire)
+    start_container
+    install_ansible
+
+    echo "=== Running playbook (audioserver=pipewire) ==="
+    run_playbook -v -e audioserver=pipewire "$@"
+    assert_pipewire
+
+    echo "=== Done ==="
+    ;;
+
+  rerun-pipewire)
+    echo "=== Re-running playbook (audioserver=pipewire) ==="
+    run_playbook -e audioserver=pipewire "$@"
+    assert_pipewire
     ;;
 
   rerun-as-other-user)
