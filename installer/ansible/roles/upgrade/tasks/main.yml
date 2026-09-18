@@ -8,7 +8,9 @@
     scaffold_version: '2026.9.0b1'
 
 - name: Clean up pre-odioctl upgrade artifacts
-  when: odios_role_pre_scaffold | bool
+  when:
+    - ansible_role_name in odios_prior_roles
+    - odios_role_pre_scaffold | bool
   block:
     - name: Remove legacy per-user upgrade scripts and units
       ansible.builtin.file:
