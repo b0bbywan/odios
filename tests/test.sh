@@ -10,6 +10,7 @@ GITHUB_REPO="b0bbywan/odios"
 GITHUB_RELEASE_BASE_URL="https://github.com/${GITHUB_REPO}/releases"
 
 _DEFAULT_TAG="$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo latest)"
+_DEFAULT_TAG="${_DEFAULT_TAG//\//-}"   # docker tags reject '/', branch names don't
 REMOTE_IMAGE="${REMOTE_IMAGE:-ghcr.io/${GITHUB_REPO}/test:${_DEFAULT_TAG}}"
 PLATFORM="${PLATFORM:-}"  # e.g. linux/arm64, linux/arm/v7, linux/arm/v6
 BUILD_LOCAL=false
