@@ -1,21 +1,10 @@
 ---
-- name: Ensure ~/.local/bin exists
-  ansible.builtin.file:
-    path: "/home/{{ target_user }}/.local/bin"
-    state: directory
-    owner: "{{ target_user }}"
-    group: "{{ target_user }}"
-    mode: '0755'
-  become: "{{ become_for_target_user }}"
-
-- name: Install odio-motd script
-  ansible.builtin.copy:
-    src: odio-motd
-    dest: "/home/{{ target_user }}/.local/bin/odio-motd"
-    owner: "{{ target_user }}"
-    group: "{{ target_user }}"
-    mode: '0755'
-  become: "{{ become_for_target_user }}"
+# odios_role_pre_scaffold: true on installs predating `odioctl motd` (2026.9.0b3),
+# which replaced the local odio-motd script.
+- name: Resolve prior role version
+  ansible.builtin.include_tasks: "../../../tasks/resolve_prior_version.yml"
+  vars:
+    scaffold_version: '2026.9.0b3'
 
 - name: Hook odio-motd into ~/.profile
   ansible.builtin.blockinfile:
@@ -27,9 +16,18 @@
     marker: "# {mark} ANSIBLE MANAGED BLOCK - odio-motd"
     block: |
       case $- in
-          *i*) [ -x "$HOME/.local/bin/odio-motd" ] && "$HOME/.local/bin/odio-motd" ;;
+          *i*) command -v odioctl >/dev/null && odioctl motd ;;
       esac
   become: "{{ become_for_target_user }}"
+
+- name: Remove legacy odio-motd script
+  ansible.builtin.file:
+    path: "/home/{{ target_user }}/.local/bin/odio-motd"
+    state: absent
+  become: "{{ become_for_target_user }}"
+  when:
+    - ansible_role_name in odios_prior_roles
+    - odios_role_pre_scaffold | bool
 
 - name: Suppress system motd for odio user
   ansible.builtin.file:

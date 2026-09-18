@@ -1,9 +1,9 @@
 ---
 # Enabling a socket doesn't bind it, so without this the web UI only answers
 # after a reboot. Image mode has no running manager (the unit binds at boot).
-- name: Start odioctl-web socket
+- name: Start odioctl-web-proxy socket
   ansible.builtin.systemd:
-    name: odioctl-web.socket
+    name: odioctl-web-proxy.socket
     state: started
     scope: user
   environment:
@@ -13,7 +13,8 @@
   when: install_mode == "live"
 
 # The socket only hands the new binary to the next connection; an instance
-# already up keeps serving the old one until it's restarted.
+# already up keeps serving the old one until it's restarted. No-op when stopped
+# (e.g. by the proxy socket migration).
 - name: Restart odioctl-web
   ansible.builtin.include_tasks: "../../../tasks/systemd_restart_user.yml"
   vars:
