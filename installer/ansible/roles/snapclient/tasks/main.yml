@@ -22,14 +22,15 @@
       vars:
         service_name: snapclient.service
 
-- name: Copy user snapclient service
-  ansible.builtin.copy:
-    src: snapclient.service
+- name: Deploy user snapclient service
+  ansible.builtin.template:
+    src: snapclient.service.j2
     dest: /usr/lib/systemd/user/snapclient.service
     mode: '0644'
     owner: root
     group: root
   become: true
+  notify: Restart snapclient
 
 - name: Enable user snapclient service
   ansible.builtin.include_tasks: "../../../tasks/systemd_enable_user.yml"

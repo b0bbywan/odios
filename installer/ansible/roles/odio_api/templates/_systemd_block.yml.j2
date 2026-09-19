@@ -5,13 +5,14 @@ systemd:
     - name: bluetooth.service
 {% endif %}
   user:
-{% if install_pulseaudio %}
-    - name: pulseaudio.service
+{% if install_audioserver %}
+    - name: {{ odio_api_audioserver_unit[audioserver] }}
 {% endif %}
 {% if install_mpd or install_mpd_discplayer %}
     - name: mpd.service
 {% if install_mympd %}
       url: ":{{ mpd_mympd_http_port }}"
+      open: self
 {% endif %}
 {% endif %}
 {% if install_mpd_discplayer %}
@@ -24,15 +25,18 @@ systemd:
     - name: snapclient.service
 {% if odio_api_snapweb_url is defined %}
       url: "{{ odio_api_snapweb_url }}"
+      open: panel
 {% endif %}
 {% endif %}
 {% if install_spotifyd %}
     - name: spotifyd.service
       url: "https://open.spotify.com"
+      open: tab
 {% endif %}
 {% if install_qbzd %}
     - name: qbzd.service
       url: "https://play.qobuz.com/"
+      open: tab
 {% endif %}
 {% if install_upmpdcli %}
     - name: upmpdcli.service

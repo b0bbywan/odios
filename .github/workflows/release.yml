@@ -192,11 +192,13 @@ jobs:
 
       - name: Set image tag
         id: meta
+        env:
+          HEAD_REF: ${{ github.head_ref }}
         run: |
           if [[ "${{ needs.build.outputs.is_release }}" == "true" ]]; then
             TAG="${{ needs.build.outputs.version }}"
           else
-            TAG="${{ github.head_ref }}"
+            TAG="${HEAD_REF//\//-}"   # docker tags reject '/', branch names don't
           fi
           echo "image=ghcr.io/${{ github.repository }}/test:${TAG}" >> "$GITHUB_OUTPUT"
 
@@ -235,6 +237,8 @@ jobs:
             rerun: rerun
           - action: test-as-other-user
             rerun: rerun-as-other-user
+          - action: test-pipewire
+            rerun: rerun-pipewire
     steps:
       - uses: actions/checkout@v7
         with:

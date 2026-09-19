@@ -20,7 +20,7 @@
   ansible.builtin.apt:
     name:
       - bluez
-      - pulseaudio-module-bluetooth
+      - "{{ bluetooth_audioserver_package[audioserver] }}"
       - rfkill
     state: present
     install_recommends: false

@@ -1,0 +1,45 @@
+---
+# Hand the user audio session to the audioserver role including this file:
+# unmask its own units, then stop, disable and mask the other server's.
+# Included unconditionally by both audioserver roles — masking is what keeps a
+# base image's preinstalled server from racing the selected one for the DAC.
+# Variables:
+#   audioserver_services: units of the selected audioserver (<role>_services)
+#   audioserver_other: the audioserver being replaced (pulseaudio | pipewire)
+
+- name: Unmask selected audioserver units
+  ansible.builtin.include_tasks: systemd_unmask_user.yml
+  vars:
+    service_name: "{{ item }}"
+  loop: "{{ audioserver_services }}"
+
+# The other role's vars aren't in scope here, so read them from its vars file.
+- name: Load the replaced audioserver vars
+  ansible.builtin.include_vars:
+    file: "{{ playbook_dir }}/roles/{{ audioserver_other }}/vars/main.yml"
+    name: _other
+
+# Only units actually shipped on the system: masking a name dpkg never
+# installed would leave a dangling /dev/null symlink behind.
+- name: Find installed units of the replaced audioserver
+  ansible.builtin.stat:
+    path: "/usr/lib/systemd/user/{{ item }}"
+  register: _audioserver_other_units
+  loop: "{{ _other[audioserver_other + '_services'] }}"
+
+- name: Disable and stop the replaced audioserver units
+  ansible.builtin.include_tasks: systemd_disable_user.yml
+  vars:
+    service_name: "{{ item.item }}"
+    wanted_by: "{{ _other[audioserver_other + '_wanted_by'][item.item] | default('default.target') }}"
+  loop: "{{ _audioserver_other_units.results | selectattr('stat.exists') | list }}"
+  loop_control:
+    label: "{{ item.item }}"
+
+- name: Mask the replaced audioserver units
+  ansible.builtin.include_tasks: systemd_mask_user.yml
+  vars:
+    service_name: "{{ item.item }}"
+  loop: "{{ _audioserver_other_units.results | selectattr('stat.exists') | list }}"
+  loop_control:
+    label: "{{ item.item }}"

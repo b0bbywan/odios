@@ -7,10 +7,7 @@
     daemon_reload: true
   environment:
     XDG_RUNTIME_DIR: "/run/user/{{ target_user_uid }}"
-  loop:
-    - pipewire.service
-    - pipewire-pulse.service
-    - wireplumber.service
+  loop: "{{ pipewire_services | reject('search', '\\.socket$') | list }}"
   become: "{{ become_for_target_user }}"
   become_user: "{{ target_user }}"
   when: install_mode == "live"

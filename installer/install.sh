@@ -15,6 +15,8 @@ GITHUB_REPO="b0bbywan/odios"
 ODIOS_VERSION="${ODIOS_VERSION:-latest}"
 INSTALL_MODE="${INSTALL_MODE:-live}"
 CURRENT_USER="${USER:-$(id -un)}"   # resilient to unset USER (docker exec, cron, …)
+# pulseaudio | pipewire. Env-only for now — pipewire is not offered at the prompt.
+AUDIOSERVER="${AUDIOSERVER:-pulseaudio}"
 
 export LANG="${LANG:-C.UTF-8}"
 export LC_ALL="${LC_ALL:-C.UTF-8}"
@@ -52,7 +54,9 @@ ask_config() {
     echo ""
 
     local pipewire_installed=false
-    dpkg -l pipewire 2>/dev/null | grep -q '^ii' && pipewire_installed=true
+    if [[ "$AUDIOSERVER" == "pulseaudio" ]]; then
+        dpkg -l pipewire 2>/dev/null | grep -q '^ii' && pipewire_installed=true
+    fi
 
     if $pipewire_installed; then
         echo -e "${YELLOW}⚠ PipeWire is installed — it will conflict with PulseAudio for the current user '${CURRENT_USER}'.${NC}"
@@ -75,7 +79,7 @@ ask_config() {
     fi
 
     echo ""
-    read -rp "Install PulseAudio? [Y/n]: "                 INSTALL_PULSEAUDIO
+    read -rp "Install audio server (${AUDIOSERVER})? [Y/n]: " INSTALL_AUDIOSERVER
     read -rp "Install Bluetooth? [Y/n]: "                  INSTALL_BLUETOOTH
     read -rp "Install MPD? [Y/n]: "                        INSTALL_MPD
     read -rp "Install MPD disc player? [Y/n]: "            INSTALL_MPD_DISCPLAYER
@@ -115,12 +119,18 @@ ask_config() {
 }
 
 prompt_for_config() {
+    if [[ "$AUDIOSERVER" != "pulseaudio" && "$AUDIOSERVER" != "pipewire" ]]; then
+        echo -e "${RED}AUDIOSERVER must be 'pulseaudio' or 'pipewire', got: '${AUDIOSERVER}'${NC}" >&2
+        exit 1
+    fi
+
     [[ "$INSTALL_MODE" == "live" && -z "${TARGET_USER:-}" ]] && ask_config
 
     TARGET_USER="${TARGET_USER:-${CURRENT_USER}}"
     MPD_MUSIC_DIRECTORY="${MPD_MUSIC_DIRECTORY:-}"
     MPD_CONF_PATH="${MPD_CONF_PATH:-}"
-    INSTALL_PULSEAUDIO="${INSTALL_PULSEAUDIO:-Y}"
+    # INSTALL_PULSEAUDIO kept as a compat alias — it predates the audioserver choice.
+    INSTALL_AUDIOSERVER="${INSTALL_AUDIOSERVER:-${INSTALL_PULSEAUDIO:-Y}}"
     INSTALL_BLUETOOTH="${INSTALL_BLUETOOTH:-Y}"
     INSTALL_MPD="${INSTALL_MPD:-Y}"
     INSTALL_ODIO_API="${INSTALL_ODIO_API:-Y}"
@@ -144,7 +154,15 @@ prompt_for_config() {
     # Smart-upgrade hint: odioctl exports RUN_<role>=N for roles whose
     # target version matches the installed version. Internal-only — fresh
     # installs never set these, so RUN_X collapses to INSTALL_X.
-    RUN_PULSEAUDIO="${RUN_PULSEAUDIO:-$INSTALL_PULSEAUDIO}"
+    # Only the selected audioserver's role may run; the other is hard-off, since
+    # extra-vars outrank the group_vars derivation.
+    if [[ "$AUDIOSERVER" == "pulseaudio" ]]; then
+        RUN_PULSEAUDIO="${RUN_AUDIOSERVER:-${RUN_PULSEAUDIO:-$INSTALL_AUDIOSERVER}}"
+        RUN_PIPEWIRE=N
+    else
+        RUN_PIPEWIRE="${RUN_AUDIOSERVER:-${RUN_PIPEWIRE:-$INSTALL_AUDIOSERVER}}"
+        RUN_PULSEAUDIO=N
+    fi
     RUN_BLUETOOTH="${RUN_BLUETOOTH:-$INSTALL_BLUETOOTH}"
     RUN_MPD="${RUN_MPD:-$INSTALL_MPD}"
     RUN_ODIO_API="${RUN_ODIO_API:-$INSTALL_ODIO_API}"
@@ -344,7 +362,8 @@ run_playbook() {
   "odio_version":           "$(cat "${WORK_DIR}/VERSION" 2>/dev/null || echo "unknown")",
   "install_mode":           "${INSTALL_MODE}",
   "target_user":            "${TARGET_USER}",
-  "install_pulseaudio":     $(bool "$INSTALL_PULSEAUDIO"),
+  "audioserver":            "${AUDIOSERVER}",
+  "install_audioserver":    $(bool "$INSTALL_AUDIOSERVER"),
   "install_bluetooth":      $(bool "$INSTALL_BLUETOOTH"),
   "install_mpd":            $(bool "$INSTALL_MPD"),
   "install_odio_api":       $(bool "$INSTALL_ODIO_API"),
@@ -361,6 +380,7 @@ run_playbook() {
   "install_mpd_discplayer": $(bool "$INSTALL_MPD_DISCPLAYER"),
   "install_branding":       $(bool "$INSTALL_BRANDING"),
   "run_pulseaudio":         $(bool "$RUN_PULSEAUDIO"),
+  "run_pipewire":           $(bool "$RUN_PIPEWIRE"),
   "run_bluetooth":          $(bool "$RUN_BLUETOOTH"),
   "run_mpd":                $(bool "$RUN_MPD"),
   "run_odio_api":           $(bool "$RUN_ODIO_API"),

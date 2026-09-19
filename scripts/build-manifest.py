@@ -4,8 +4,9 @@
 Usage: build-manifest.py <odios_version> <roles_dir> <output_path>
 
 `catalog` describes the roles that carry <role>_description/_group/_services for
-odioctl; opt_in is true when group_vars defaults install_<role> to false, and
-archs, only when <role>_archs is set, lists the dpkg architectures it installs on.
+odioctl, unless <role>_catalog is false; opt_in says the role is off unless
+asked for, and archs, only when <role>_archs is set, lists the dpkg
+architectures it installs on.
 """
 import json
 import os
@@ -15,6 +16,14 @@ from typing import Any
 import yaml
 
 CATALOG_KEYS = ("description", "group", "services")
+
+
+def opt_in(role: str, role_vars: dict[str, Any], defaults: dict[str, Any]) -> bool:
+    # install_<role> settles it when group_vars holds a literal; a derived one
+    # (the audioserver pair) is a Jinja string, so the role declares it itself.
+    if f"{role}_opt_in" in role_vars:
+        return bool(role_vars[f"{role}_opt_in"])
+    return defaults.get(f"install_{role}") is False
 
 
 def load(path: str) -> dict[str, Any]:
@@ -41,12 +50,16 @@ def main() -> int:
         if f"{role}_version" not in role_vars:
             continue
         roles[role] = str(role_vars[f"{role}_version"])
-        if any(f"{role}_{k}" in role_vars for k in CATALOG_KEYS):
+        # A role can carry catalog metadata before odioctl can model it;
+        # <role>_catalog: false holds it back until then.
+        if role_vars.get(f"{role}_catalog", True) and any(
+            f"{role}_{k}" in role_vars for k in CATALOG_KEYS
+        ):
             catalog[role] = {
                 "description": role_vars.get(f"{role}_description", ""),
                 "group": role_vars.get(f"{role}_group", ""),
                 "services": role_vars.get(f"{role}_services", []),
-                "opt_in": defaults.get(f"install_{role}") is False,
+                "opt_in": opt_in(role, role_vars, defaults),
             }
             if f"{role}_archs" in role_vars:
                 catalog[role]["archs"] = role_vars[f"{role}_archs"]

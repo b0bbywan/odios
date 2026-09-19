@@ -11,6 +11,11 @@ gpg_file: "/usr/share/keyrings/odio.gpg"
 odio_testing_repo: "{{ odio_version is search('-[0-9]+-g[0-9a-f]+$') }}"
 
 odio_version: "unknown"
+
+# Audio server backend: pulseaudio | pipewire. Each consumer role maps it to
+# that software's own spelling via a <role>_audioserver_* var in vars/main.yml.
+audioserver: "pulseaudio"
+
 mpd_music_directory: "/media/USB"
 mpd_mympd_http_port: "8080"
 # Standard MPD user socket (matches the packaged mpd.socket unit's
@@ -18,7 +23,7 @@ mpd_mympd_http_port: "8080"
 mpd_socket_path: "/run/user/{{ target_user_uid }}/mpd/socket"
 
 # Core components (default: enabled)
-install_pulseaudio: true
+install_audioserver: true
 install_bluetooth: true
 install_mpd: true
 install_odio_api: true
@@ -42,11 +47,17 @@ install_upnpwebradios: "{{ install_upmpdcli }}"
 # Branding (odio-motd login banner, hushlogin, .profile hook)
 install_branding: true
 
+# Exactly one audioserver role installs, picked by `audioserver`. Derived
+# rather than prompted: they are mutually exclusive, not two components.
+install_pulseaudio: "{{ install_audioserver | bool and audioserver == 'pulseaudio' }}"
+install_pipewire: "{{ install_audioserver | bool and audioserver == 'pipewire' }}"
+
 # Smart-upgrade gate: defaults to install_X so fresh installs and
 # direct ansible-playbook / image-builder paths run every selected role.
 # odioctl overrides individual run_X to false when the target manifest
 # matches the installed role version (skipping unchanged roles).
 run_pulseaudio: "{{ install_pulseaudio }}"
+run_pipewire: "{{ install_pipewire }}"
 run_bluetooth: "{{ install_bluetooth }}"
 run_mpd: "{{ install_mpd }}"
 run_odio_api: "{{ install_odio_api }}"

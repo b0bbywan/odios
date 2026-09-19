@@ -1,2 +1,19 @@
 ---
-pipewire_version: "2026.6.0b1"
+pipewire_version: "2026.9.0b3"
+# odioctl has no notion of the audioserver choice yet, so it would list this
+# as a second Audio component tickable alongside pulseaudio.
+pipewire_catalog: false
+pipewire_opt_in: true
+pipewire_description: "PipeWire server with network streaming (experimental)"
+pipewire_group: "Audio"
+pipewire_services:
+  - pipewire.socket
+  - pipewire.service
+  - pipewire-pulse.socket
+  - pipewire-pulse.service
+  - wireplumber.service
+# [Install] WantedBy= of units not wanted by default.target.
+pipewire_wanted_by:
+  pipewire.socket: sockets.target
+  pipewire-pulse.socket: sockets.target
+  wireplumber.service: pipewire.service

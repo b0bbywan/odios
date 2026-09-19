@@ -58,7 +58,7 @@
   ansible.builtin.lineinfile:
     path: "/home/{{ target_user }}/.config/shairport-sync/shairport-sync.conf"
     regexp: '^\s*//?\s*output_backend\s*='
-    line: '	output_backend = "pa";'
+    line: '	output_backend = "{{ shairport_sync_audioserver_backend[audioserver] }}";'
   become: "{{ become_for_target_user }}"
   become_user: "{{ target_user }}"
   notify: Restart shairport-sync
