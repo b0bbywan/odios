@@ -375,6 +375,22 @@
           "url": "https://docs.odio.love/operations/how-it-works/#mono-output"
         }
       ]
+    },
+    {
+      "login": "VeeM",
+      "name": "Mykola",
+      "avatar_url": "https://avatars.githubusercontent.com/u/14110709?v=4",
+      "profile": "https://github.com/VeeM",
+      "contributions": [
+        {
+          "type": "bug",
+          "url": "https://github.com/b0bbywan/odios/pull/91"
+        },
+        {
+          "type": "code",
+          "url": "https://github.com/b0bbywan/odios/pull/91"
+        }
+      ]
     }
   ],
   "contributorsPerLine": 7,
