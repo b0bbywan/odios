@@ -9,7 +9,7 @@ api:
   port: 8018
   ui:
     enabled: true
-    admin: ":8021"
+    adminSocket: "/run/user/{{ target_user_uid }}/odioctl-web.sock"
 
 # Logging
 logLevel: info
