@@ -72,6 +72,24 @@
   become_user: "{{ target_user }}"
   notify: Restart shairport-sync
 
+- name: Configure shairport-sync dbus service bus
+  ansible.builtin.lineinfile:
+    path: "/home/{{ target_user }}/.config/shairport-sync/shairport-sync.conf"
+    regexp: '^\s*//?\s*dbus_service_bus\s*='
+    line: '	dbus_service_bus = "session";'
+  become: "{{ become_for_target_user }}"
+  become_user: "{{ target_user }}"
+  notify: Restart shairport-sync
+
+- name: Configure shairport-sync mpris service bus
+  ansible.builtin.lineinfile:
+    path: "/home/{{ target_user }}/.config/shairport-sync/shairport-sync.conf"
+    regexp: '^\s*//?\s*mpris_service_bus\s*='
+    line: '	mpris_service_bus = "session";'
+  become: "{{ become_for_target_user }}"
+  become_user: "{{ target_user }}"
+  notify: Restart shairport-sync
+
 - name: Remove legacy shairport-sync pulseaudio TCP server setting
   ansible.builtin.lineinfile:
     path: "/home/{{ target_user }}/.config/shairport-sync/shairport-sync.conf"
