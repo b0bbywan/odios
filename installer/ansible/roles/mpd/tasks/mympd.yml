@@ -1,10 +1,12 @@
 ---
 # True on fresh installs, when mympd is newly enabled, or on upgrades from before
-# the home shortcuts shipped (mpd 2026.5.0b3).
+# the latest mympd setup (mpd 2026.9.0b3).
 - name: Determine mympd first setup
   ansible.builtin.set_fact:
     mpd_mympd_first_setup: >-
-      {{ ('mympd' not in odios_prior_features) or odios_role_pre_scaffold }}
+      {{ ('mympd' not in odios_prior_features)
+         or (odios_prior_role_versions[ansible_role_name] | default('0')
+             is version('2026.9.0b3', '<', version_type='pep440')) }}
 
 - name: Install mympd v{{ mpd_mympd_apt_version }}
   ansible.builtin.apt:
