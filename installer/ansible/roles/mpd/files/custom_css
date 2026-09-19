@@ -81,3 +81,24 @@
 .progress-bar {
   background-color: #5ab81e;
 }
+
+/* Smaller home shortcuts (myMPD default: 8rem tile, 6x4rem icon, 3rem glyph) */
+.home-icons {
+  width: 6rem;
+  height: 6.5rem;
+}
+
+.home-icons .card-body {
+  width: 4rem;
+  height: 4rem;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 3rem;
+  background-size: contain;
+}
+
+.home-icons .homeIconBadge {
+  right: 0.25rem;
+}
