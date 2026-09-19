@@ -12,6 +12,7 @@ systemd:
     - name: mpd.service
 {% if install_mympd %}
       url: ":{{ mpd_mympd_http_port }}"
+      open: self
 {% endif %}
 {% endif %}
 {% if install_mpd_discplayer %}
@@ -24,15 +25,18 @@ systemd:
     - name: snapclient.service
 {% if odio_api_snapweb_url is defined %}
       url: "{{ odio_api_snapweb_url }}"
+      open: panel
 {% endif %}
 {% endif %}
 {% if install_spotifyd %}
     - name: spotifyd.service
       url: "https://open.spotify.com"
+      open: tab
 {% endif %}
 {% if install_qbzd %}
     - name: qbzd.service
       url: "https://play.qobuz.com/"
+      open: tab
 {% endif %}
 {% if install_upmpdcli %}
     - name: upmpdcli.service
