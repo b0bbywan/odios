@@ -22,17 +22,17 @@
       - video
   become: true
 
-- name: Install fbrowser-kiosk
+- name: Install odio-kiosk
   ansible.builtin.apt:
     name:
-      - "fbrowser-kiosk={{ display_apt_version }}"
+      - "odio-kiosk>={{ display_apt_version }}"
     state: present
     install_recommends: false
   become: true
   register: display_apt
-  notify: Restart odio-screen
+  notify: Restart odio-kiosk
 
-# The package ships odio-screen.service; image mode has no running manager.
+# The package ships odio-kiosk@.service; image mode has no running manager.
 - name: Reload user systemd
   ansible.builtin.systemd:
     daemon_reload: true
@@ -46,26 +46,58 @@
     - display_apt.changed
   register: display_apt
 
-- name: Create fbrowser config directory
+# odio-kiosk replaces fbrowser-kiosk, but dpkg owns neither the old user
+# config nor the enable symlink odio-screen.service left behind.
+- name: Remove fbrowser-kiosk leftovers
   ansible.builtin.file:
-    path: "/home/{{ target_user }}/.config/fbrowser-kiosk"
+    path: "{{ item }}"
+    state: absent
+  loop:
+    - "/home/{{ target_user }}/.config/fbrowser-kiosk"
+    - "/home/{{ target_user }}/.config/systemd/user/default.target.wants/odio-screen.service"
+  become: "{{ become_for_target_user }}"
+
+- name: Create odio-kiosk config directory
+  ansible.builtin.file:
+    path: "/home/{{ target_user }}/.config/odio-kiosk"
     state: directory
     owner: "{{ target_user }}"
     group: "{{ target_user }}"
     mode: '0700'
   become: "{{ become_for_target_user }}"
 
-- name: Configure fbrowser
+- name: Configure the odio screen
   ansible.builtin.copy:
-    src: config
-    dest: "/home/{{ target_user }}/.config/fbrowser-kiosk/config"
+    src: odio.conf
+    dest: "/home/{{ target_user }}/.config/odio-kiosk/{{ display_instance }}.conf"
     owner: "{{ target_user }}"
     group: "{{ target_user }}"
     mode: '0600'
   become: "{{ become_for_target_user }}"
-  notify: Restart odio-screen
+  notify: Restart odio-kiosk
 
-- name: Enable user odio-screen service
+- name: Create odio-kiosk drop-in directory
+  ansible.builtin.file:
+    path: "/home/{{ target_user }}/.config/systemd/user/odio-kiosk@{{ display_instance }}.service.d"
+    state: directory
+    owner: "{{ target_user }}"
+    group: "{{ target_user }}"
+    mode: '0755'
+  become: "{{ become_for_target_user }}"
+
+# The unit names no server: the drop-in is what ties this screen to odio-api.
+- name: Order the odio screen with odio-api
+  ansible.builtin.copy:
+    src: odio-api.conf
+    dest: "/home/{{ target_user }}/.config/systemd/user/odio-kiosk@{{ display_instance }}.service.d/odio-api.conf"
+    owner: "{{ target_user }}"
+    group: "{{ target_user }}"
+    mode: '0644'
+  become: "{{ become_for_target_user }}"
+  notify: Restart odio-kiosk
+
+- name: Enable user odio-kiosk service
   ansible.builtin.include_tasks: "../../../tasks/systemd_enable_user.yml"
   vars:
-    service_name: odio-screen.service
+    service_name: "odio-kiosk@{{ display_instance }}.service"
+    service_unit_path: /usr/lib/systemd/user/odio-kiosk@.service

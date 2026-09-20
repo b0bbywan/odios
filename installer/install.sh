@@ -43,7 +43,7 @@ EOF
 
 # ─── Config prompts ───────────────────────────────────────────────────────────
 
-# fbrowser-kiosk ships amd64/arm64 only. dpkg's architecture, not uname's: a
+# odio-kiosk ships amd64/arm64 only. dpkg's architecture, not uname's: a
 # 32-bit userland may run on an arm64 kernel.
 display_supported() {
     [[ "$(dpkg --print-architecture 2>/dev/null)" =~ ^(amd64|arm64)$ ]]
@@ -93,7 +93,7 @@ ask_config() {
     read -rp "Install Spotifyd (Spotify Connect)? [Y/n]: " INSTALL_SPOTIFYD
     read -rp "Install qbzd (Qobuz Connect)? [y/N]: "       INSTALL_QBZD
     if display_supported; then
-        read -rp "Install display (fbrowser-kiosk)? [y/N]: " INSTALL_DISPLAY
+        read -rp "Install display (odio-kiosk)? [y/N]: " INSTALL_DISPLAY
     fi
     read -rp "Install branding (odio-motd login banner, hushlogin)? [Y/n]: " INSTALL_BRANDING
 

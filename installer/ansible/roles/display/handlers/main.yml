@@ -1,7 +1,7 @@
 ---
-- name: Restart odio-screen
+- name: Restart odio-kiosk
   ansible.builtin.systemd:
-    name: odio-screen.service
+    name: "odio-kiosk@{{ display_instance }}.service"
     state: restarted
     scope: user
     daemon_reload: true
