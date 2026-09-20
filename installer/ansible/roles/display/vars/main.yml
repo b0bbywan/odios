@@ -1,11 +1,15 @@
 ---
-display_version: "2026.9.0b2"
-display_apt_version: "1.0.0+git20260210.4213a69"
-display_description: "Kiosk browser on an attached screen (experimental)"
+display_version: "2026.9.0b3"
+display_apt_version: "2.0.0"
+display_label: "Screen"
+display_description: "Web dashboard on an attached screen (experimental)"
 display_group: "System"
+# The unit is a template, one instance per screen; a node has the one.
+display_instance: "odio"
+# Literal: build-manifest.py does not render Jinja; keep in sync with display_instance.
 display_services:
-  - odio-screen.service
-# fbrowser-kiosk is built for these dpkg architectures only.
+  - "odio-kiosk@odio.service"
+# odio-kiosk is built for these dpkg architectures only.
 display_archs:
   - amd64
   - arm64
