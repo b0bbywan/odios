@@ -5,8 +5,9 @@ Usage: build-manifest.py <odios_version> <roles_dir> <output_path>
 
 `catalog` describes the roles that carry <role>_description/_group/_services for
 odioctl, unless <role>_catalog is false; opt_in says the role is off unless
-asked for, and archs, only when <role>_archs is set, lists the dpkg
-architectures it installs on.
+asked for, required (<role>_required) that odioctl must not offer to disable it,
+and archs, only when <role>_archs is set, lists the dpkg architectures it
+installs on.
 """
 import json
 import os
@@ -60,6 +61,7 @@ def main() -> int:
                 "group": role_vars.get(f"{role}_group", ""),
                 "services": role_vars.get(f"{role}_services", []),
                 "opt_in": opt_in(role, role_vars, defaults),
+                "required": bool(role_vars.get(f"{role}_required", False)),
             }
             if f"{role}_archs" in role_vars:
                 catalog[role]["archs"] = role_vars[f"{role}_archs"]

@@ -4,6 +4,8 @@ mpd_mpd2mpris_apt_version: "0.13.0"
 mpd_mympd_apt_version: "26.0.0"
 mpd_description: "Music Player Daemon for USB, CD and network libraries"
 mpd_group: "Playback"
+# upmpdcli and mpd_discplayer play through it: dropping mpd would break them.
+mpd_required: true
 mpd_services:
   - mpd.socket
   - mpd.service

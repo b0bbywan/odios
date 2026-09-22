@@ -3,6 +3,7 @@ upgrade_version: "2026.9.0b3"
 upgrade_odioctl_apt_version: "0.4.0~beta.4"
 upgrade_description: "odioctl and the upgrade check timer"
 upgrade_group: "System"
+upgrade_required: true
 upgrade_services:
   - odio-check-upgrade.timer
   - odioctl-web-proxy.socket
