@@ -3,6 +3,8 @@ pulseaudio_version: "2026.9.0b3"
 pulseaudio_opt_in: false
 pulseaudio_description: "PulseAudio server with network streaming"
 pulseaudio_group: "Audio"
+# An audio server is mandatory; which one is the audioserver choice.
+pulseaudio_required: true
 pulseaudio_services:
   - pulseaudio.socket
   - pulseaudio.service
