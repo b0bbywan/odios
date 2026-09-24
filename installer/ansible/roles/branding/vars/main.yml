@@ -1,5 +1,6 @@
 ---
 branding_version: "2026.9.0b3"
-branding_description: "Login banner and motd suppression"
+branding_label: "Branding"
+branding_description: "odio login banner"
 branding_group: "System"
 branding_services: []

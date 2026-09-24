@@ -1,7 +1,8 @@
 ---
 snapclient_version: "2026.9.0b3"
 snapclient_snapclientmpris_version: "1.2.0"
-snapclient_description: "Snapcast multi-room client"
+snapclient_label: "Snapcast"
+snapclient_description: "Synchronized multi-room playback"
 snapclient_group: "Streaming"
 snapclient_services:
   - snapclient.service

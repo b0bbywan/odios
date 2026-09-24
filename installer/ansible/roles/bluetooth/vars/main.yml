@@ -1,6 +1,7 @@
 ---
 bluetooth_version: "2026.9.0b3"
-bluetooth_description: "Bluetooth A2DP sink and pairing agent"
+bluetooth_label: "Bluetooth"
+bluetooth_description: "Bluetooth audio, in and out"
 bluetooth_group: "Audio"
 bluetooth_services:
   - bluetooth.service

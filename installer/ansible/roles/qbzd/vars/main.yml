@@ -1,7 +1,8 @@
 ---
 qbzd_version: "2026.9.0b3"
 qbzd_apt_version: "2.1.2"
-qbzd_description: "Qobuz Connect endpoint (experimental)"
+qbzd_label: "Qobuz Connect"
+qbzd_description: "Play from the Qobuz app (experimental)"
 qbzd_group: "Streaming"
 qbzd_services:
   - qbzd.service

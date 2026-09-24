@@ -1,7 +1,8 @@
 ---
 mpd_discplayer_version: "2026.9.0b3"
 mpd_discplayer_apt_version: "0.8.0"
-mpd_discplayer_description: "Autoplay for audio CDs and USB drives"
+mpd_discplayer_label: "CD & USB player"
+mpd_discplayer_description: "Plays a CD or USB drive as soon as it is inserted"
 mpd_discplayer_group: "Playback"
 mpd_discplayer_services:
   - mpd-discplayer.service

@@ -2,7 +2,8 @@
 mpd_version: "2026.9.0b3"
 mpd_mpd2mpris_apt_version: "0.13.0"
 mpd_mympd_apt_version: "26.0.0"
-mpd_description: "Music Player Daemon for USB, CD and network libraries"
+mpd_label: "MPD"
+mpd_description: "Music library on USB drives, CDs and network shares"
 mpd_group: "Playback"
 # upmpdcli and mpd_discplayer play through it: dropping mpd would break them.
 mpd_required: true
@@ -13,7 +14,8 @@ mpd_services:
 # Each one has an install_<feature> in group_vars and a prompt in install.sh.
 mpd_features:
   mympd:
-    description: "Web UI for MPD"
+    label: "myMPD"
+    description: "Web player for your music library and web radios"
 
 # MPD output plugin per audioserver: the native pipewire plugin when running
 # PipeWire, libpulse otherwise.
