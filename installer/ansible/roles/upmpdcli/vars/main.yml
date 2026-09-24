@@ -1,6 +1,14 @@
 ---
-upmpdcli_version: "2026.9.0b2"
+upmpdcli_version: "2026.9.0b3"
 upmpdcli_description: "UPnP / OpenHome renderer"
 upmpdcli_group: "Streaming"
 upmpdcli_services:
   - upmpdcli.service
+# Each one has an install_<feature> in group_vars and a prompt in install.sh.
+upmpdcli_features:
+  tidal:
+    description: "Tidal streaming"
+  qobuz:
+    description: "Qobuz streaming"
+  upnpwebradios:
+    description: "Internet radios"
