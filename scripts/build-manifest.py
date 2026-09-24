@@ -7,8 +7,9 @@ Usage: build-manifest.py <odios_version> <roles_dir> <output_path>
 odioctl, unless <role>_catalog is false; opt_in says the role is off unless
 asked for, required (<role>_required) that odioctl must not offer to disable it,
 and archs, only when <role>_archs is set, lists the dpkg architectures it
-installs on. features, only when <role>_features is set, maps each feature of
-the role to its description.
+installs on. label (<role>_label) is the name the user knows it by, when not
+the role's own. features, only when <role>_features is set, maps each feature
+of the role to its description, and label when it has one.
 """
 import json
 import os
@@ -64,11 +65,14 @@ def main() -> int:
                 "opt_in": opt_in(role, role_vars, defaults),
                 "required": bool(role_vars.get(f"{role}_required", False)),
             }
+            if f"{role}_label" in role_vars:
+                catalog[role]["label"] = role_vars[f"{role}_label"]
             if f"{role}_archs" in role_vars:
                 catalog[role]["archs"] = role_vars[f"{role}_archs"]
             if f"{role}_features" in role_vars:
                 catalog[role]["features"] = {
                     name: {"description": meta.get("description", "")}
+                    | ({"label": meta["label"]} if "label" in meta else {})
                     for name, meta in role_vars[f"{role}_features"].items()
                 }
 
