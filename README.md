@@ -125,13 +125,13 @@ See [installer/README.md](installer/README.md) for full installation options, en
 
 ## Settings page
 
-Every box serves a settings page at `http://<your-box>:8021`, also linked from the odio dashboard header. No SSH, no config file to edit:
+Every odio node serves a settings page at `http://<odio-host>:8021`, also linked from the odio dashboard header. No SSH, no config file to edit:
 
 - **Upgrades** — shows when a new release is available and applies it, then reports when it is done
-- **Components** — add or drop services on a box already in use (e.g. Qobuz Connect); new optional services ship this way
+- **Components** — add or drop services on a node already in use (e.g. Qobuz Connect); new optional services ship this way
 - **Tidal & Qobuz Connect sign-in** — the page hands you the sign-in link, you open it, and the service is connected
 - **DAC** — pick the sound card overlay on a Raspberry Pi
-- **Reboot** the box
+- **Reboot** the node
 
 The page updates itself as things happen, no reload. It is served by `odioctl web`, socket-activated so it only starts on the first connection.
 
@@ -150,7 +150,7 @@ odioctl upgrade apply --progress          # emit structured progress events for 
 
 `odioctl components` and `odioctl dac` do from the shell what the settings page does for components and the DAC overlay.
 
-Upgrading from 2026.7.0rc2 or earlier: the command on those boxes is still `odio-upgrade apply`; once 2026.9.0b1 is applied it becomes `odioctl upgrade apply`.
+Upgrading from 2026.7.0rc2 or earlier: the command on those nodes is still `odio-upgrade apply`; once 2026.9.0b1 is applied it becomes `odioctl upgrade apply`.
 
 ## Recommended clients
 

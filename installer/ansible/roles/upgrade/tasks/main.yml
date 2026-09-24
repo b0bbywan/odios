@@ -26,7 +26,7 @@
         - .config/systemd/user/timers.target.wants/odio-check-upgrade.timer
 
     # /etc/systemd/user shadows the deb's /usr/lib/systemd/user units, so these
-    # must go or the box keeps calling the deleted /usr/local/bin/odio-upgrade.
+    # must go or the node keeps calling the deleted /usr/local/bin/odio-upgrade.
     - name: Remove legacy system-wide upgrade artifacts
       ansible.builtin.file:
         path: "{{ item }}"
@@ -55,7 +55,7 @@
 
 # Migration path: common seeds this group on first install, before linger
 # starts the user manager, but its first-install block never re-runs on an
-# existing box. A manager already up keeps its old group list, so here the
+# existing node. A manager already up keeps its old group list, so here the
 # membership only takes effect on target_user's next login.
 - name: Add target user to the odioctl group
   ansible.builtin.user:
