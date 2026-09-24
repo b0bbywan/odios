@@ -31,25 +31,31 @@
   ansible.builtin.set_fact:
     _odios_excluded_roles: "{{ _odios_optional_roles | difference(_odios_installed_roles) }}"
 
-# Same split for sub-flags. Pure opt-out semantics on upgrade: only
+# Same split for sub-flags, the ones roles declare in <role>_features (what
+# the manifest's catalog publishes). Pure opt-out semantics on upgrade: only
 # features_excluded maps to N; everything else gets Y.
+- name: List features the roles declare
+  ansible.builtin.set_fact:
+    _odios_features: >-
+      {{ _odios_role_dirs.files | map(attribute='path') | map('basename')
+         | map('regex_replace', '$', '_features') | select('in', _odios_all_role_vars)
+         | map('extract', _odios_all_role_vars) | map('list') | flatten | sort }}
+  vars:
+    _odios_all_role_vars: >-
+      {{ query('ansible.builtin.file', *(_odios_role_dirs.files | map(attribute='path')
+           | map('regex_replace', '$', '/vars/main.yml') | select('file')))
+         | map('from_yaml') | combine }}
+
 - name: Build list of enabled features
   ansible.builtin.set_fact:
     _odios_enabled_features: >-
-      {{
-        (['tidal']         if install_tidal         | bool else [])
-        + (['qobuz']         if install_qobuz         | bool else [])
-        + (['upnpwebradios'] if install_upnpwebradios | bool else [])
-        + (['mympd']         if install_mympd         | bool else [])
-      }}
+      {{ _odios_features
+         | zip(query('ansible.builtin.vars', *(_odios_features | map('regex_replace', '^', 'install_'))) | map('bool'))
+         | selectattr('1') | map(attribute='0') | list }}
 
 - name: Build list of excluded features
   ansible.builtin.set_fact:
-    _odios_excluded_features: >-
-      {{
-        ['tidal', 'qobuz', 'upnpwebradios', 'mympd']
-        | difference(_odios_enabled_features)
-      }}
+    _odios_excluded_features: "{{ _odios_features | difference(_odios_enabled_features) }}"
 
 # Refresh every installed role's version from vars/main.yml. RUN_X=N
 # roles weren't re-installed but target == prior, so writing target is
