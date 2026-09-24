@@ -223,8 +223,11 @@ run_enable_qbzd() {
     fi
 
     echo "=== odioctl components enable qbzd, then check + apply (target=${tag}) ==="
+    # components offers what the cached release catalog lists: cache the
+    # target's, through the odioctl the upgrade just installed.
     docker exec -u odio -e INSTALL_MODE=image "${CONTAINER_NAME}" bash -c '
         set -e
+        /usr/bin/odioctl upgrade check --version "$1" || [[ $? == 1 ]]
         /usr/bin/odioctl components enable qbzd
         rc=0; /usr/bin/odioctl upgrade check --version "$1" || rc=$?
         [[ $rc == 1 ]] || { echo "ERROR: check exited $rc, expected 1 (qbzd pending)" >&2; exit 1; }
