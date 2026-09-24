@@ -4,7 +4,8 @@ pipewire_version: "2026.9.0b3"
 # as a second Audio component tickable alongside pulseaudio.
 pipewire_catalog: false
 pipewire_opt_in: true
-pipewire_description: "PipeWire server with network streaming (experimental)"
+pipewire_label: "PipeWire"
+pipewire_description: "Sound server, with network streaming (experimental)"
 pipewire_group: "Audio"
 pipewire_required: true
 pipewire_services:

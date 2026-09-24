@@ -1,6 +1,7 @@
 ---
 common_version: "2026.9.0b3"
-common_description: "Core configuration shared by every component"
+common_label: "Base system"
+common_description: "Core system configuration"
 common_group: "System"
 common_required: true
 common_services: []

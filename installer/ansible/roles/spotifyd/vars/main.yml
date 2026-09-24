@@ -1,7 +1,8 @@
 ---
 spotifyd_version: "2026.9.0b3"
 spotifyd_apt_version: "0.4.4"
-spotifyd_description: "Spotify Connect endpoint"
+spotifyd_label: "Spotify Connect"
+spotifyd_description: "Play from the Spotify app"
 spotifyd_group: "Streaming"
 spotifyd_services:
   - spotifyd.service
