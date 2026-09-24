@@ -4,7 +4,8 @@
 Usage: build-manifest.py <odios_version> <roles_dir> <output_path>
 
 `catalog` describes the roles that carry <role>_description/_group/_services for
-odioctl, unless <role>_catalog is false; opt_in says the role is off unless
+odioctl, unless <role>_catalog is false; version is <role>_version, which
+`roles` repeats for the odioctl that predate it; opt_in says the role is off unless
 asked for, required (<role>_required) that odioctl must not offer to disable it,
 and archs, only when <role>_archs is set, lists the dpkg architectures it
 installs on. label (<role>_label) is the name the user knows it by, when not
@@ -59,6 +60,7 @@ def main() -> int:
             f"{role}_{k}" in role_vars for k in CATALOG_KEYS
         ):
             catalog[role] = {
+                "version": roles[role],
                 "description": role_vars.get(f"{role}_description", ""),
                 "group": role_vars.get(f"{role}_group", ""),
                 "services": role_vars.get(f"{role}_services", []),
@@ -75,6 +77,11 @@ def main() -> int:
                     | ({"label": meta["label"]} if "label" in meta else {})
                     for name, meta in role_vars[f"{role}_features"].items()
                 }
+
+    # vars are read raw, so a Jinja expression would ship unrendered.
+    if "{{" in json.dumps(catalog):
+        print("catalog holds an unrendered Jinja expression", file=sys.stderr)
+        return 1
 
     manifest = {"odios": version, "roles": roles, "catalog": catalog}
     with open(output, "w") as f:
