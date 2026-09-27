@@ -1,0 +1,20 @@
+---
+# Sets install_* to what stays installed: in the prior state, minus the removals.
+# Needs read_state.yml first. Variables: odios_disable_roles, odios_disable_features.
+- name: List what stays installed
+  ansible.builtin.set_fact:
+    _odios_kept: >-
+      {{ (odios_prior_roles + odios_prior_features)
+         | difference(odios_disable_roles | default([]))
+         | difference(odios_disable_features | default({}) | list) }}
+
+# install_audioserver names no role: it stands for pulseaudio or pipewire.
+- name: Restore the audio server from state
+  ansible.builtin.set_fact:
+    audioserver: "{{ _odios_existing_state.audioserver | default(audioserver) }}"
+    install_audioserver: "{{ ['pulseaudio', 'pipewire'] | intersect(_odios_kept) | length > 0 }}"
+
+- name: Set install flags from state
+  ansible.builtin.set_fact:
+    "{{ item }}": "{{ item | regex_replace('^install_', '') in _odios_kept }}"  # noqa: var-naming[no-jinja]
+  loop: "{{ query('ansible.builtin.varnames', '^install_') | difference(['install_mode', 'install_audioserver']) }}"
