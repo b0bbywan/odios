@@ -16,6 +16,8 @@ mpd_features:
   mympd:
     label: "myMPD"
     description: "Web player for your music library and web radios"
+    services:
+      - mympd.service
 
 # MPD output plugin per audioserver: the native pipewire plugin when running
 # PipeWire, libpulse otherwise.
