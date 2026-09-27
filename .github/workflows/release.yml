@@ -239,6 +239,8 @@ jobs:
             rerun: rerun-as-other-user
           - action: test-pipewire
             rerun: rerun-pipewire
+          - action: test-disable
+            rerun: rerun-disable
     steps:
       - uses: actions/checkout@v7
         with:
