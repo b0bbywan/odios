@@ -1,0 +1,14 @@
+---
+argument_specs:
+  main:
+    short_description: Disable what odioctl removes, one component at a time
+    options:
+      disable_roles:
+        type: list
+        elements: str
+        default: []
+        description: Roles to disable.
+      disable_features:
+        type: dict
+        default: {}
+        description: Features to disable, each mapped to its role.

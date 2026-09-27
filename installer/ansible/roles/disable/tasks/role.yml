@@ -1,0 +1,29 @@
+---
+# Stops and disables the role's units, then runs its tasks/disable.yml hook
+# in the role itself so its handlers and vars come along. No mask, no purge.
+- name: Read the vars of {{ disable_role }}
+  ansible.builtin.include_vars:
+    file: "{{ playbook_dir }}/roles/{{ disable_role }}/vars/main.yml"
+    name: disable_role_vars
+
+- name: Disable user units of {{ disable_role }}
+  ansible.builtin.include_tasks: "../../../tasks/systemd_disable_user.yml"
+  vars:
+    service_name: "{{ disable_unit }}"
+  loop: "{{ disable_role_vars[disable_role ~ '_services'] | default([]) }}"
+  loop_control:
+    loop_var: disable_unit
+
+- name: Disable system units of {{ disable_role }}
+  ansible.builtin.include_tasks: "../../../tasks/systemd_disable_system.yml"
+  vars:
+    service_name: "{{ disable_unit }}"
+  loop: "{{ disable_role_vars[disable_role ~ '_system_services'] | default([]) }}"
+  loop_control:
+    loop_var: disable_unit
+
+- name: Run the disable hook of {{ disable_role }}
+  ansible.builtin.include_role:
+    name: "{{ disable_role }}"
+    tasks_from: disable
+  when: (playbook_dir ~ '/roles/' ~ disable_role ~ '/tasks/disable.yml') is file

@@ -1,0 +1,21 @@
+---
+# Stops and disables the feature's units, then runs its role's
+# tasks/disable_<feature>.yml hook. No mask, no purge.
+- name: Read the vars of {{ disable_feature.role }}
+  ansible.builtin.include_vars:
+    file: "{{ playbook_dir }}/roles/{{ disable_feature.role }}/vars/main.yml"
+    name: disable_role_vars
+
+- name: Disable user units of {{ disable_feature.name }}
+  ansible.builtin.include_tasks: "../../../tasks/systemd_disable_user.yml"
+  vars:
+    service_name: "{{ disable_unit }}"
+  loop: "{{ disable_role_vars[disable_feature.role ~ '_features'][disable_feature.name].services | default([]) }}"
+  loop_control:
+    loop_var: disable_unit
+
+- name: Run the disable hook of {{ disable_feature.name }}
+  ansible.builtin.include_role:
+    name: "{{ disable_feature.role }}"
+    tasks_from: "disable_{{ disable_feature.name }}"
+  when: (playbook_dir ~ '/roles/' ~ disable_feature.role ~ '/tasks/disable_' ~ disable_feature.name ~ '.yml') is file

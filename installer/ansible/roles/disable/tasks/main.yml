@@ -1,0 +1,12 @@
+---
+- name: Disable roles
+  ansible.builtin.include_tasks: role.yml
+  loop: "{{ disable_roles }}"
+  loop_control:
+    loop_var: disable_role
+
+- name: Disable features
+  ansible.builtin.include_tasks: feature.yml
+  loop: "{{ disable_features | dict2items(key_name='name', value_name='role') }}"
+  loop_control:
+    loop_var: disable_feature
