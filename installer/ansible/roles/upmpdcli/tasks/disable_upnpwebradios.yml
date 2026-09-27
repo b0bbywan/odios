@@ -1,0 +1,20 @@
+---
+# Run by the disable role. Commented, not removed: webradios.yml's ^#? uncomments them.
+- name: Comment out web radio plugins
+  ansible.builtin.lineinfile:
+    path: "/home/{{ target_user }}/.config/upmpdcli/upmpdcli.conf"
+    regexp: "^({{ item }}\\s*=.*)$"
+    line: '#\1'
+    backrefs: true
+  become: "{{ become_for_target_user }}"
+  become_user: "{{ target_user }}"
+  loop:
+    - upradiosuser
+    - upradiostitle
+    - radio-browseruser
+    - radio-browsertitle
+    - radio-paradiseuser
+    - radio-paradisetitle
+    - mother-earth-radiouser
+    - mother-earth-radiotitle
+  notify: Restart upmpdcli
