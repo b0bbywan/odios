@@ -431,6 +431,17 @@ EOF
     echo -e "${BLUE}Playbook completed in $((elapsed / 60))m $((elapsed % 60))s${NC}"
 }
 
+# ─── Installed release ────────────────────────────────────────────────────────
+
+# odioctl replays disable.yml from the release installed here, offline.
+# /var/lib/odio is odioctl's postinst's: no odioctl, nothing kept.
+keep_release() {
+    [[ -d /var/lib/odio ]] || return 0
+    sudo rm -rf /var/lib/odio/release
+    sudo cp -r "${WORK_DIR}" /var/lib/odio/release
+    sudo chmod 0755 /var/lib/odio/release
+}
+
 # ─── Cleanup ──────────────────────────────────────────────────────────────────
 
 cleanup() {
@@ -451,6 +462,7 @@ main() {
     install_dependencies
     download_archive
     run_playbook
+    keep_release
 
     echo ""
     echo -e "${GREEN}═══════════════════════════════════════════════════════════${NC}"
