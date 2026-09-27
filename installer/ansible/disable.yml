@@ -1,8 +1,8 @@
 ---
 # Disables what odioctl was asked to remove, from the installed release: their
 # units stop, their hooks run, then odio_api is replayed so odio-api stops
-# listing them. odioctl passes the removals and install_* as what stays
-# installed, and records state.json itself once this succeeds.
+# listing them. odioctl passes only the removals, install_* come from the
+# prior state, and odioctl records state.json itself once this succeeds.
 # Variables (extra-vars):
 #   odios_disable_roles: [role, …]
 #   odios_disable_features: {feature: its role, …}
@@ -54,6 +54,9 @@
 
     - name: Read prior install state
       ansible.builtin.include_tasks: "tasks/read_state.yml"
+
+    - name: Derive install flags from state
+      ansible.builtin.include_tasks: "tasks/install_flags_from_state.yml"
 
   roles:
     - role: disable
