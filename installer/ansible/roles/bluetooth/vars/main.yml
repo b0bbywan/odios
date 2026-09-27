@@ -3,7 +3,8 @@ bluetooth_version: "2026.9.0b3"
 bluetooth_label: "Bluetooth"
 bluetooth_description: "Bluetooth audio, in and out"
 bluetooth_group: "Audio"
-bluetooth_services:
+# <role>_services are user units; bluetooth.service is the system's.
+bluetooth_system_services:
   - bluetooth.service
 
 # A2DP codec support: a pulseaudio module vs pipewire's own SPA plugin.

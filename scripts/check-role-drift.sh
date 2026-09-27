@@ -91,7 +91,7 @@ if [[ ${#touched[@]} -gt 0 ]]; then
     [[ -n "$desc" ]] || missing+=("${role}_description")
     group=$(awk -v k="${role}_group:" '$1==k {gsub(/"/, "", $2); print $2}' "$vars_file")
     [[ -n "$group" && " $groups " == *" $group "* ]] || missing+=("${role}_group")
-    grep -q "^${role}_services:" "$vars_file" || missing+=("${role}_services")
+    grep -qE "^${role}_(system_)?services:" "$vars_file" || missing+=("${role}_services")
     [[ ${#missing[@]} -eq 0 ]] || incomplete+=("$role: ${missing[*]}")
   done
   if [[ ${#incomplete[@]} -gt 0 ]]; then
