@@ -311,6 +311,65 @@ PYSTATE
     echo "=== audioserver=pipewire OK ==="
 }
 
+# disable.yml as odioctl will run it: only the removals, what stays installed
+# comes from the state. Three roles (a hook, a user unit, a system unit) and two
+# features (one with a unit, one with a hook), on an odio installed without
+# spotifyd: the odio_api replay must not bring it back from the defaults.
+DISABLE_VARS='{
+  "odios_disable_roles": ["shairport_sync", "branding", "bluetooth"],
+  "odios_disable_features": {"mympd": "mpd", "tidal": "upmpdcli"}
+}'
+
+run_disable() {
+    # shellcheck disable=SC2046
+    docker exec $(ansible_exec_user) $(mitogen_exec_env) "${CONTAINER_NAME}" \
+      ansible-playbook -i inventory/localhost.yml \
+        /opt/odios/ansible/disable.yml \
+        $(ansible_extra_flags) \
+        -e "${DISABLE_VARS}" \
+        "$@"
+}
+
+assert_disabled() {
+    echo "=== Asserting the removals landed ==="
+    docker exec -u odio "${CONTAINER_NAME}" bash -c "${USER_SYSTEMD_PRELUDE}"'
+        set -e
+        fail() { echo "ERROR: $*" >&2; exit 1; }
+
+        for unit in shairport-sync.service mympd.service; do
+            st=$(systemctl --user is-enabled "$unit" 2>/dev/null || true)
+            [[ "$st" != enabled ]] || fail "$unit is still enabled"
+            ! systemctl --user is-active --quiet "$unit" || fail "$unit is still active"
+        done
+        for unit in upmpdcli.service odio-api.service; do
+            systemctl --user is-active --quiet "$unit" || fail "$unit is not active"
+        done
+
+        ! grep -q "BLOCK - odio-motd" ~/.profile || fail "~/.profile still hooks odio-motd"
+        [[ ! -e ~/.hushlogin ]] || fail "~/.hushlogin is still there"
+
+        conf=~/.config/upmpdcli/upmpdcli.conf
+        grep -q "^#tidaluser" "$conf" || fail "tidaluser is not commented out"
+        ! grep -q "^tidaluser" "$conf" || fail "tidaluser is still set"
+        grep -q "^qobuzuser" "$conf" || fail "qobuzuser went with tidal"
+
+        conf=~/.config/odio-api/config.yaml
+        for unit in spotifyd.service shairport-sync.service mympd.service bluetooth.service; do
+            ! grep -q "$unit" "$conf" || fail "odio-api still lists $unit"
+        done
+        ! grep -q "^bluetooth:" "$conf" || fail "odio-api still has a bluetooth section"
+    '
+    docker exec "${CONTAINER_NAME}" bash -c '
+        set -e
+        fail() { echo "ERROR: $*" >&2; exit 1; }
+
+        st=$(systemctl is-enabled bluetooth.service 2>/dev/null || true)
+        [[ "$st" != enabled ]] || fail "bluetooth.service is still enabled"
+        ! systemctl is-active --quiet bluetooth.service || fail "bluetooth.service is still active"
+    '
+    echo "=== Removals OK ==="
+}
+
 # Live embedded upgrade with --progress, capturing stdout to assert the callback fired.
 run_odio_upgrade_progress() {
     local tag="$1"
@@ -367,6 +426,8 @@ while [[ "${1:-}" == --* ]]; do
         echo "  install-root [TAG]          - Test install.sh as root, TARGET_USER=odio"
         echo "  install-as-other-user [TAG] - Test install.sh as bob (NOPASSWD sudoer), TARGET_USER=odio"
         echo "  test-pipewire      - Start + run the playbook with audioserver=pipewire, then assert the result"
+        echo "  test-disable       - Start + run the playbook, then disable.yml as odioctl will → assert the removals"
+        echo "  rerun-disable      - Re-run disable.yml without restart (idempotence + same assertions)"
         echo "  rerun-pipewire     - Re-run it without restart (idempotence + same assertions)"
         echo "  test-as-other-user          - Run playbook directly as bob (live mode) → exercises become_for_target_user paths"
         echo "                                TAG examples: latest, pr-2, 2026.3.0"
@@ -387,7 +448,7 @@ while [[ "${1:-}" == --* ]]; do
 done
 
 case "${1:-}" in
-  shell|rerun|rerun-as-other-user|clean|install|install-root|install-as-other-user|test|test-as-other-user|test-pipewire|rerun-pipewire|upgrade|upgrade-from-image-fetch|upgrade-from-image-embedded|upgrade-from-image-odioctl|upgrade-from-image-systemctl|upgrade-from-image-fetch-as-other-user|upgrade-from-image-progress|upgrade-from-image-enable-qbzd)
+  shell|rerun|rerun-as-other-user|clean|install|install-root|install-as-other-user|test|test-as-other-user|test-pipewire|rerun-pipewire|test-disable|rerun-disable|upgrade|upgrade-from-image-fetch|upgrade-from-image-embedded|upgrade-from-image-odioctl|upgrade-from-image-systemctl|upgrade-from-image-fetch-as-other-user|upgrade-from-image-progress|upgrade-from-image-enable-qbzd)
     ACTION="$1"
     shift
     ;;
@@ -479,6 +540,26 @@ case "${ACTION}" in
     echo "=== Re-running playbook (audioserver=pipewire) ==="
     run_playbook -e audioserver=pipewire "$@"
     assert_pipewire
+    ;;
+
+  test-disable)
+    start_container
+    install_ansible
+
+    echo "=== Running playbook (without spotifyd) ==="
+    run_playbook -e install_spotifyd=false "$@"
+
+    echo "=== Running disable.yml ==="
+    run_disable -v
+    assert_disabled
+
+    echo "=== Done ==="
+    ;;
+
+  rerun-disable)
+    echo "=== Re-running disable.yml ==="
+    run_disable
+    assert_disabled
     ;;
 
   rerun-as-other-user)
