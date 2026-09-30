@@ -54,7 +54,7 @@
 # not auto-enabled by the postinst, which does create the empty `odioctl` group.
 - name: Install odioctl v{{ upgrade_odioctl_apt_version }}
   ansible.builtin.apt:
-    name: "odioctl={{ upgrade_odioctl_apt_version }}"
+    name: "odioctl>={{ upgrade_odioctl_apt_version }}"
     state: present
   become: true
   register: upgrade_odioctl_apt
