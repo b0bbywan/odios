@@ -1,6 +1,6 @@
 ---
 upgrade_version: "2026.9.0b3"
-upgrade_odioctl_apt_version: "0.4.0~beta.5"
+upgrade_odioctl_apt_version: "0.4.0~beta.6"
 upgrade_label: "Upgrade"
 upgrade_description: "Keeps odio up to date"
 upgrade_group: "System"
