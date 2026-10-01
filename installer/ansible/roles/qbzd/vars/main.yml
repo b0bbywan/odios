@@ -1,5 +1,5 @@
 ---
-qbzd_version: "2026.9.0b3"
+qbzd_version: "2026.10.0b1"
 qbzd_apt_version: "2.1.2"
 qbzd_label: "Qobuz Connect"
 qbzd_description: "Play from the Qobuz app (experimental)"

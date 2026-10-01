@@ -7,12 +7,12 @@
   vars:
     scaffold_version: '2026.9.0b1'
 
-# True on installs predating odioctl-web-proxy.socket (2026.9.0b3), fresh ones included.
+# True on installs predating odioctl-web-proxy.socket (2026.10.0b1), fresh ones included.
 - name: Resolve odioctl-web proxy socket migration
   ansible.builtin.set_fact:
     upgrade_pre_proxy_socket: >-
       {{ odios_prior_role_versions[ansible_role_name] | default('0')
-         is version('2026.9.0b3', '<', version_type='pep440') }}
+         is version('2026.10.0b1', '<', version_type='pep440') }}
 
 - name: Clean up pre-odioctl upgrade artifacts
   when:

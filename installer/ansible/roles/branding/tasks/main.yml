@@ -1,10 +1,10 @@
 ---
-# odios_role_pre_scaffold: true on installs predating `odioctl motd` (2026.9.0b3),
+# odios_role_pre_scaffold: true on installs predating `odioctl motd` (2026.10.0b1),
 # which replaced the local odio-motd script.
 - name: Resolve prior role version
   ansible.builtin.include_tasks: "../../../tasks/resolve_prior_version.yml"
   vars:
-    scaffold_version: '2026.9.0b3'
+    scaffold_version: '2026.10.0b1'
 
 - name: Hook odio-motd into ~/.profile
   ansible.builtin.blockinfile:
