@@ -1,5 +1,5 @@
 ---
-spotifyd_version: "2026.9.0b3"
+spotifyd_version: "2026.10.0b1"
 spotifyd_apt_version: "0.4.4"
 spotifyd_label: "Spotify Connect"
 spotifyd_description: "Play from the Spotify app"
