@@ -1,5 +1,5 @@
 ---
-bluetooth_version: "2026.9.0b3"
+bluetooth_version: "2026.10.0b1"
 bluetooth_label: "Bluetooth"
 bluetooth_description: "Bluetooth audio, in and out"
 bluetooth_group: "Audio"
