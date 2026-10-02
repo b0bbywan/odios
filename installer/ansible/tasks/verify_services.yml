@@ -43,16 +43,26 @@
       }}
   when: install_mode == "live"
 
-- name: Verify system services are active  # noqa command-instead-of-module
-  ansible.builtin.command: "systemctl is-active {{ item }}"
-  register: _sys_svc_check
-  changed_when: false
-  failed_when: _sys_svc_check.rc != 0
-  loop: "{{ _odios_expected_system_services }}"
+# A role re-enabled with an unchanged config fires no handler: start what is
+# inactive, a failed start fails the run.
+- name: Verify system services
   become: true
   when:
     - install_mode == "live"
     - not _odios_in_container
+  block:
+    - name: Verify system services are active  # noqa command-instead-of-module
+      ansible.builtin.command: "systemctl is-active {{ item }}"
+      register: _sys_svc_check
+      changed_when: false
+      failed_when: _sys_svc_check.rc != 0
+      loop: "{{ _odios_expected_system_services }}"
+  rescue:
+    - name: Start the system services found inactive
+      ansible.builtin.systemd:
+        name: "{{ item }}"
+        state: started
+      loop: "{{ _sys_svc_check.results | rejectattr('rc', 'eq', 0) | map(attribute='item') }}"
 
 - name: Verify system services are enabled (container fallback)  # noqa command-instead-of-module
   ansible.builtin.command: "systemctl is-enabled {{ item }}"
@@ -65,17 +75,26 @@
     - install_mode == "live"
     - _odios_in_container
 
-- name: Verify user services are active  # noqa command-instead-of-module
-  ansible.builtin.command: "systemctl --user is-active {{ item }}"
-  register: _user_svc_check
-  changed_when: false
-  failed_when: _user_svc_check.rc != 0
-  loop: "{{ _odios_expected_user_services }}"
+- name: Verify user services
   environment:
     XDG_RUNTIME_DIR: "/run/user/{{ target_user_uid }}"
   become: "{{ become_for_target_user }}"
   become_user: "{{ target_user }}"
   when: install_mode == "live"
+  block:
+    - name: Verify user services are active  # noqa command-instead-of-module
+      ansible.builtin.command: "systemctl --user is-active {{ item }}"
+      register: _user_svc_check
+      changed_when: false
+      failed_when: _user_svc_check.rc != 0
+      loop: "{{ _odios_expected_user_services }}"
+  rescue:
+    - name: Start the user services found inactive
+      ansible.builtin.systemd:
+        name: "{{ item }}"
+        state: started
+        scope: user
+      loop: "{{ _user_svc_check.results | rejectattr('rc', 'eq', 0) | map(attribute='item') }}"
 
 - name: Health-check summary
   ansible.builtin.debug:
