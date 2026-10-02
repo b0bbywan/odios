@@ -1,5 +1,5 @@
 ---
-pipewire_version: "2026.9.0b3"
+pipewire_version: "2026.10.0b1"
 # odioctl has no notion of the audioserver choice yet, so it would list this
 # as a second Audio component tickable alongside pulseaudio.
 pipewire_catalog: false

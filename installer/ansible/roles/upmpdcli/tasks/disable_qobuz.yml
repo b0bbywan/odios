@@ -1,0 +1,11 @@
+---
+# Run by the disable role. Commented, not removed: qobuz.yml's ^#? uncomments it.
+- name: Comment out qobuz user
+  ansible.builtin.lineinfile:
+    path: "/home/{{ target_user }}/.config/upmpdcli/upmpdcli.conf"
+    regexp: '^(qobuzuser\s*=.*)$'
+    line: '#\1'
+    backrefs: true
+  become: "{{ become_for_target_user }}"
+  become_user: "{{ target_user }}"
+  notify: Restart upmpdcli

@@ -1,5 +1,5 @@
 ---
-mpd_version: "2026.9.0b3"
+mpd_version: "2026.10.0b1"
 mpd_mpd2mpris_apt_version: "0.13.0"
 mpd_mympd_apt_version: "26.0.0"
 mpd_label: "MPD"
@@ -16,6 +16,8 @@ mpd_features:
   mympd:
     label: "myMPD"
     description: "Web player for your music library and web radios"
+    services:
+      - mympd.service
 
 # MPD output plugin per audioserver: the native pipewire plugin when running
 # PipeWire, libpulse otherwise.

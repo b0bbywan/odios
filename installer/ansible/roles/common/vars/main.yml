@@ -1,5 +1,5 @@
 ---
-common_version: "2026.9.0b3"
+common_version: "2026.10.0b1"
 common_label: "Base system"
 common_description: "Core system configuration"
 common_group: "System"

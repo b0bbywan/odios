@@ -1,5 +1,5 @@
 ---
-pulseaudio_version: "2026.9.0b3"
+pulseaudio_version: "2026.10.0b1"
 pulseaudio_opt_in: false
 pulseaudio_label: "PulseAudio"
 pulseaudio_description: "Sound server, with network streaming"

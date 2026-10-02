@@ -1,5 +1,5 @@
 ---
-upmpdcli_version: "2026.9.0b3"
+upmpdcli_version: "2026.10.0b1"
 upmpdcli_label: "UPnP / DLNA"
 upmpdcli_description: "Play from UPnP and OpenHome control apps"
 upmpdcli_group: "Streaming"
