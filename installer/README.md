@@ -15,7 +15,7 @@ Ansible-based "curl | bash" installer to set up a complete audio/multimedia syst
 - **Spotifyd** - Spotify Connect receiver
 - **Snapcast** - Multi-room audio client
 - **myMPD** - Web UI for MPD (default port 8080, override with `MPD_MYMPD_HTTP_PORT`) — also exposes web radio playback
-- **UPnP/DLNA** - Renderer for UPnP application control, with optional Qobuz, Tidal, and web-radio plugins (Tidal signs in from the settings page on port 8021; Qobuz credentials are set manually in `~/.config/upmpdcli/upmpdcli.conf`).
+- **UPnP/DLNA** - Renderer for UPnP application control, with optional Qobuz, Tidal, and web-radio plugins (Tidal signs in from the settings page at `/ui/admin/` on odio-api; Qobuz credentials are set manually in `~/.config/upmpdcli/upmpdcli.conf`).
 - **qbzd** - Qobuz Connect endpoint (experimental, off by default; signs in from the settings page or `qbzd setup`)
 - **Display** - Kiosk browser on an attached screen (`odio-kiosk`, `odio-kiosk@odio.service`; experimental, off by default, amd64/arm64 only)
 - **MPD DiscPlayer** - CD/USB support for MPD
@@ -142,7 +142,7 @@ Each install ships the [odioctl](https://github.com/b0bbywan/odioctl) package (`
 - **`odioctl upgrade verify`** — reads `state.json` and runs schema sanity checks (used in CI / for inspecting an install; exits 0 valid, 1 invalid, 2 missing).
 - **`odioctl pwa-url`** — prints `https://pwa.odio.love/#/i/<ip>` using the source IP of the default route (falls back to `https://pwa.odio.love` if no IP is detectable; handy for the SSH login banner).
 
-`odioctl` also carries `components` (opt roles and features in or out of the next upgrade), `dac` (pick the Raspberry Pi overlay) and `web` (a plain-HTML page for all of the above, socket-activated on port 8021 by `odioctl-web.socket`).
+`odioctl` also carries `components` (opt roles and features in or out of the next upgrade; on `apply`, disabled ones first go through `disable.yml`, which stops and disables their units, runs the role's disable hook and replays `odio_api`, without uninstalling anything, and odioctl drops them from `state.json` only once it succeeds), `dac` (pick the Raspberry Pi overlay) and `web` (a plain-HTML page for all of the above, served on a local unix socket activated by `odioctl-web-proxy.socket`, and proxied by odio-api at `/ui/admin/`).
 
 Its sudoers fragment grants passwordless root for exactly those argv to the `odioctl` group. That is deliberately not the `odio` group, which carries state.json access and also holds the installing user when it differs from `target_user`. Only `target_user` joins `odioctl`: `common` seeds it on a first install, before `loginctl enable-linger` starts the user manager, and the `upgrade` role backfills it on an existing one.
 
@@ -216,32 +216,17 @@ Re-running the same install (e.g. `odioctl upgrade apply --force` against the ve
 already installed) does *not* duplicate the entry: the dedup-consecutive rule
 keeps the history a record of *version transitions*, not invocations.
 
-### Opting out before upgrade
+### Enabling or disabling a component
 
-To keep a role or sub-flag off on the next upgrade, open `~/.cache/odio/state.json` in your editor and add its name to the matching `_excluded` list. Example — skipping the `branding` role and `upnpwebradios` feature:
-
-```diff
- {
-   ...
-   "roles_excluded": [
--
-+    "branding"
-   ],
-   "features_excluded": [
--
-+    "upnpwebradios"
-   ]
- }
-```
-
-Then:
+Toggle a role or feature from the settings page, or from the shell:
 
 ```bash
-odioctl upgrade apply --dry-run --force   # verify the derived INSTALL_* flags
-odioctl upgrade apply                     # apply
+odioctl components list                   # list the components and their state
+odioctl components disable upnpwebradios  # or enable
+odioctl upgrade apply                     # apply the pending change
 ```
 
-Removing an entry from the list opts back in — the next upgrade sees it as unlisted and re-installs it.
+A toggle only records the change in `/var/lib/odio/state.json`; `apply` performs it. Disabled components go first through `disable.yml` (units stopped and disabled, the role's disable hook, `odio_api` replayed so odio-api stops listing them); packages and config stay installed. Then `install.sh` runs for anything to install or upgrade. A re-enabled component is started again by the health-check even if its config did not change.
 
 ## Architecture
 
@@ -251,8 +236,9 @@ Removing an entry from the list opts back in — the next upgrade sees it as unl
 2. It checks prerequisites (OS, arch, Python 3.10+, cryptography, curl, sudo, disk space, systemd)
 3. It downloads the release archive from GitHub into `/tmp`
 4. It runs **vendored** ansible-core from the archive (no Ansible installation required)
-5. The playbook configures the system and starts the services
-6. Temporary files are cleaned up
+5. The playbook configures the system and starts the services, then health-checks them (expected services found inactive are started; a failed start fails the run)
+6. `state.json` is written only once the health-check passes, so a failed upgrade stays pending
+7. Temporary files are cleaned up
 
 ### Release archive
 
@@ -274,6 +260,7 @@ installer/
 ├── install.sh                   # curl|bash entry point (published as-is)
 └── ansible/
     ├── playbook.yml             # Main playbook
+    ├── disable.yml              # Stops disabled components, run by odioctl before install.sh
     ├── inventory/localhost.yml
     ├── group_vars/all.yml       # Default variables
     ├── tasks/
@@ -288,11 +275,13 @@ installer/
         ├── common/              # System prerequisites + linger
         ├── upgrade/             # odioctl package + its systemd user timer / web socket
         ├── branding/            # odio-motd login banner (optional)
+        ├── disable/             # Stops a disabled role/feature's units and runs its disable hook
         ├── pulseaudio/          # PulseAudio + network streaming (AUDIOSERVER=pulseaudio, default)
         ├── pipewire/            # PipeWire + pipewire-pulse (AUDIOSERVER=pipewire, experimental)
         ├── bluetooth/           # Bluetooth audio (A2DP)
         ├── mpd/                 # Music Player Daemon (incl. myMPD web UI sub-feature)
         ├── odio_api/            # REST control API
+        ├── display/             # odio-kiosk on an attached screen (optional, experimental)
         ├── shairport_sync/      # AirPlay (optional)
         ├── snapclient/          # Snapcast (optional)
         ├── upmpdcli/            # UPnP/DLNA (optional)
@@ -333,6 +322,8 @@ mypy                                 # type-check (config: pyproject.toml)
 ```bash
 ./tests/test.sh               # pull image from GHCR + run playbook (ansible installed via pip)
 ./tests/test.sh rerun         # re-run playbook without restarting the container
+./tests/test.sh test-disable  # run playbook, then disable.yml as odioctl does, assert they are stopped
+./tests/test.sh rerun-disable # re-run disable.yml (idempotence)
 ./tests/test.sh shell         # shell into the container
 ./tests/test.sh clean         # remove the container
 ./tests/test.sh --build       # force local image build instead of pulling from GHCR

@@ -72,7 +72,7 @@ Full Home Assistant integration included — odios nodes appear as native media 
                          (Qobuz Connect)
 
 ┌─────────────────────────────────────────────────────┐
-│             odioctl (settings, :8021)               │  ← upgrades, components, DAC, sign-ins
+│       odioctl (settings, via odio-api /ui/admin/)   │  ← upgrades, components, DAC, sign-ins
 └─────────────────────────────────────────────────────┘
 ```
 
@@ -83,7 +83,8 @@ Most service run as **systemd user services** — no root daemons, full per-user
 | Component | Role | Session |
 |-----------|------|---------|
 | [go-odio-api](https://github.com/b0bbywan/go-odio-api) | REST API + embedded UI, bridges systemd / PulseAudio / MPRIS (incl. TrackList queue) / D-Bus / Bluetooth Speaker | user |
-| [odioctl](https://github.com/b0bbywan/odioctl) | Settings page (port 8021) and CLI: upgrades, optional components, DAC overlay, Tidal / Qobuz Connect sign-in, reboot | user |
+| [odioctl](https://github.com/b0bbywan/odioctl) | Settings page (proxied by odio-api at `/ui/admin/`) and CLI: upgrades, optional components, DAC overlay, Tidal / Qobuz Connect sign-in, reboot | user |
+| [odio-kiosk](https://github.com/b0bbywan/odio-framebuffer-ui) | Web dashboard on an attached screen (QtWebEngine 6, Chromium 122), optional, off by default, experimental, amd64/arm64 only | user |
 | [go-mpd-discplayer](https://github.com/b0bbywan/go-mpd-discplayer) | Automatic CD/USB playback with metadata via MPD | user |
 | [PulseAudio](https://www.freedesktop.org/wiki/Software/PulseAudio) *(or [PipeWire](https://pipewire.org/), `AUDIOSERVER=pipewire`, experimental)* | Central audio server, routes all sources to the DAC output — other PCs running PulseAudio or PipeWire can stream to it over the network via TCP/Zeroconf (wired connections only) | user |
 | [MPD](https://www.musicpd.org/) | Music Player Daemon (network, CD/USB) | user |
@@ -125,7 +126,7 @@ See [installer/README.md](installer/README.md) for full installation options, en
 
 ## Settings page
 
-Every odio node serves a settings page at `http://<odio-host>:8021`, also linked from the odio dashboard header. No SSH, no config file to edit:
+Every odio node serves a settings page at `http://<odio-host>:8018/ui/admin/`, also linked from the odio dashboard header. No SSH, no config file to edit:
 
 - **Upgrades** — shows when a new release is available and applies it, then reports when it is done
 - **Components** — add or drop services on a node already in use (e.g. Qobuz Connect); new optional services ship this way
@@ -133,7 +134,7 @@ Every odio node serves a settings page at `http://<odio-host>:8021`, also linked
 - **DAC** — pick the sound card overlay on a Raspberry Pi
 - **Reboot** the node
 
-The page updates itself as things happen, no reload. It is served by `odioctl web`, socket-activated so it only starts on the first connection.
+The page updates itself as things happen, no reload. It is served by `odioctl web` on a local unix socket, proxied by odio-api, and socket-activated so it only starts on the first connection.
 
 ## Upgrading
 
@@ -196,6 +197,7 @@ Upgrading from 2026.7.0rc2 or earlier: the command on those nodes is still `odio
 
 - [go-odio-api](https://github.com/b0bbywan/go-odio-api) — REST API and embedded UI
 - [odioctl](https://github.com/b0bbywan/odioctl) — Settings page and CLI for upgrades, components, DAC and streaming sign-ins
+- [odio-framebuffer-ui](https://github.com/b0bbywan/odio-framebuffer-ui) — `odio-kiosk`, QtWebEngine 6 (Chromium 122) kiosk showing the web dashboard on a screen attached to the node
 - [odio-ha](https://github.com/b0bbywan/odio-ha) — Full Home Assistant integration: odios nodes appear as native HA media players and can be mapped to official integrations to inherit their full capabilities
 - [odio-pwa](https://github.com/b0bbywan/odio-pwa) — Progressive Web App to control multiple odios nodes ([live](https://odio-pwa.vercel.app/))
 - [go-mpd-discplayer](https://github.com/b0bbywan/go-mpd-discplayer) — CD/USB player daemon
