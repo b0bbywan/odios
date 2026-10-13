@@ -43,7 +43,7 @@
 
 # Open-source audiophile distribution for Debian/Ubuntu and Raspberry Pi with native Home Assistant integration.
 
-odios turns a €35 Raspberry Pi into what commercial streamers sell for €300–500: Bluetooth A2DP (in & out), AirPlay, Spotify Connect, Qobuz Connect, Snapcast multi-room, UPnP/DLNA, CD playback with metadata — all in one box, controlled from a web app and managed from a settings page, no SSH, account or subscription required. Other PCs running PulseAudio or PipeWire can also stream directly to it over the network, making it a true whole-home audio sink.
+odios turns a €35 Raspberry Pi into what commercial streamers sell for €300–500: Bluetooth A2DP (in & out), AirPlay, Spotify Connect, Qobuz Connect, Snapcast multi-room, UPnP/DLNA, CD playback with metadata — all in one box, controlled from a web app or a physical remote, and managed from a settings page, no SSH, account or subscription required. Other PCs running PulseAudio or PipeWire can also stream directly to it over the network, making it a true whole-home audio sink.
 
 Built on modern foundations: everything runs as unprivileged systemd user services (no root daemons), orchestrated through a unified REST API written in Go. Battle-tested on a Raspberry Pi B+ (armv6l) for over 6 years without reinstall.
 
@@ -60,7 +60,7 @@ Full Home Assistant integration included — odios nodes appear as native media 
                          │ HTTP
 ┌────────────────────────▼────────────────────────────┐
 │                    go-odio-api                      │  ← unified REST API + embedded UI
-│     systemd · PulseAudio · MPRIS ·  Bluetooth       │
+│ systemd · PulseAudio · MPRIS · Bluetooth · remotes  │
 │                                                     │
 └──────┬──────────┬──────────┬──────────┬─────────────┘
        │          │          │          │
@@ -82,7 +82,7 @@ Most service run as **systemd user services** — no root daemons, full per-user
 
 | Component | Role | Session |
 |-----------|------|---------|
-| [go-odio-api](https://github.com/b0bbywan/go-odio-api) | REST API + embedded UI, bridges systemd / PulseAudio / MPRIS (incl. TrackList queue) / D-Bus / Bluetooth Speaker | user |
+| [go-odio-api](https://github.com/b0bbywan/go-odio-api) | REST API + embedded UI, bridges systemd / PulseAudio / MPRIS (incl. TrackList queue) / D-Bus / Bluetooth Speaker, reads physical remotes (infrared, HDMI-CEC, GPIO buttons) | user |
 | [odioctl](https://github.com/b0bbywan/odioctl) | Settings page (proxied by odio-api at `/ui/admin/`) and CLI: upgrades, optional components, DAC overlay, Tidal / Qobuz Connect sign-in, reboot | user |
 | [odio-kiosk](https://github.com/b0bbywan/odio-framebuffer-ui) | Web dashboard on an attached screen (QtWebEngine 6, Chromium 122), optional, off by default, experimental, amd64/arm64 only | user |
 | [go-mpd-discplayer](https://github.com/b0bbywan/go-mpd-discplayer) | Automatic CD/USB playback with metadata via MPD | user |
@@ -136,6 +136,10 @@ Every odio node serves a settings page at `http://<odio-host>:8018/ui/admin/`, a
 
 The page updates itself as things happen, no reload. It is served by `odioctl web` on a local unix socket, proxied by odio-api, and socket-activated so it only starts on the first connection.
 
+## Remote control
+
+On headless and image installs, odio reads infrared receivers, GPIO buttons and HDMI-CEC adapters (your TV remote) out of the box. Media keys drive play/pause, next/previous, volume and mute on the active player, with no client involved. Bluetooth and USB remotes are opt-in, named in `input.devices` in the odio-api config. Handled devices are grabbed, so their keys reach odio only. The dashboard footer shows the remotes being read. See [Remote controls](https://docs.odio.love/control/remote/).
+
 ## Upgrading
 
 Each install ships [odioctl](https://github.com/b0bbywan/odioctl), the tool behind the settings page. Upgrades show up in the settings page, the odio web UI and Home Assistant, and apply from there. `odioctl upgrade check` runs daily via a systemd user timer and refreshes `/var/cache/odio/upgrades.json`; `odioctl upgrade apply` performs the upgrade.
@@ -183,6 +187,7 @@ Upgrading from 2026.7.0rc2 or earlier: the command on those nodes is still `odio
 | **Multi-room** | ✅ Included (Snapcast) | 💰 Premium only |
 | **CD playback** | ✅ Included with metadata | 💰 Premium only |
 | **Network audio sink** | ✅ PulseAudio/PipeWire TCP (wired) | ❌ Not supported |
+| **Physical remote** | ✅ Included (infrared, HDMI-CEC, GPIO buttons; Bluetooth/USB opt-in) | ⚠️ Plugins only (IR, GPIO buttons) |
 | **Home Assistant** | Native integration | Unofficial community plugin |
 | **Voice assistant / AI** | Via Home Assistant | 💰 CORRD (Premium) |
 | **Embedded UI** | Lightweight HTMX/Tailwind | Node.js/React |
