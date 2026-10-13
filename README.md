@@ -11,7 +11,7 @@
     <a href="https://github.com/b0bbywan/odios/actions/workflows/release.yml"><img src="https://github.com/b0bbywan/odios/actions/workflows/release.yml/badge.svg" alt="Build" /></a>
     <a href="https://github.com/sponsors/b0bbywan"><img src="https://img.shields.io/github/sponsors/b0bbywan?label=Sponsor&logo=GitHub" alt="GitHub Sponsors" /></a>
     <!-- ALL-CONTRIBUTORS-BADGE:START - Do not remove or modify this section -->
-    <a href="#contributors-"><img src="https://img.shields.io/badge/all_contributors-22-orange.svg?style=flat-square" alt="All Contributors" /></a>
+    <a href="#contributors-"><img src="https://img.shields.io/badge/all_contributors-23-orange.svg?style=flat-square" alt="All Contributors" /></a>
     <!-- ALL-CONTRIBUTORS-BADGE:END -->
   </p>
   <p align="center">
@@ -250,6 +250,7 @@ Thanks goes to these wonderful people ([emoji key](https://allcontributors.org/d
     </tr>
     <tr>
       <td align="center" valign="top" width="14.28%"><a href="https://github.com/BzSpi"><img src="https://avatars.githubusercontent.com/u/1766776?v=4?s=100" width="100px;" alt="Spi"/><br /><sub><b>Spi</b></sub></a><br /><a href="https://github.com/b0bbywan/odios/issues/96" title="Bug reports">🐛</a> <a href="https://github.com/b0bbywan/odios/issues/95" title="Ideas, Planning, & Feedback">🤔</a></td>
+      <td align="center" valign="top" width="14.28%"><a href="https://github.com/KlaHe14"><img src="https://avatars.githubusercontent.com/u/340970225?v=4?s=100" width="100px;" alt="KlaHe14"/><br /><sub><b>KlaHe14</b></sub></a><br /><a href="https://github.com/b0bbywan/odios/issues/98" title="Ideas, Planning, & Feedback">🤔</a></td>
     </tr>
   </tbody>
 </table>
