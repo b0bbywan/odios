@@ -50,3 +50,9 @@ bluetooth:
   idleTimeout: 30m
   scanTimeout: 60s
 {% endif %}
+
+{% if is_headless or install_mode == "image" %}
+input:
+  enabled: true
+  cec: true
+{% endif %}
