@@ -2,11 +2,11 @@
 # config.sh — Constants for odios image builder. No logic, only variables.
 
 # Base image URLs — update these when Pi OS releases change
-export PIOS_ARMHF_URL="https://downloads.raspberrypi.com/raspios_lite_armhf/images/raspios_lite_armhf-2025-12-04/2025-12-04-raspios-trixie-armhf-lite.img.xz"
-export PIOS_ARM64_URL="https://downloads.raspberrypi.com/raspios_lite_arm64/images/raspios_lite_arm64-2025-12-04/2025-12-04-raspios-trixie-arm64-lite.img.xz"
+export PIOS_ARMHF_URL="https://downloads.raspberrypi.com/raspios_lite_armhf/images/raspios_lite_armhf-2026-10-06/2026-10-06-raspios-trixie-armhf-lite.img.xz"
+export PIOS_ARM64_URL="https://downloads.raspberrypi.com/raspios_lite_arm64/images/raspios_lite_arm64-2026-10-06/2026-10-06-raspios-trixie-arm64-lite.img.xz"
 
-export PIOS_ARMHF_SHA256="1b3e49b67b15050a9f20a60267c145e6d468dc9559dd9cd945130a11401a49ff"
-export PIOS_ARM64_SHA256="681a775e20b53a9e4c7341d748a5a8cdc822039d8c67c1fd6ca35927abbe6290"
+export PIOS_ARMHF_SHA256="2c302771f34c67a0b7ae7aa2e0dcdd3eac660504be59193c011ba79d412e1632"
+export PIOS_ARM64_SHA256="483db18a48da399b5b7022ffae9a07bc6d99daab30e593aedac09b69ff422843"
 
 # Build parameters
 export IMAGE_GROW_SIZE="2G"
