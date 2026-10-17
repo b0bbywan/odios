@@ -88,3 +88,8 @@
   ansible.builtin.include_tasks: "../../../tasks/systemd_enable_user.yml"
   vars:
     service_name: mpd2mpris.service
+
+- name: Lower mpd2mpris startup CPU weight
+  ansible.builtin.include_tasks: "../../../tasks/systemd_startup_weight_user.yml"
+  vars:
+    service_name: mpd2mpris.service
