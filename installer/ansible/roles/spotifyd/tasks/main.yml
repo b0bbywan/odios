@@ -47,3 +47,8 @@
   vars:
     service_name: spotifyd.service
   when: ansible_role_name not in odios_prior_roles
+
+- name: Lower spotifyd startup CPU weight
+  ansible.builtin.include_tasks: "../../../tasks/systemd_startup_weight_user.yml"
+  vars:
+    service_name: spotifyd.service

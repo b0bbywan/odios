@@ -9,6 +9,7 @@ ExecStart=/usr/bin/snapclient --logsink=system --logfilter=*:info,Avahi:warning 
 # very noisy on stdout
 StandardOutput=null
 Restart=on-failure
+StartupCPUWeight=20
 
 [Install]
 WantedBy=default.target

@@ -1,0 +1,25 @@
+---
+# Lower a user service's CPU weight while the user manager starts, so the audio
+# server, odio-api and mpd come first on a single core; normal weight after.
+# Variables:
+#   service_name: name of the service (e.g. qbzd.service)
+
+- name: Create drop-in directory - {{ service_name }}
+  ansible.builtin.file:
+    path: "/usr/lib/systemd/user/{{ service_name }}.d"
+    state: directory
+    owner: root
+    group: root
+    mode: '0755'
+  become: true
+
+- name: Lower startup CPU weight - {{ service_name }}
+  ansible.builtin.copy:
+    content: |
+      [Service]
+      StartupCPUWeight=20
+    dest: "/usr/lib/systemd/user/{{ service_name }}.d/odio-startup.conf"
+    owner: root
+    group: root
+    mode: '0644'
+  become: true
