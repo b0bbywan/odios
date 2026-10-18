@@ -208,6 +208,10 @@
         {
           "type": "doc",
           "url": "https://github.com/b0bbywan/odios/discussions/71"
+        },
+        {
+          "type": "bug",
+          "url": "https://github.com/b0bbywan/odios/discussions/85"
         }
       ]
     },
@@ -417,6 +421,18 @@
         {
           "type": "ideas",
           "url": "https://github.com/b0bbywan/odios/issues/98"
+        }
+      ]
+    },
+    {
+      "login": "rp1231",
+      "name": "rp1231",
+      "avatar_url": "https://avatars.githubusercontent.com/u/47380919?v=4",
+      "profile": "https://github.com/rp1231",
+      "contributions": [
+        {
+          "type": "ideas",
+          "url": "https://github.com/b0bbywan/odios/issues/94"
         }
       ]
     }

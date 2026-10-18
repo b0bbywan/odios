@@ -11,7 +11,7 @@
     <a href="https://github.com/b0bbywan/odios/actions/workflows/release.yml"><img src="https://github.com/b0bbywan/odios/actions/workflows/release.yml/badge.svg" alt="Build" /></a>
     <a href="https://github.com/sponsors/b0bbywan"><img src="https://img.shields.io/github/sponsors/b0bbywan?label=Sponsor&logo=GitHub" alt="GitHub Sponsors" /></a>
     <!-- ALL-CONTRIBUTORS-BADGE:START - Do not remove or modify this section -->
-    <a href="#contributors-"><img src="https://img.shields.io/badge/all_contributors-23-orange.svg?style=flat-square" alt="All Contributors" /></a>
+    <a href="#contributors-"><img src="https://img.shields.io/badge/all_contributors-24-orange.svg?style=flat-square" alt="All Contributors" /></a>
     <!-- ALL-CONTRIBUTORS-BADGE:END -->
   </p>
   <p align="center">
@@ -236,7 +236,7 @@ Thanks goes to these wonderful people ([emoji key](https://allcontributors.org/d
       <td align="center" valign="top" width="14.28%"><a href="https://github.com/Thomas-O"><img src="https://avatars.githubusercontent.com/u/6567035?v=4?s=100" width="100px;" alt="Thomas-O"/><br /><sub><b>Thomas-O</b></sub></a><br /><a href="https://github.com/b0bbywan/odios/discussions/66" title="Ideas, Planning, & Feedback">🤔</a></td>
     </tr>
     <tr>
-      <td align="center" valign="top" width="14.28%"><a href="https://github.com/voterpublic"><img src="https://avatars.githubusercontent.com/u/112673643?v=4?s=100" width="100px;" alt="voterpublic"/><br /><sub><b>voterpublic</b></sub></a><br /><a href="https://github.com/b0bbywan/odios/discussions/71" title="Documentation">📖</a></td>
+      <td align="center" valign="top" width="14.28%"><a href="https://github.com/voterpublic"><img src="https://avatars.githubusercontent.com/u/112673643?v=4?s=100" width="100px;" alt="voterpublic"/><br /><sub><b>voterpublic</b></sub></a><br /><a href="https://github.com/b0bbywan/odios/discussions/71" title="Documentation">📖</a> <a href="https://github.com/b0bbywan/odios/discussions/85" title="Bug reports">🐛</a></td>
       <td align="center" valign="top" width="14.28%"><a href="https://www.reddit.com/user/Pleasant-Mind-7122/"><img src="https://www.redditstatic.com/avatars/defaults/v2/avatar_default_0.png?s=100" width="100px;" alt="Pleasant-Mind-7122"/><br /><sub><b>Pleasant-Mind-7122</b></sub></a><br /><a href="https://github.com/b0bbywan/odio.love/commit/3d7230bb6b7e780d85cc97aa2c632747d9171e39" title="Bug reports">🐛</a> <a href="https://github.com/b0bbywan/odio.love/commit/3d7230bb6b7e780d85cc97aa2c632747d9171e39" title="Ideas, Planning, & Feedback">🤔</a></td>
       <td align="center" valign="top" width="14.28%"><a href="https://www.reddit.com/user/ThisLeedsGuy/"><img src="https://www.redditstatic.com/avatars/defaults/v2/avatar_default_0.png?s=100" width="100px;" alt="ThisLeedsGuy"/><br /><sub><b>ThisLeedsGuy</b></sub></a><br /><a href="https://docs.odio.love/guides/mpd/#using-a-nas-library" title="Ideas, Planning, & Feedback">🤔</a></td>
       <td align="center" valign="top" width="14.28%"><a href="https://www.reddit.com/user/Sterkenzz/"><img src="https://www.redditstatic.com/avatars/defaults/v2/avatar_default_6.png?s=100" width="100px;" alt="Sterkenzz"/><br /><sub><b>Sterkenzz</b></sub></a><br /><a href="https://docs.odio.love/guides/use-case-htpc/#plex" title="Research">🔬</a></td>
@@ -256,6 +256,7 @@ Thanks goes to these wonderful people ([emoji key](https://allcontributors.org/d
     <tr>
       <td align="center" valign="top" width="14.28%"><a href="https://github.com/BzSpi"><img src="https://avatars.githubusercontent.com/u/1766776?v=4?s=100" width="100px;" alt="Spi"/><br /><sub><b>Spi</b></sub></a><br /><a href="https://github.com/b0bbywan/odios/issues/96" title="Bug reports">🐛</a> <a href="https://github.com/b0bbywan/odios/issues/95" title="Ideas, Planning, & Feedback">🤔</a></td>
       <td align="center" valign="top" width="14.28%"><a href="https://github.com/KlaHe14"><img src="https://avatars.githubusercontent.com/u/340970225?v=4?s=100" width="100px;" alt="KlaHe14"/><br /><sub><b>KlaHe14</b></sub></a><br /><a href="https://github.com/b0bbywan/odios/issues/98" title="Ideas, Planning, & Feedback">🤔</a></td>
+      <td align="center" valign="top" width="14.28%"><a href="https://github.com/rp1231"><img src="https://avatars.githubusercontent.com/u/47380919?v=4?s=100" width="100px;" alt="rp1231"/><br /><sub><b>rp1231</b></sub></a><br /><a href="https://github.com/b0bbywan/odios/issues/94" title="Ideas, Planning, & Feedback">🤔</a></td>
     </tr>
   </tbody>
 </table>
