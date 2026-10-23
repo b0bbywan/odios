@@ -60,10 +60,13 @@
   when: not odio_testing_repo | bool
 
 # Single apt update for the whole run; later roles must not re-update (except upmpdcli's ppa).
+# Temporary: lesbonscomptes.com (upmpdcli repo) is down; don't let a dead
+# third-party source block upgrades. Revert once it's back.
 - name: Update apt cache
   ansible.builtin.apt:
     update_cache: true
   become: true
+  failed_when: false
 
 - name: User systemd directories
   ansible.builtin.file:

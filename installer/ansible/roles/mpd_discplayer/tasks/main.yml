@@ -150,6 +150,25 @@
   become: "{{ become_for_target_user }}"
   notify: Restart mpd-discplayer
 
+- name: Create disc-cuer directory
+  ansible.builtin.file:
+    path: "{{ mpd_music_directory }}/.disc-cuer"
+    state: directory
+    mode: '0775'
+    owner: "{{ target_user }}"
+    group: audio
+  become: true
+
+- name: Create empty .mpdignore in disc-cuer
+  ansible.builtin.copy:
+    content: ""
+    dest: "{{ mpd_music_directory }}/.disc-cuer/.mpdignore"
+    mode: '0644'
+    owner: "{{ target_user }}"
+    group: audio
+    force: false
+  become: true
+
 - name: Enable mpd-discplayer service
   ansible.builtin.include_tasks: "../../../tasks/systemd_enable_user.yml"
   vars:
