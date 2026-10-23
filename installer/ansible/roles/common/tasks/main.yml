@@ -6,6 +6,12 @@
   vars:
     scaffold_version: '2026.5.0b1'
 
+- name: Remove upmpdcli apt sources
+  ansible.builtin.file:
+    path: /etc/apt/sources.list.d/upmpdcli.sources
+    state: absent
+  become: true
+
 - name: APT key setup
   when: ansible_role_name not in odios_prior_roles
   block:
