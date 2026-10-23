@@ -2,29 +2,10 @@
 - name: Upmpdcli repo and config scaffolding (first install)
   when: ansible_role_name not in odios_prior_roles
   block:
-    - name: Download lesbonscomptes GPG key
-      ansible.builtin.get_url:
-        url: "https://www.lesbonscomptes.com/pages/lesbonscomptes.gpg"
-        dest: /usr/share/keyrings/lesbonscomptes.gpg
-        mode: '0644'
-        owner: root
-        group: root
-      become: true
-
-    - name: Download upmpdcli apt sources
-      ansible.builtin.get_url:
-        url: "https://www.lesbonscomptes.com/upmpdcli/pages/upmpdcli-{% if ansible_architecture in ['armv6l', 'armv7l', 'aarch64'] %}r{% endif %}trixie.sources"
-        dest: /etc/apt/sources.list.d/upmpdcli.sources
-        mode: '0644'
-        owner: root
-        group: root
-      become: true
-
     - name: Install upmpdcli
       ansible.builtin.apt:
         name: upmpdcli
         state: present
-        update_cache: true
         install_recommends: false
       become: true
       notify: Restart upmpdcli
