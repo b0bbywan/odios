@@ -1,0 +1,5 @@
+// Raspberry Pi OS arm64 uses Debian's unattended-upgrades defaults, which skip
+// archive.raspberrypi.com (kernel, firmware). No effect on non-Pi systems.
+Unattended-Upgrade::Origins-Pattern {
+        "origin=Raspberry Pi Foundation,codename=${distro_codename},label=Raspberry Pi Foundation";
+};

@@ -131,3 +131,13 @@
     install_recommends: false
   become: true
   when: install_mode == "image"
+
+- name: Allow Raspberry Pi archive in unattended-upgrades (image mode)
+  ansible.builtin.copy:
+    src: 52odio-unattended-upgrades
+    dest: /etc/apt/apt.conf.d/52odio-unattended-upgrades
+    owner: root
+    group: root
+    mode: '0644'
+  become: true
+  when: install_mode == "image"
