@@ -356,7 +356,7 @@ The `--build` flag works with all actions:
 ### Service verification
 
 ```bash
-systemctl --user status pulseaudio pulse-tcp mpd   # AUDIOSERVER=pipewire: pipewire pipewire-pulse wireplumber mpd
+systemctl --user status pulseaudio mpd   # AUDIOSERVER=pipewire: pipewire pipewire-pulse wireplumber mpd
 
 pactl list modules | grep -E "tcp|zeroconf"
 
@@ -428,7 +428,7 @@ sudo apt install python3-cryptography
 ```bash
 journalctl --user -u pulseaudio -u mpd -f
 
-systemctl --user restart pulseaudio pulse-tcp mpd
+systemctl --user restart pulseaudio mpd
 ```
 
 ### "XDG_RUNTIME_DIR not set" error
