@@ -1,0 +1,17 @@
+---
+- name: Disable user units of pulse-tcp.service
+  ansible.builtin.include_tasks: "../../../tasks/systemd_disable_user.yml"
+  vars:
+    service_name: pulse-tcp.service
+
+- name: Remove pulse-tcp script
+  ansible.builtin.file:
+    path: /usr/local/bin/pulse-tcp.sh
+    state: absent
+  become: true
+
+- name: Remove pulse-tcp service
+  ansible.builtin.file:
+    path: "/usr/lib/systemd/user/pulse-tcp.service"
+    state: absent
+  become: true

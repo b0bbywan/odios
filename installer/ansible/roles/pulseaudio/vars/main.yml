@@ -1,5 +1,5 @@
 ---
-pulseaudio_version: "2026.10.0b1"
+pulseaudio_version: "2026.11.0rc1"
 pulseaudio_opt_in: false
 pulseaudio_label: "PulseAudio"
 pulseaudio_description: "Sound server, with network streaming"
@@ -9,7 +9,6 @@ pulseaudio_required: true
 pulseaudio_services:
   - pulseaudio.socket
   - pulseaudio.service
-  - pulse-tcp.service
 # [Install] WantedBy= of units not wanted by default.target.
 pulseaudio_wanted_by:
   pulseaudio.socket: sockets.target

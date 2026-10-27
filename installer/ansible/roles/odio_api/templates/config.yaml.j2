@@ -37,6 +37,14 @@ zeroconf:
 pulseaudio:
   enabled: true
   serve_cookie: true
+  processing:
+    mono:
+      enabled: true
+      onBoot: false
+    networkSink:
+      enabled: true
+      onBoot: true
+      acl: {{ (audioserver == "pulseaudio") | lower }}
 
 mpris:
   enabled: true
