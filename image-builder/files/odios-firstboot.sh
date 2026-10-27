@@ -71,6 +71,11 @@ if [[ "$CURRENT_HOSTNAME" != "$IMAGE_HOSTNAME" ]]; then
     else
         echo "odios-firstboot: ${UPMPDCLI_CONF} not found"
     fi
+
+    # User services may already run with the old name; not started yet is fine too.
+    echo "odios-firstboot: restarting spotifyd/upmpdcli if running..."
+    runuser -u "$ODIOS_USER" -- env XDG_RUNTIME_DIR="/run/user/$(id -u "$ODIOS_USER")" \
+        systemctl --user try-restart spotifyd.service upmpdcli.service || true
 else
     echo "odios-firstboot: hostname unchanged (${CURRENT_HOSTNAME}), skipping config updates"
 fi
