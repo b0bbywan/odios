@@ -70,6 +70,9 @@
     - install_mode == "live"
     - install_snapclient
 
+- name: Disable pulse-tcp
+  ansible.builtin.include_tasks: pulse_tcp.yml
+
 - name: Deploy odio-api configuration
   ansible.builtin.template:
     src: config.yaml.j2
