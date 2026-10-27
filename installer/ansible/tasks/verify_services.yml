@@ -19,15 +19,11 @@
       {{ (['bluetooth.service'] if install_bluetooth | bool else []) }}
   when: install_mode == "live"
 
-# pulseaudio needs real audio hardware to stay up — in docker it starts and dies
-# right back, so pulse-tcp is dropped there; real-system coverage comes from
-# test-install / test-upgrade. pipewire has no such trouble and is always checked.
 - name: Compute expected user services
   ansible.builtin.set_fact:
     _odios_expected_user_services: >-
       {{
         (['pulseaudio.service'] if install_pulseaudio | bool else [])
-        + (['pulse-tcp.service'] if install_pulseaudio | bool and not _odios_in_container else [])
         + (['pipewire.service', 'pipewire-pulse.service', 'wireplumber.service']
            if install_pipewire | bool else [])
         + (['mpd.service', 'mpd2mpris.service'] if install_mpd  | bool else [])
