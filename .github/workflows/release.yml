@@ -148,6 +148,15 @@ jobs:
   build-test-image:
     needs: build
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - variant: ""
+            platforms: linux/amd64,linux/arm64,linux/arm/v7,linux/arm/v6
+            amd64_base: debian:trixie
+          - variant: -ubuntu-26.04
+            platforms: linux/amd64
+            amd64_base: ubuntu:26.04
     outputs:
       image: ${{ steps.meta.outputs.image }}
     steps:
@@ -186,10 +195,11 @@ jobs:
           context: .
           file: tests/Dockerfile.test
           push: true
-          platforms: linux/amd64,linux/arm64,linux/arm/v7,linux/arm/v6
-          tags: ${{ steps.meta.outputs.image }}
-          cache-from: type=registry,ref=ghcr.io/${{ github.repository }}/test:buildcache
-          cache-to: type=registry,ref=ghcr.io/${{ github.repository }}/test:buildcache,mode=max
+          platforms: ${{ matrix.platforms }}
+          build-args: AMD64_BASE=${{ matrix.amd64_base }}
+          tags: ${{ steps.meta.outputs.image }}${{ matrix.variant }}
+          cache-from: type=registry,ref=ghcr.io/${{ github.repository }}/test:buildcache${{ matrix.variant }}
+          cache-to: type=registry,ref=ghcr.io/${{ github.repository }}/test:buildcache${{ matrix.variant }},mode=max
 
   test-playbook:
     needs: build-test-image
@@ -206,15 +216,18 @@ jobs:
             rerun: rerun-pipewire
           - action: test-disable
             rerun: rerun-disable
+          - action: test
+            rerun: rerun
+            variant: -ubuntu-26.04
     steps:
       - uses: actions/checkout@v7
         with:
           fetch-depth: 0
 
-      - name: Run playbook (${{ matrix.action }})
+      - name: Run playbook (${{ matrix.action }}${{ matrix.variant }})
         run: ./tests/test.sh ${{ matrix.action }}
         env:
-          REMOTE_IMAGE: ${{ needs.build-test-image.outputs.image }}
+          REMOTE_IMAGE: ${{ needs.build-test-image.outputs.image }}${{ matrix.variant }}
 
       - name: Re-run playbook (idempotence)
         run: ./tests/test.sh ${{ matrix.rerun }}
@@ -269,15 +282,21 @@ jobs:
       (needs.pre-release.result == 'success' || needs.release.result == 'success')
     runs-on: ubuntu-latest
     strategy:
+      fail-fast: false
       matrix:
-        mode: [install, install-root, install-as-other-user]
+        include:
+          - mode: install
+          - mode: install-root
+          - mode: install-as-other-user
+          - mode: install
+            variant: -ubuntu-26.04
     steps:
       - uses: actions/checkout@v7
 
-      - name: Test curl|bash (${{ matrix.mode }})
+      - name: Test curl|bash (${{ matrix.mode }}${{ matrix.variant }})
         run: ./tests/test.sh ${{ matrix.mode }} ${{ needs.build.outputs.release_tag }}
         env:
-          REMOTE_IMAGE: ${{ needs.build-test-image.outputs.image }}
+          REMOTE_IMAGE: ${{ needs.build-test-image.outputs.image }}${{ matrix.variant }}
 
       - name: Clean
         if: always()
