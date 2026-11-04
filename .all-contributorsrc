@@ -435,6 +435,22 @@
           "url": "https://github.com/b0bbywan/odios/issues/94"
         }
       ]
+    },
+    {
+      "login": "andreasfuessl-cmyk",
+      "name": "andreasfuessl-cmyk",
+      "avatar_url": "https://avatars.githubusercontent.com/u/284752653?v=4",
+      "profile": "https://github.com/andreasfuessl-cmyk",
+      "contributions": [
+        {
+          "type": "bug",
+          "url": "https://github.com/b0bbywan/odios/issues/105"
+        },
+        {
+          "type": "userTesting",
+          "url": "https://github.com/b0bbywan/odios/issues/105"
+        }
+      ]
     }
   ],
   "contributorsPerLine": 7,
