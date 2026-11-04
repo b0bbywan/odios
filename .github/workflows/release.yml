@@ -52,6 +52,8 @@ jobs:
             echo "release_tag=pr-${{ github.event.pull_request.number }}" >> "$GITHUB_OUTPUT"
           fi
 
+      - uses: astral-sh/setup-uv@v10.3.3
+
       - name: Build archive
         env:
           GNU_EMAIL: ${{ secrets.GNU_EMAIL }}

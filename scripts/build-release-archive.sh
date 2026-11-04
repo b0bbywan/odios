@@ -1,6 +1,7 @@
 #!/bin/bash
 # Build the installer archive (playbooks + vendored ansible-core + manifest.json)
 # that install.sh and the image builder download from the GitHub release.
+# ansible-core and its deps come from the `vendor` group of uv.lock; needs uv.
 #
 # Usage: build-release-archive.sh [--name <archive>] [--output <dir>] [<version>]
 #   <version>          stamped into VERSION and manifest.json
@@ -9,12 +10,10 @@
 #   --output <dir>     where the archive and manifest.json land (default: output)
 #
 # Env:
-#   ANSIBLE_CORE_VERSION  pip spec of the vendored ansible-core (default: 2.19.*)
-#   GNU_EMAIL             written to group_vars/all/secrets.yml when set
+#   GNU_EMAIL  written to group_vars/all/secrets.yml when set
 
 set -euo pipefail
 
-ANSIBLE_CORE_VERSION="${ANSIBLE_CORE_VERSION:-2.19.*}"
 NAME=""
 OUTPUT="output"
 while [[ "${1:-}" == --* ]]; do
@@ -34,12 +33,14 @@ NAME="${NAME:-odio-${VERSION}.tar.gz}"
 STAGING=$(mktemp -d)
 trap 'rm -rf "${STAGING}"' EXIT
 
-echo "=== Vendoring ansible-core ${ANSIBLE_CORE_VERSION} ==="
-python3 -m pip install --quiet --no-warn-conflicts --target="${STAGING}/vendor" --no-compile \
-    "ansible-core==${ANSIBLE_CORE_VERSION}"
+echo "=== Vendoring the uv.lock vendor group ==="
+uv export --quiet --frozen --only-group vendor --no-emit-project \
+    --no-emit-package cryptography --no-emit-package cffi --no-emit-package pycparser \
+    -o "${STAGING}/requirements.txt"
+uv pip install --quiet --target="${STAGING}/vendor" --no-deps --require-hashes \
+    -r "${STAGING}/requirements.txt"
+rm "${STAGING}/requirements.txt"
 
-# Native extensions are provided by the system at install time
-rm -rf "${STAGING}"/vendor/cryptography "${STAGING}"/vendor/cryptography-*.dist-info
 find "${STAGING}/vendor" -name '*.so' -delete
 find "${STAGING}/vendor" -depth -type d \( -name '__pycache__' -o -name '*.dist-info' \) \
     -exec rm -rf {} +

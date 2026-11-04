@@ -219,7 +219,7 @@ Upgrading from 2026.7.0rc2 or earlier: the command on those nodes is still `odio
 ./scripts/build-release-archive.sh --name odio-dev.tar.gz --output dist
 ```
 
-Needs `python3` with pip and network access to PyPI. `ANSIBLE_CORE_VERSION` (default `2.19.*`) picks the vendored ansible-core, and `GNU_EMAIL`, when set, goes into `group_vars/all/secrets.yml` for MPD DiscPlayer.
+Needs [uv](https://docs.astral.sh/uv/) and network access to PyPI. The vendored ansible-core and its dependencies are the `vendor` group of `pyproject.toml`, pinned by hash in `uv.lock` (bump with `uv lock --upgrade-package ansible-core`). `GNU_EMAIL`, when set, goes into `group_vars/all/secrets.yml` for MPD DiscPlayer.
 
 ## License
 
