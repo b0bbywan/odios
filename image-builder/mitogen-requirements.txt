@@ -1,0 +1,3 @@
+# Mitogen for the image build's mitogen_linear strategy (never shipped), pinned by hash.
+mitogen==0.3.49 \
+    --hash=sha256:897ba7fc324a3f39d3787de7a9bcd93d055a43dad22a19c78c09b911c8fe2aa7
