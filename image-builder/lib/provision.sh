@@ -57,7 +57,7 @@ provision_image() {
     mkdir -p "$rootfs/tmp/odios"
     tar xzf "$rootfs/tmp/odios.tar.gz" -C "$rootfs/tmp/odios"
     python3 -m pip install --target="$rootfs/tmp/odios/vendor" --no-compile --no-deps \
-        "mitogen==${MITOGEN_VERSION:-0.3.49}"
+        --require-hashes -r "$SCRIPT_DIR/mitogen-requirements.txt"
 
     log_info "Running Ansible playbook inside chroot (odio_version=${odios_version})..."
     chroot "$rootfs" /bin/bash -e <<PROVISION
