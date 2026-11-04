@@ -15,7 +15,6 @@ permissions:
   packages: write
 
 env:
-  ANSIBLE_CORE_VERSION: '2.19.*'
   ARCHIVE_PREFIX: odio
 
 jobs:
@@ -50,60 +49,19 @@ jobs:
             echo "is_release=false" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Vendor ansible-core (pure Python)
-        run: |
-          pip install \
-            --target=staging/vendor \
-            --no-compile \
-            "ansible-core==${{ env.ANSIBLE_CORE_VERSION }}"
-
-          # Collect licenses before stripping dist-info
-          mkdir -p staging/licenses
-          cp licences/ANSIBLE-LICENSE-GPLv3 staging/licenses/ANSIBLE-LICENSE-GPLv3
-          cp LICENSE staging/licenses/ODIOS-LICENSE-BSD2
-
-          # Remove packages with unavoidable native extensions — provided by the system at install time
-          rm -rf staging/vendor/cryptography staging/vendor/cryptography-*.dist-info
-
-          # Strip remaining native extensions and bloat
-          find staging/vendor -name '*.so' -delete
-          find staging/vendor -type d -name '__pycache__' -exec rm -rf {} + 2>/dev/null || true
-          find staging/vendor -type d -name '*.dist-info' -exec rm -rf {} + 2>/dev/null || true
-
-          echo "Vendor size: $(du -sh staging/vendor | cut -f1)"
-
-      - name: Assemble archive
+      - name: Build archive
         env:
           GNU_EMAIL: ${{ secrets.GNU_EMAIL }}
         run: |
-          # Playbooks
-          cp -r installer/ansible staging/ansible
-
-          # Inject secrets
-          if [[ -n "${GNU_EMAIL}" ]]; then
-            echo "mpd_discplayer_gnu_email: \"${GNU_EMAIL}\"" \
-              > staging/ansible/group_vars/all/secrets.yml
-          fi
-
-          # Stamp version
-          echo "${{ steps.meta.outputs.version }}" > staging/VERSION
-
-          # Build per-release role manifest (PyYAML comes with vendored ansible-core)
-          PYTHONPATH=staging/vendor ./scripts/build-manifest.py \
-            "${{ steps.meta.outputs.version }}" \
-            staging/ansible/roles \
-            staging/manifest.json
-
-          tar czf "${{ steps.meta.outputs.archive_name }}" -C staging ansible vendor licenses VERSION manifest.json
-
-          echo "Archive size: $(du -sh ${{ steps.meta.outputs.archive_name }} | cut -f1)"
-          echo "Archive contents:"
-          tar tzf "${{ steps.meta.outputs.archive_name }}" | head -30
+          ./scripts/build-release-archive.sh \
+            --name "${{ steps.meta.outputs.archive_name }}" \
+            --output staging \
+            "${{ steps.meta.outputs.version }}"
 
       - uses: actions/upload-artifact@v7
         with:
           name: playbooks-archive
-          path: ${{ steps.meta.outputs.archive_name }}
+          path: staging/${{ steps.meta.outputs.archive_name }}
           retention-days: 5
 
       - uses: actions/upload-artifact@v7
