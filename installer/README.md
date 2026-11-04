@@ -54,11 +54,11 @@ This applies to: `/etc/bluetooth/main.conf`, `/etc/shairport-sync.conf`, `/etc/d
 
 ## Requirements
 
-- OS: Debian 13, Ubuntu 22.04+, or Raspberry Pi OS (Trixie)
+- OS: Debian 13, Ubuntu 26.04, or Raspberry Pi OS (Trixie)
 - Architecture: ARM (armv6l, armv7l, aarch64) or x86_64
-- Python 3.10+
+- Python 3.12+
 - `python3-cryptography` (present by default on Debian/Ubuntu)
-- `python3-jinja`
+- `python3-jinja2`
 - `curl`
 - Sudo access (or root)
 - Internet connection
@@ -233,8 +233,8 @@ A toggle only records the change in `/var/lib/odio/state.json`; `apply` performs
 ### How it works
 
 1. `install.sh` is downloaded and executed (`curl | bash`)
-2. It checks prerequisites (OS, arch, Python 3.10+, cryptography, curl, sudo, disk space, systemd)
-3. It downloads the release archive from GitHub into `/tmp`
+2. It checks prerequisites (OS, arch, Python 3.12+, cryptography, curl, sudo, disk space, systemd)
+3. It downloads the release archive from GitHub into `/tmp` and checks it against the release's `SHA256SUMS` (releases without one only get a warning)
 4. It runs **vendored** ansible-core from the archive (no Ansible installation required)
 5. The playbook configures the system and starts the services, then health-checks them (expected services found inactive are started; a failed start fails the run)
 6. `state.json` is written only once the health-check passes, so a failed upgrade stays pending
