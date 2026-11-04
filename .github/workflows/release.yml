@@ -28,6 +28,7 @@ jobs:
       archive_name: ${{ steps.meta.outputs.archive_name }}
       version: ${{ steps.meta.outputs.version }}
       is_release: ${{ steps.meta.outputs.is_release }}
+      release_tag: ${{ steps.meta.outputs.release_tag }}
     steps:
       - uses: actions/checkout@v7
         with:
@@ -41,12 +42,14 @@ jobs:
             echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
             echo "archive_name=${ARCHIVE_PREFIX}-${VERSION}.tar.gz" >> "$GITHUB_OUTPUT"
             echo "is_release=true" >> "$GITHUB_OUTPUT"
+            echo "release_tag=${VERSION}" >> "$GITHUB_OUTPUT"
           else
             SHA="${{ github.event.pull_request.head.sha }}"
             VERSION=$(git describe --tags --long --always --match='[0-9][0-9][0-9][0-9].*' "${SHA}")
             echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
             echo "archive_name=${ARCHIVE_PREFIX}-dev.tar.gz" >> "$GITHUB_OUTPUT"
             echo "is_release=false" >> "$GITHUB_OUTPUT"
+            echo "release_tag=pr-${{ github.event.pull_request.number }}" >> "$GITHUB_OUTPUT"
           fi
 
       - name: Build archive
@@ -269,17 +272,8 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
-      - name: Resolve tag
-        id: tag
-        run: |
-          if [[ "${{ needs.build.outputs.is_release }}" == "true" ]]; then
-            echo "value=${{ needs.build.outputs.version }}" >> "$GITHUB_OUTPUT"
-          else
-            echo "value=pr-${{ github.event.pull_request.number }}" >> "$GITHUB_OUTPUT"
-          fi
-
       - name: Test curl|bash (${{ matrix.mode }})
-        run: ./tests/test.sh ${{ matrix.mode }} ${{ steps.tag.outputs.value }}
+        run: ./tests/test.sh ${{ matrix.mode }} ${{ needs.build.outputs.release_tag }}
         env:
           REMOTE_IMAGE: ${{ needs.build-test-image.outputs.image }}
 
@@ -439,17 +433,8 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Resolve target tag
-        id: tag
-        run: |
-          if [[ "${{ needs.build.outputs.is_release }}" == "true" ]]; then
-            echo "value=${{ needs.build.outputs.version }}" >> "$GITHUB_OUTPUT"
-          else
-            echo "value=pr-${{ github.event.pull_request.number }}" >> "$GITHUB_OUTPUT"
-          fi
-
-      - name: "Run upgrade test (${{ matrix.platform }}: ${{ matrix.baseline_tag }}${{ matrix.baseline_variant }} -> ${{ steps.tag.outputs.value }} via ${{ matrix.test_action }})"
-        run: ./tests/test.sh "${{ matrix.test_action }}" "${{ steps.tag.outputs.value }}"
+      - name: "Run upgrade test (${{ matrix.platform }}: ${{ matrix.baseline_tag }}${{ matrix.baseline_variant }} -> ${{ needs.build.outputs.release_tag }} via ${{ matrix.test_action }})"
+        run: ./tests/test.sh "${{ matrix.test_action }}" "${{ needs.build.outputs.release_tag }}"
         env:
           REMOTE_IMAGE: ghcr.io/${{ github.repository }}/test-baseline:${{ matrix.baseline_tag }}-${{ matrix.arch }}${{ matrix.baseline_variant }}
           PLATFORM: ${{ matrix.platform }}
@@ -484,20 +469,11 @@ jobs:
           sudo apt-get install -y qemu-user-static binfmt-support parted \
             e2fsprogs xz-utils wget psmisc zerofree
 
-      - name: Resolve version tag
-        id: tag
-        run: |
-          if [[ "${{ needs.build.outputs.is_release }}" == "true" ]]; then
-            echo "value=${{ needs.build.outputs.version }}" >> "$GITHUB_OUTPUT"
-          else
-            echo "value=pr-${{ github.event.pull_request.number }}" >> "$GITHUB_OUTPUT"
-          fi
-
       - name: Build image
         run: |
           sudo ./image-builder/build.sh build \
             --arch ${{ matrix.arch }} \
-            --version ${{ steps.tag.outputs.value }} \
+            --version ${{ needs.build.outputs.release_tag }} \
             --output ./output
 
       - name: Build per-arch RPi-Imager manifest (pre-release only)
@@ -524,7 +500,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v7
         with:
-          name: odio-${{ matrix.arch }}-${{ steps.tag.outputs.value }}
+          name: odio-${{ matrix.arch }}-${{ needs.build.outputs.release_tag }}
           path: output/odio-*.img.xz
 
   publish-image:
@@ -536,19 +512,10 @@ jobs:
       needs.test-upgrade.result == 'success'
     runs-on: ubuntu-latest
     steps:
-      - name: Resolve version tag
-        id: tag
-        run: |
-          if [[ "${{ needs.build.outputs.is_release }}" == "true" ]]; then
-            echo "value=${{ needs.build.outputs.version }}" >> "$GITHUB_OUTPUT"
-          else
-            echo "value=pr-${{ github.event.pull_request.number }}" >> "$GITHUB_OUTPUT"
-          fi
-
       - name: Download image artifacts
         uses: actions/download-artifact@v8
         with:
-          pattern: odio-*-${{ steps.tag.outputs.value }}
+          pattern: odio-*-${{ needs.build.outputs.release_tag }}
           path: images
           merge-multiple: true
 
@@ -563,7 +530,7 @@ jobs:
       - name: Upload images and per-arch manifests to release
         uses: softprops/action-gh-release@v3
         with:
-          tag_name: ${{ steps.tag.outputs.value }}
+          tag_name: ${{ needs.build.outputs.release_tag }}
           files: |
             images/odio-*.img.xz
             rpi-manifests/odio.*.rpi-imager-manifest
@@ -589,27 +556,18 @@ jobs:
           pattern: manifest-*
           path: entries
 
-      - name: Resolve version tag
-        id: tag
-        run: |
-          if [[ "${{ needs.build.outputs.is_release }}" == "true" ]]; then
-            echo "value=${{ needs.build.outputs.version }}" >> "$GITHUB_OUTPUT"
-          else
-            echo "value=pr-${{ github.event.pull_request.number }}" >> "$GITHUB_OUTPUT"
-          fi
-
       - name: Build combined manifest
         run: ./scripts/build-rpi-manifests.py odio.rpi-imager-manifest entries/manifest-*/*.json
 
       - name: Upload combined manifest to release
         uses: softprops/action-gh-release@v3
         with:
-          tag_name: ${{ steps.tag.outputs.value }}
+          tag_name: ${{ needs.build.outputs.release_tag }}
           files: odio.rpi-imager-manifest
 
       - name: Mark release as final (real releases only)
         if: needs.build.outputs.is_release == 'true'
-        run: gh release edit "${{ steps.tag.outputs.value }}" --prerelease=false --latest=true
+        run: gh release edit "${{ needs.build.outputs.release_tag }}" --prerelease=false --latest=true
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GH_REPO: ${{ github.repository }}
