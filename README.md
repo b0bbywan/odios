@@ -221,6 +221,8 @@ Upgrading from 2026.7.0rc2 or earlier: the command on those nodes is still `odio
 
 Needs [uv](https://docs.astral.sh/uv/) and network access to PyPI. The vendored ansible-core and its dependencies are the `vendor` group of `pyproject.toml`, pinned by hash in `uv.lock` (bump with `uv lock --upgrade-package ansible-core`). `GNU_EMAIL`, when set, goes into `group_vars/all/secrets.yml` for MPD DiscPlayer.
 
+The build is reproducible: the same commit, version and secrets give the same archive, byte for byte.
+
 ## License
 
 This project is licensed under the BSD 2-Clause License — see [LICENSE](LICENSE).
