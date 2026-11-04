@@ -326,11 +326,23 @@ wheels = [
 ]
 
 [[package]]
+name = "mitogen"
+version = "0.3.49"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/81/9d/cef9877c316fa5fbf0b43e4e37b67906ddad86289aa7e7e0b40fca52307e/mitogen-0.3.49.tar.gz", hash = "sha256:3ef56ba1a2a78eeed35958f64b205fe01d598b2974354a4480ff620628804d52", size = 241314, upload-time = "2026-06-03T22:49:48.046Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/e4/f8/2b616723c7c388952e544f6d10d30720703723693f257ce11b5f6210236d/mitogen-0.3.49-py2.py3-none-any.whl", hash = "sha256:897ba7fc324a3f39d3787de7a9bcd93d055a43dad22a19c78c09b911c8fe2aa7", size = 291895, upload-time = "2026-06-03T22:49:46.576Z" },
+]
+
+[[package]]
 name = "odios"
 version = "0"
 source = { virtual = "." }
 
 [package.dev-dependencies]
+image-build = [
+    { name = "mitogen" },
+]
 vendor = [
     { name = "ansible-core" },
 ]
@@ -338,6 +350,7 @@ vendor = [
 [package.metadata]
 
 [package.metadata.requires-dev]
+image-build = [{ name = "mitogen", specifier = "==0.3.49" }]
 vendor = [{ name = "ansible-core", specifier = "==2.19.15" }]
 
 [[package]]
