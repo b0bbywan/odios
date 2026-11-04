@@ -220,8 +220,9 @@ check_python() {
     local py_major py_minor
     py_major=$(python3 -c 'import sys; print(sys.version_info.major)')
     py_minor=$(python3 -c 'import sys; print(sys.version_info.minor)')
-    if [[ "$py_major" -lt 3 ]] || [[ "$py_major" -eq 3 && "$py_minor" -lt 10 ]]; then
-        echo -e "${RED}✗ Python 3.10+ required (found ${py_major}.${py_minor})${NC}"
+    # ansible-core 2.21's minimum on the controller
+    if [[ "$py_major" -lt 3 ]] || [[ "$py_major" -eq 3 && "$py_minor" -lt 12 ]]; then
+        echo -e "${RED}✗ Python 3.12+ required (found ${py_major}.${py_minor})${NC}"
         return 1
     fi
     echo -e "${GREEN}✓ Python ${py_major}.${py_minor}${NC}"
