@@ -8,3 +8,11 @@ updates:
       actions:
         patterns:
           - "*"
+  - package-ecosystem: "uv"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    ignore:
+      # Moving to a new ansible-core series is a deliberate bump
+      - dependency-name: "ansible-core"
+        update-types: ["version-update:semver-major", "version-update:semver-minor"]

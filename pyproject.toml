@@ -1,3 +1,13 @@
+[project]
+name = "odios"
+version = "0"
+requires-python = ">=3.11"
+
+# Vendored into the installer archive by scripts/build-release-archive.sh;
+# cryptography and its deps come from the system.
+[dependency-groups]
+vendor = ["ansible-core==2.19.15"]
+
 [tool.ruff]
 line-length = 100
 target-version = "py310"
