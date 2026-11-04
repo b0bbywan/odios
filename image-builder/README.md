@@ -65,7 +65,7 @@ sudo ./image-builder/build.sh clean --workdir /tmp/odios-build
 1. **Download** Pi OS Lite base image, verify SHA256
 2. **Prepare** -- copy, grow by 2G, losetup, resize partition
 3. **Chroot** -- mount filesystems, set up QEMU user-mode emulation
-4. **Provision** -- download odios release archive, run Ansible playbook (`install_mode=image`)
+4. **Provision** -- download odios release archive, verify it against `SHA256SUMS`, run Ansible playbook (`install_mode=image`)
 5. **Firstboot** -- install `odios-firstboot.service` (updates service names if hostname changes)
 6. **Upgrade** -- `apt-get upgrade` to ship with latest packages
 7. **Verify** -- check `init_resize` is present in `cmdline.txt` for first-boot auto-expand
@@ -98,7 +98,7 @@ Cloud-init customization (hostname, SSH, WiFi, user creation) is fully supported
 
 Pi Imager 2.0+ does not offer customization for images loaded via "Use custom" directly (missing metadata, [rpi-imager#1302](https://github.com/raspberrypi/rpi-imager/issues/1302)). Two alternatives:
 
-**cloud-init manually**: Download and flash the `.img.xz` from the GitHub release, then mount the boot partition and create `user-data` and `network-config` files:
+**cloud-init manually**: Download the `.img.xz` from the GitHub release, check it against its `image_download_sha256` in `odio.rpi-imager-manifest` (see [Verifying downloads](../README.md#verifying-downloads)) and flash it, then mount the boot partition and create `user-data` and `network-config` files:
 
 ```yaml
 # user-data (on boot partition)

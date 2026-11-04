@@ -124,6 +124,28 @@ The installer works on both fresh and existing systems (idempotent, safe to re-r
 
 See [installer/README.md](installer/README.md) for full installation options, environment variables, and testing.
 
+### Verifying downloads
+
+Each release publishes a `SHA256SUMS` covering the installer archive, `install.sh` and `manifest.json`. `install.sh` checks the archive against it on its own. To check a file you downloaded yourself, from the same directory:
+
+```bash
+curl -fsSLO https://github.com/b0bbywan/odios/releases/download/<version>/SHA256SUMS
+sha256sum -c --ignore-missing SHA256SUMS
+```
+
+Images are covered by `odio.rpi-imager-manifest`: Raspberry Pi Imager checks each image against its `image_download_sha256`. For an image downloaded by hand, compare `sha256sum odio-<version>-<arch>.img.xz` with that value.
+
+These checksums come from the same GitHub release as the files: they catch a corrupt download, not a tampered release. For that, every asset (archive, `install.sh`, `manifest.json`, images and Imager manifests) carries a build provenance attestation, signed through Sigstore by the release workflow. Verifying it with the [GitHub CLI](https://cli.github.com/) proves the file was built by `release.yml` in this repository, from that tag:
+
+```bash
+gh attestation verify odio-<version>.tar.gz \
+  --repo b0bbywan/odios \
+  --signer-workflow b0bbywan/odios/.github/workflows/release.yml \
+  --source-ref refs/tags/<version>
+```
+
+To check `install.sh` before running it, download it, verify it the same way, then run `bash install.sh`.
+
 ## Settings page
 
 Every odio node serves a settings page at `http://<odio-host>:8018/ui/admin/`, also linked from the odio dashboard header. No SSH, no config file to edit:
@@ -208,6 +230,20 @@ Upgrading from 2026.7.0rc2 or earlier: the command on those nodes is still `odio
 - [go-mpd-discplayer](https://github.com/b0bbywan/go-mpd-discplayer) — CD/USB player daemon
 - [mpd2mpris](https://github.com/b0bbywan/mpd2mpris) — MPRIS bridge for MPD with CUE and remote cover art support
 - [Snapclientmpris](https://github.com/b0bbywan/snapclientmpris) — MPRIS bridge for snapclient
+
+## Building the installer archive
+
+`install.sh` and the image builder download `odio-<version>.tar.gz` from the GitHub release: the playbooks, a vendored pure-Python ansible-core, the licenses, a `VERSION` stamp and the release's `manifest.json`. CI builds it with the same script you can run locally:
+
+```bash
+./scripts/build-release-archive.sh                    # output/odio-<git describe>.tar.gz + output/manifest.json
+./scripts/build-release-archive.sh 2026.10.0b1        # stamp a given version
+./scripts/build-release-archive.sh --name odio-dev.tar.gz --output dist
+```
+
+Needs [uv](https://docs.astral.sh/uv/) and network access to PyPI. The vendored ansible-core and its dependencies are the `vendor` group of `pyproject.toml`, pinned by hash in `uv.lock` (bump with `uv lock --upgrade-package ansible-core`). `GNU_EMAIL`, when set, goes into `group_vars/all/secrets.yml` for MPD DiscPlayer.
+
+The build is reproducible: the same commit, version and secrets give the same archive, byte for byte.
 
 ## License
 
