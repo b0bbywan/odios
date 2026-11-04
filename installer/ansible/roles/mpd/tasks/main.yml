@@ -147,6 +147,7 @@
       audio_output {
           type        "{{ mpd_audioserver_output[audioserver].type }}"
           name        "{{ mpd_audioserver_output[audioserver].name }}"
+          mixer_type  "software"
       }
   become: "{{ become_for_target_user }}"
   become_user: "{{ target_user }}"
