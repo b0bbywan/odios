@@ -459,9 +459,11 @@ case "${1:-}" in
 esac
 
 install_ansible() {
-    echo "=== Installing ansible-core + mitogen ==="
+    local pins
+    mapfile -t pins < <(./scripts/lock-pin.py ansible-core mitogen)
+    echo "=== Installing ${pins[*]} ==="
     docker exec "${CONTAINER_NAME}" \
-      pip3 install --break-system-packages --quiet "ansible-core==2.19.*" "mitogen==0.3.49"
+      pip3 install --break-system-packages --quiet "${pins[@]}"
 }
 
 # Enable Mitogen on the direct playbook path via env vars (CI speedup);
