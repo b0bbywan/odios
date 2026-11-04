@@ -209,6 +209,18 @@ Upgrading from 2026.7.0rc2 or earlier: the command on those nodes is still `odio
 - [mpd2mpris](https://github.com/b0bbywan/mpd2mpris) — MPRIS bridge for MPD with CUE and remote cover art support
 - [Snapclientmpris](https://github.com/b0bbywan/snapclientmpris) — MPRIS bridge for snapclient
 
+## Building the installer archive
+
+`install.sh` and the image builder download `odio-<version>.tar.gz` from the GitHub release: the playbooks, a vendored pure-Python ansible-core, the licenses, a `VERSION` stamp and the release's `manifest.json`. CI builds it with the same script you can run locally:
+
+```bash
+./scripts/build-release-archive.sh                    # output/odio-<git describe>.tar.gz + output/manifest.json
+./scripts/build-release-archive.sh 2026.10.0b1        # stamp a given version
+./scripts/build-release-archive.sh --name odio-dev.tar.gz --output dist
+```
+
+Needs `python3` with pip and network access to PyPI. `ANSIBLE_CORE_VERSION` (default `2.19.*`) picks the vendored ansible-core, and `GNU_EMAIL`, when set, goes into `group_vars/all/secrets.yml` for MPD DiscPlayer.
+
 ## License
 
 This project is licensed under the BSD 2-Clause License — see [LICENSE](LICENSE).
