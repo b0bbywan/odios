@@ -451,6 +451,22 @@
           "url": "https://github.com/b0bbywan/odios/pull/111"
         }
       ]
+    },
+    {
+      "login": "afuessl",
+      "name": "a.fuessl",
+      "avatar_url": "https://avatars.githubusercontent.com/u/182667799?v=4",
+      "profile": "https://github.com/afuessl",
+      "contributions": [
+        {
+          "type": "bug",
+          "url": "https://github.com/b0bbywan/odios/issues/105"
+        },
+        {
+          "type": "userTesting",
+          "url": "https://github.com/b0bbywan/odios/issues/105"
+        }
+      ]
     }
   ],
   "contributorsPerLine": 7,
