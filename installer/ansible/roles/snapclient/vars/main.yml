@@ -1,5 +1,5 @@
 ---
-snapclient_version: "2026.10.0b2"
+snapclient_version: "2026.11.0rc1"
 snapclient_snapclientmpris_version: "1.3.0"
 snapclient_label: "Snapcast"
 snapclient_description: "Synchronized multi-room playback"
@@ -9,7 +9,8 @@ snapclient_services:
   - snapclientmpris.service
 
 # snapclient players are alsa/pulse/file only — PipeWire is driven through its
-# pulse compatibility layer.
+# pulse compatibility layer. Own media.role: the default "music" shares its
+# stream-restore volume/mute with the Bluetooth loopback.
 snapclient_audioserver_player:
-  pulseaudio: "pulse"
-  pipewire: "pulse"
+  pulseaudio: "pulse:property=media.role=snapcast"
+  pipewire: "pulse:property=media.role=snapcast"
