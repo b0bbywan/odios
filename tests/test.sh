@@ -295,7 +295,8 @@ assert_pipewire() {
         grep -q "output_backend = \"pa\";" "$conf" \
             || fail "shairport-sync output_backend is not pa"
 
-        grep -q -- "--player pulse" /usr/lib/systemd/user/snapclient.service \
+        conf=$HOME/.config/snapclient/snapclient.conf
+        grep -q -- "--player pulse" "$conf" \
             || fail "snapclient no longer reaches pipewire through pulse"
 
         python3 <<\PYSTATE

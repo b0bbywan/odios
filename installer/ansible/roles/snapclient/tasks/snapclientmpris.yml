@@ -7,13 +7,15 @@
   become: true
   notify: Restart snapclientmpris
 
-- name: Lower snapclientmpris startup CPU weight
-  ansible.builtin.include_tasks: "../../../tasks/systemd_startup_weight_user.yml"
-  vars:
-    service_name: snapclientmpris.service
-
-- name: Enable user snapclient service
-  ansible.builtin.include_tasks: "../../../tasks/systemd_enable_user.yml"
-  vars:
-    service_name: snapclientmpris.service
+- name: Snapclientmpris scaffold
   when: odios_role_pre_scaffold | bool
+  block:
+    - name: Lower snapclientmpris startup CPU weight
+      ansible.builtin.include_tasks: "../../../tasks/systemd_startup_weight_user.yml"
+      vars:
+        service_name: snapclientmpris.service
+
+    - name: Enable user snapclientmpris service
+      ansible.builtin.include_tasks: "../../../tasks/systemd_enable_user.yml"
+      vars:
+        service_name: snapclientmpris.service
