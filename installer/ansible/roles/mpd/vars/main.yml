@@ -1,6 +1,6 @@
 ---
 mpd_version: "2026.11.0rc1"
-mpd_mpd2mpris_apt_version: "0.13.0"
+mpd_mpd2mpris_apt_version: "0.13.1"
 mpd_mympd_apt_version: "26.0.0"
 mpd_label: "MPD"
 mpd_description: "Music library on USB drives, CDs and network shares"

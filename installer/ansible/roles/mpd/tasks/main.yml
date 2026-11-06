@@ -1,10 +1,10 @@
 ---
 # odios_role_pre_scaffold: true on installs predating the latest mpd scaffold
-# (myMPD home shortcuts, 2026.5.0b3); gates every mpd migration.
+# (mpd2mpris startup weight, 2026.11.0rc1); gates every mpd migration.
 - name: Resolve prior role version
   ansible.builtin.include_tasks: "../../../tasks/resolve_prior_version.yml"
   vars:
-    scaffold_version: '2026.5.0b3'
+    scaffold_version: '2026.11.0rc1'
 
 - name: MPD packages, system unit and directories (first install)
   when: ansible_role_name not in odios_prior_roles
