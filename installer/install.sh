@@ -309,6 +309,29 @@ install_dependencies() {
 
 # ─── Archive download ─────────────────────────────────────────────────────────
 
+# SHA256SUMS comes from the same release: catches a corrupt download, not a
+# tampered release. Releases published before SHA256SUMS only get a warning.
+verify_archive() {
+    local sums_url="$1" archive="$2"
+    local name="${archive##*/}" sums expected actual
+
+    if ! sums=$(curl -fsSL "$sums_url"); then
+        echo -e "${YELLOW}⚠ No SHA256SUMS in this release, archive not verified${NC}"
+        return 0
+    fi
+    expected=$(awk -v n="$name" '$2 == n {print $1}' <<<"$sums")
+    if [[ -z "$expected" ]]; then
+        echo -e "${RED}✗ ${name} is not listed in SHA256SUMS${NC}"
+        exit 1
+    fi
+    actual=$(sha256sum "$archive" | cut -d' ' -f1)
+    if [[ "$actual" != "$expected" ]]; then
+        echo -e "${RED}✗ SHA256 mismatch for ${name}${NC}"
+        exit 1
+    fi
+    echo -e "${GREEN}✓ Archive checksum verified${NC}"
+}
+
 download_archive() {
     WORK_DIR=$(mktemp -d)
 
@@ -331,8 +354,12 @@ download_archive() {
         exit 1
     fi
 
+    local archive="${WORK_DIR}/${download_url##*/}"
     echo -e "${BLUE}Downloading ${download_url}...${NC}"
-    curl -fsSL "$download_url" | tar -xzf - -C "$WORK_DIR"
+    curl -fsSL -o "$archive" "$download_url"
+    verify_archive "${download_url%/*}/SHA256SUMS" "$archive"
+    tar -xzf "$archive" -C "$WORK_DIR"
+    rm -f "$archive"
 
     local version_file="${WORK_DIR}/VERSION"
     if [[ -f "$version_file" ]]; then
