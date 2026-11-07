@@ -31,6 +31,20 @@ provision_image() {
         log_error "Failed to download release archive (version '${version}' may not exist)"
         exit 1
     fi
+    # Same check as install.sh: fail on mismatch, warn when SHA256SUMS is absent
+    local sums expected actual
+    if sums=$(wget -qO- "${download_url%/*}/SHA256SUMS"); then
+        expected=$(awk -v n="${download_url##*/}" '$2 == n {print $1}' <<<"$sums")
+        actual=$(sha256sum "$rootfs/tmp/odios.tar.gz" | cut -d' ' -f1)
+        if [[ -z "$expected" || "$actual" != "$expected" ]]; then
+            rm -f "$rootfs/tmp/odios.tar.gz"
+            log_error "Archive does not match SHA256SUMS"
+            exit 1
+        fi
+        log_info "Archive checksum verified"
+    else
+        log_warn "No SHA256SUMS in release '${version}', archive not verified"
+    fi
     if ! tar tzf "$rootfs/tmp/odios.tar.gz" &>/dev/null; then
         rm -f "$rootfs/tmp/odios.tar.gz"
         log_error "Downloaded file is not a valid tar.gz archive"
