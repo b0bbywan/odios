@@ -84,6 +84,7 @@ jobs:
         with:
           sparse-checkout: |
             installer/install.sh
+            scripts/release-sha256sums.sh
           sparse-checkout-cone-mode: false
 
       - uses: actions/download-artifact@v8
@@ -110,6 +111,15 @@ jobs:
             manifest.json
           generate_release_notes: true
 
+      # Images are covered by image_download_sha256 in the Imager manifest.
+      - name: Publish SHA256SUMS
+        run: |
+          ./scripts/release-sha256sums.sh "${{ needs.build.outputs.release_tag }}" \
+            "${{ needs.build.outputs.archive_name }}" install.sh manifest.json
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+
   pre-release:
     needs: build
     if: needs.build.outputs.is_release == 'false' && github.event_name == 'pull_request'
@@ -119,6 +129,7 @@ jobs:
         with:
           sparse-checkout: |
             installer/install.sh
+            scripts/release-sha256sums.sh
           sparse-checkout-cone-mode: false
 
       - uses: actions/download-artifact@v8
@@ -144,6 +155,14 @@ jobs:
             Pre-release automatique pour la PR #${{ github.event.pull_request.number }}.
 
             **Commit :** `${{ github.event.pull_request.head.sha }}`
+
+      - name: Publish SHA256SUMS
+        run: |
+          ./scripts/release-sha256sums.sh "${{ needs.build.outputs.release_tag }}" \
+            "${{ needs.build.outputs.archive_name }}" install.sh manifest.json
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
 
   build-test-image:
     needs: build
