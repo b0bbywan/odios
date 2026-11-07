@@ -45,12 +45,12 @@ RUN rm -f /lib/systemd/system/multi-user.target.wants/* \
 RUN useradd -m -s /bin/bash odio && \
     echo 'odio ALL=(ALL) NOPASSWD:ALL' > /etc/sudoers.d/odio
 
+WORKDIR /opt/odios/ansible
+
+# COPY-only stage with --link: cached base layers are never pulled.
 FROM system AS final
 
-COPY installer/ansible /opt/odios/ansible
-RUN chown -R odio:odio /opt/odios
-
-WORKDIR /opt/odios/ansible
+COPY --link installer/ansible /opt/odios/ansible
 
 VOLUME ["/sys/fs/cgroup"]
 STOPSIGNAL SIGRTMIN+3
