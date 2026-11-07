@@ -34,7 +34,7 @@ jobs:
       - uses: actions/setup-python@v7
         with:
           python-version: '3.12'
-      - run: pip install pyyaml "ansible-core==2.19.*"
+      - run: pip install pyyaml "$(./scripts/lock-pin.py ansible-core)"
       - run: python3 -m unittest discover -v tests
 
   python-lint:

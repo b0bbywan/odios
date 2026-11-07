@@ -1,13 +1,25 @@
+[project]
+name = "odios"
+version = "0"
+requires-python = ">=3.12"
+
+# vendor: vendored into the installer archive by scripts/build-release-archive.sh,
+# cryptography and its deps come from the system. image-build: the image builder's
+# Mitogen. Installs without uv read their pins with scripts/lock-pin.py.
+[dependency-groups]
+vendor = ["ansible-core==2.21.6"]
+image-build = ["mitogen==0.3.54"]
+
 [tool.ruff]
 line-length = 100
-target-version = "py310"
+target-version = "py312"
 extend-exclude = ["installer/ansible/vendor", "tests/__pycache__"]
 
 [tool.ruff.lint]
 select = ["E", "F", "W", "B", "I", "UP", "SIM", "RUF"]
 
 [tool.mypy]
-python_version = "3.10"
+python_version = "3.12"
 check_untyped_defs = true
 no_implicit_optional = true
 warn_unused_ignores = true
@@ -18,6 +30,7 @@ mypy_path = ["installer/ansible/callback_plugins"]
 files = [
     "installer/ansible/callback_plugins/odio_progress.py",
     "scripts/build-manifest.py",
+    "scripts/lock-pin.py",
     "scripts/build-rpi-manifests.py",
     "tests/test_odio_progress.py",
 ]

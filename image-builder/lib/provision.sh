@@ -56,8 +56,9 @@ provision_image() {
     # mitogen_linear strategy (CI build speedup; never shipped — /tmp is wiped).
     mkdir -p "$rootfs/tmp/odios"
     tar xzf "$rootfs/tmp/odios.tar.gz" -C "$rootfs/tmp/odios"
+    "$SCRIPT_DIR/../scripts/lock-pin.py" --hashes mitogen > "$rootfs/tmp/mitogen-requirements.txt"
     python3 -m pip install --target="$rootfs/tmp/odios/vendor" --no-compile --no-deps \
-        "mitogen==${MITOGEN_VERSION:-0.3.49}"
+        --require-hashes -r "$rootfs/tmp/mitogen-requirements.txt"
 
     log_info "Running Ansible playbook inside chroot (odio_version=${odios_version})..."
     chroot "$rootfs" /bin/bash -e <<PROVISION

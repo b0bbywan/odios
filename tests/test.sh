@@ -13,6 +13,7 @@ _DEFAULT_TAG="$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo latest)"
 _DEFAULT_TAG="${_DEFAULT_TAG//\//-}"   # docker tags reject '/', branch names don't
 REMOTE_IMAGE="${REMOTE_IMAGE:-ghcr.io/${GITHUB_REPO}/test:${_DEFAULT_TAG}}"
 PLATFORM="${PLATFORM:-}"  # e.g. linux/arm64, linux/arm/v7, linux/arm/v6
+AMD64_BASE="${AMD64_BASE:-}"  # amd64 base for local builds, e.g. ubuntu:26.04
 BUILD_LOCAL=false
 
 # ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -33,19 +34,25 @@ platform_flags() {
     [[ -n "${PLATFORM}" ]] && echo "--platform ${PLATFORM}" || true
 }
 
+build_flags() {
+    platform_flags
+    [[ -n "${AMD64_BASE}" ]] && echo "--build-arg AMD64_BASE=${AMD64_BASE}" || true
+}
+
 resolve_image() {
     local pflags; pflags=$(platform_flags)
+    local bflags; bflags=$(build_flags)
     if [[ "${BUILD_LOCAL}" == "true" ]]; then
         echo "=== Building image locally ==="
         # shellcheck disable=SC2086
-        docker build ${pflags} -t "${REMOTE_IMAGE}" -f tests/Dockerfile.test .
+        docker build ${bflags} -t "${REMOTE_IMAGE}" -f tests/Dockerfile.test .
     else
         echo "=== Pulling image ==="
         # shellcheck disable=SC2086
         docker pull ${pflags} "${REMOTE_IMAGE}" || {
             echo "Pull failed, falling back to local build..."
             # shellcheck disable=SC2086
-            docker build ${pflags} -t "${REMOTE_IMAGE}" -f tests/Dockerfile.test .
+            docker build ${bflags} -t "${REMOTE_IMAGE}" -f tests/Dockerfile.test .
         }
     fi
 }
@@ -459,9 +466,11 @@ case "${1:-}" in
 esac
 
 install_ansible() {
-    echo "=== Installing ansible-core + mitogen ==="
+    local pins
+    mapfile -t pins < <(./scripts/lock-pin.py ansible-core mitogen)
+    echo "=== Installing ${pins[*]} ==="
     docker exec "${CONTAINER_NAME}" \
-      pip3 install --break-system-packages --quiet "ansible-core==2.19.*" "mitogen==0.3.49"
+      pip3 install --break-system-packages --quiet "${pins[@]}"
 }
 
 # Enable Mitogen on the direct playbook path via env vars (CI speedup);
