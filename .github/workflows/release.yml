@@ -24,6 +24,10 @@ jobs:
   build:
     needs: checks
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+      attestations: write
     outputs:
       archive_name: ${{ steps.meta.outputs.archive_name }}
       version: ${{ steps.meta.outputs.version }}
@@ -63,6 +67,14 @@ jobs:
             --output staging \
             "${{ steps.meta.outputs.version }}"
 
+      - name: Attest archive, manifest.json and install.sh
+        uses: actions/attest@v4
+        with:
+          subject-path: |
+            staging/${{ steps.meta.outputs.archive_name }}
+            staging/manifest.json
+            installer/install.sh
+
       - uses: actions/upload-artifact@v7
         with:
           name: playbooks-archive
@@ -79,12 +91,16 @@ jobs:
     needs: build
     if: needs.build.outputs.is_release == 'true'
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      attestations: read
     steps:
       - uses: actions/checkout@v7
         with:
           sparse-checkout: |
             installer/install.sh
             scripts/release-sha256sums.sh
+            scripts/verify-release-attestations.sh
           sparse-checkout-cone-mode: false
 
       - uses: actions/download-artifact@v8
@@ -120,16 +136,28 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GH_REPO: ${{ github.repository }}
 
+      - name: Verify attestations
+        run: |
+          ./scripts/verify-release-attestations.sh "${{ needs.build.outputs.release_tag }}" \
+            "${{ needs.build.outputs.archive_name }}" install.sh manifest.json
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+
   pre-release:
     needs: build
     if: needs.build.outputs.is_release == 'false' && github.event_name == 'pull_request'
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      attestations: read
     steps:
       - uses: actions/checkout@v7
         with:
           sparse-checkout: |
             installer/install.sh
             scripts/release-sha256sums.sh
+            scripts/verify-release-attestations.sh
           sparse-checkout-cone-mode: false
 
       - uses: actions/download-artifact@v8
@@ -159,6 +187,14 @@ jobs:
       - name: Publish SHA256SUMS
         run: |
           ./scripts/release-sha256sums.sh "${{ needs.build.outputs.release_tag }}" \
+            "${{ needs.build.outputs.archive_name }}" install.sh manifest.json
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+
+      - name: Verify attestations
+        run: |
+          ./scripts/verify-release-attestations.sh "${{ needs.build.outputs.release_tag }}" \
             "${{ needs.build.outputs.archive_name }}" install.sh manifest.json
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -492,6 +528,10 @@ jobs:
       needs.build.result == 'success' &&
       (needs.pre-release.result == 'success' || needs.release.result == 'success')
     runs-on: ${{ matrix.runner }}
+    permissions:
+      contents: read
+      id-token: write
+      attestations: write
     strategy:
       fail-fast: false
       matrix:
@@ -516,12 +556,23 @@ jobs:
             --version ${{ needs.build.outputs.release_tag }} \
             --output ./output
 
+      - name: Attest image
+        uses: actions/attest@v4
+        with:
+          subject-path: output/odio-*.img.xz
+
       - name: Build per-arch RPi-Imager manifest (pre-release only)
         if: needs.build.outputs.is_release != 'true'
         run: |
           ./scripts/build-rpi-manifests.py \
             "odio.${{ matrix.arch }}.rpi-imager-manifest" \
             output/odio-*.json
+
+      - name: Attest per-arch RPi-Imager manifest (pre-release only)
+        if: needs.build.outputs.is_release != 'true'
+        uses: actions/attest@v4
+        with:
+          subject-path: odio.${{ matrix.arch }}.rpi-imager-manifest
 
       - name: Upload per-arch manifest entry
         uses: actions/upload-artifact@v7
@@ -582,6 +633,10 @@ jobs:
       needs.build-image.result == 'success' &&
       needs.test-upgrade.result == 'success'
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      id-token: write
+      attestations: write
     steps:
       # Checkout MUST run before download-artifact: actions/checkout wipes the
       # working directory, which would nuke `entries/` if the order were reversed.
@@ -598,6 +653,11 @@ jobs:
 
       - name: Build combined manifest
         run: ./scripts/build-rpi-manifests.py odio.rpi-imager-manifest entries/manifest-*/*.json
+
+      - name: Attest combined manifest
+        uses: actions/attest@v4
+        with:
+          subject-path: odio.rpi-imager-manifest
 
       - name: Upload combined manifest to release
         uses: softprops/action-gh-release@v3
