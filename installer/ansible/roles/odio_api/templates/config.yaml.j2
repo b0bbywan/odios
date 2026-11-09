@@ -19,6 +19,9 @@ power:
   capabilities:
     poweroff: {{ odio_api_power_can_poweroff | lower }}
     reboot: {{ odio_api_power_can_reboot | lower }}
+{% if odio_api_power_can_reboot %}
+  rebootRequiredFile: /run/reboot-required
+{% endif %}
 
 {% include "_systemd_block.yml.j2" %}
 
