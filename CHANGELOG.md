@@ -2,6 +2,22 @@
 
 Notable changes per release. Full notes, install commands and credits on [GitHub releases](https://github.com/b0bbywan/odios/releases).
 
+## [2026.11.0rc1](https://github.com/b0bbywan/odios/releases/tag/2026.11.0rc1) - 2026-11-09
+
+- Release integrity: reproducible installer archive, every release publishes SHA256SUMS and a GitHub attestation for each asset, checkable with `gh attestation verify` (see [Verifying downloads](README.md#verifying-downloads))
+- `install.sh` and the SD image build verify the installer archive against SHA256SUMS
+- MPD, Snapcast and Spotify keep their own volume: Bluetooth playback no longer resets it (myMPD jumping to 100%) (#111, #113)
+- Snapcast volume follows its PulseAudio stream, like MPD (#113)
+- Dashboard shows when a reboot is pending, with the packages behind it
+- Fixed: upgrade progress lost when the upgrade was started from a shell or the admin app
+- Fixed: on an SD image's first boot, Spotify Connect showed the image's default hostname instead of the one set in Raspberry Pi Imager
+- Python 3.12+ required (ansible-core 2.21); Ubuntu 26.04 tested in CI, older Ubuntu releases are officially unsupported
+- Updates:
+  - odio-api 0.18.2: reports a pending reboot, follows an upgrade to its end whatever started it
+  - odioctl 0.4.2: follows the upgrade to its end
+  - mpd2mpris 0.13.1: no more crash with python-mpd2 3.1.2 (Ubuntu 26.04, Debian testing)
+  - ansible-core 2.21 (was 2.19)
+
 ## [2026.10.0b3](https://github.com/b0bbywan/odios/releases/tag/2026.10.0b3) - 2026-10-25
 
 Security release, background in the [October 2026 security note](https://github.com/b0bbywan/odios/discussions/104).
