@@ -12,3 +12,9 @@
     state: restarted
   become: true
   when: install_mode == "live"
+
+# module-bluetooth only probes A2DP codecs (aptX via gstreamer) when it loads.
+- name: Restart pulseaudio for bluetooth codecs
+  ansible.builtin.include_tasks: "../../../tasks/systemd_restart_user.yml"
+  vars:
+    service_name: pulseaudio.service
