@@ -537,7 +537,7 @@ jobs:
       matrix:
         include:
           - arch: armhf
-            runner: ubuntu-latest
+            runner: ubuntu-24.04
           - arch: arm64
             runner: ubuntu-24.04-arm
     steps:
