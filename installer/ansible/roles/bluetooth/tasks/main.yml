@@ -18,14 +18,13 @@
 
 - name: Install Bluetooth packages
   ansible.builtin.apt:
-    name:
-      - bluez
-      - "{{ bluetooth_audioserver_package[audioserver] }}"
-      - rfkill
+    name: "{{ ['bluez', 'rfkill'] + bluetooth_audioserver_package[audioserver] }}"
     state: present
     install_recommends: false
   become: true
-  notify: Restart bluetooth
+  notify:
+    - Restart bluetooth
+    - Restart pulseaudio for bluetooth codecs
 
 - name: Ensure bluetooth group exists
   ansible.builtin.group:
