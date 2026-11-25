@@ -1,8 +1,8 @@
 ---
 # Variables par défaut
 install_mode: "live"  # live | image
-target_hostname: "{{ ansible_hostname }}"
-target_user: "{{ ansible_user_id }}"
+target_hostname: "{{ ansible_facts.hostname }}"
+target_user: "{{ ansible_facts.user_id }}"
 odio_gpg: "https://apt.odio.love/key.gpg"
 gpg_file: "/usr/share/keyrings/odio.gpg"
 # Pre-release channel, pinned at priority 50: never pulled by apt upgrade,

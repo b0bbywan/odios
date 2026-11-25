@@ -95,7 +95,7 @@
         name: acl
         state: present
       become: true
-      when: target_user != ansible_user_id
+      when: target_user != ansible_facts.user_id
 
     # odioctl is also created by the odioctl package's postinst, but that runs
     # in the upgrade role, after linger has started the user manager. Creating
@@ -132,14 +132,14 @@
     # So the invoker can read /var/lib/odio/state.json from its own login.
     - name: Ensure invoking user (live, ≠ target_user) in odio group
       ansible.builtin.user:
-        name: "{{ ansible_user_id }}"
+        name: "{{ ansible_facts.user_id }}"
         append: true
         groups: [odio]
       become: true
       when:
         - install_mode == "live"
-        - ansible_user_id != target_user
-        - ansible_user_id != "root"
+        - ansible_facts.user_id != target_user
+        - ansible_facts.user_id != "root"
 
     - name: Check linger status
       ansible.builtin.stat:
