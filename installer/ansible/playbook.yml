@@ -37,7 +37,7 @@
     # on it. False when the invoker already is target_user — no become needed.
     - name: Detect become requirement for target user
       ansible.builtin.set_fact:
-        become_for_target_user: "{{ target_user != ansible_user_id }}"
+        become_for_target_user: "{{ target_user != ansible_facts.user_id }}"
 
     - name: Ensure dbus running
       ansible.builtin.systemd:
@@ -57,7 +57,7 @@
         create_home: true
         state: present
       become: true
-      when: target_user != ansible_user_id
+      when: target_user != ansible_facts.user_id
 
     - name: Create ansible remote_tmp directory
       ansible.builtin.file:
@@ -77,7 +77,7 @@
 
     - name: Detect variables
       ansible.builtin.set_fact:
-        system_arch: "{{ ansible_architecture }}"
+        system_arch: "{{ ansible_facts.architecture }}"
         target_user_uid: "{{ common_user_uid_result.stdout }}"
 
     # Sets `is_headless` once for the whole run — bluetooth, odio_api, and
@@ -167,7 +167,7 @@
           - "  {{ '✓' if install_display else '✗' }} Kiosk browser"
           - ""
           - "System should already be running !"
-          - "Visit http://{{ ansible_default_ipv4.address | default('localhost') }}:8018/ui"
-          - "   📲 https://pwa.odio.love{{ '/#/i/' ~ ansible_default_ipv4.address if ansible_default_ipv4 is defined else '' }}"
+          - "Visit http://{{ ansible_facts.default_ipv4.address | default('localhost') }}:8018/ui"
+          - "   📲 https://pwa.odio.love{{ '/#/i/' ~ ansible_facts.default_ipv4.address if ansible_facts.default_ipv4.address is defined else '' }}"
           - ""
           - "═══════════════════════════════════════════════════"
