@@ -8,7 +8,7 @@ requires-python = ">=3.12"
 # Mitogen. Installs without uv read their pins with scripts/lock-pin.py.
 [dependency-groups]
 vendor = ["ansible-core==2.21.6"]
-image-build = ["mitogen==0.3.54"]
+image-build = ["mitogen==0.3.55"]
 
 [tool.ruff]
 line-length = 100
