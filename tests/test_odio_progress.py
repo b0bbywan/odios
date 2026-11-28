@@ -402,6 +402,21 @@ class SocketBufferTests(_SocketBase):
         self.assertEqual(cb._pending, [])
         self.assertTrue(_wait_for(lambda: listener2.received == [{"event": "end"}]))
 
+    def test_worker_resends_lost_event_without_waiting_for_next(self):
+        # odio-api restarts mid-run: the event sent on the dead connection
+        # must reach the new listener on its own, not with the next event.
+        listener = _Listener(self.path)
+        cb = self._cb()
+        cb._emit({"event": "progress", "percent": 67, "current": 5, "step": "odio_api"})
+        self.assertTrue(_wait_for(lambda: len(listener.received) == 1))
+        listener.stop()
+        cb._emit({"event": "progress", "percent": 83, "current": 6, "step": "finalize"})
+        self.assertTrue(_wait_for(lambda: cb._pending))
+        listener2 = _Listener(self.path)
+        self.addCleanup(listener2.stop)
+        self.assertTrue(_wait_for(lambda: listener2.received == [
+            {"event": "progress", "percent": 83, "current": 6, "step": "finalize"}]))
+
 
 if __name__ == "__main__":
     unittest.main()
