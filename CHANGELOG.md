@@ -2,6 +2,19 @@
 
 Notable changes per release. Full notes, install commands and credits on [GitHub releases](https://github.com/b0bbywan/odios/releases).
 
+## [2026.11.0rc2](https://github.com/b0bbywan/odios/releases/tag/2026.11.0rc2) - 2026-11-28
+
+- Bluetooth: aptX and aptX HD with PulseAudio
+- Audio processing toggles in the dashboard, under the default output: mono output, network sink
+- Network sink (PulseAudio over TCP, port 4713) now run by odio-api instead of `pulse-tcp`, removed on upgrade; still on at boot, open to loopback and private subnets only
+- Fixed: upgrade progress stuck on a step until the end when odio-api restarted mid-upgrade
+- Fixed: dashboard not catching up after odio-api restarted; it now refreshes on reconnect
+- Fixed: audio clients and outputs out of date after an audio server restart
+- Fixed: a dashboard section opened or closed by hand flipping back after clicking a button inside it
+- No more Ansible deprecation warnings in the install output
+- Updates:
+  - odio-api 0.19.1: audio processing, dashboard resync after a restart
+
 ## [2026.11.0rc1](https://github.com/b0bbywan/odios/releases/tag/2026.11.0rc1) - 2026-11-09
 
 - Release integrity: reproducible installer archive, every release publishes SHA256SUMS and a GitHub attestation for each asset, checkable with `gh attestation verify` (see [Verifying downloads](README.md#verifying-downloads))
