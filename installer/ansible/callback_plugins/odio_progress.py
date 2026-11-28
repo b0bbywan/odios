@@ -7,8 +7,8 @@ newline-delimited and unprefixed, over the unix socket odio-api listens on
 and relays each line as an upgrade.info event; the socket is the live channel
 (no journal polling). Socket I/O runs on a daemon thread so it never blocks the
 playbook: the connection is best-effort and reopened lazily, so a run outside
-odio-api just writes stdout, and a drop (odio-api restarting mid-upgrade)
-reconnects on the next event so later ones, notably `end`, still get through.
+odio-api just writes stdout, and an event lost to a drop (odio-api restarting
+mid-upgrade) is resent as soon as it is back, not held until the next one.
 
 Event schema (the contract odio-api parses): a generic begin/progress/end
 core, enriched with ansible-flavoured fields a generic consumer can ignore.
@@ -119,8 +119,15 @@ class CallbackModule(CallbackBase):
 
     def _run(self) -> None:
         # Drain the queue until the sentinel; None means "finish and stop".
+        # An unsent tail is retried on a timer: across odio-api's restart the
+        # next event may be minutes away (finalize → end).
         while True:
-            line = self._queue.get()
+            retry = RESEND_INTERVAL_S if self._pending and self._ever_connected else None
+            try:
+                line = self._queue.get(timeout=retry)
+            except queue.Empty:
+                self._flush()
+                continue
             if line is None:
                 self._drain_pending()
                 self._close()
